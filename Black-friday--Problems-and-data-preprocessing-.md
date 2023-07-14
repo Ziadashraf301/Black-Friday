@@ -413,8 +413,7 @@ We don’t have missing values now.
 
 ## Save data
 
-Now I will save the preprocessed data into a new CSV file for analysis
-and modeling.
+Now I will store the preprocessed data in a MySQL database for further analysis and modeling.
 
 ``` r
 #Load the RMySQL package
