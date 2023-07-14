@@ -1,12 +1,8 @@
 ---
-title: "Black friday (Problems and data preprocessing)"
+title: "Black Friday (Problems and data preprocessing)"
 output: rmarkdown::github_document
 date: "2023-07-14"
 ---
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
 
 # Introduction
 
