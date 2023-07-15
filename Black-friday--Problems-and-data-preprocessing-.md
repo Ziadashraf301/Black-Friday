@@ -1,4 +1,4 @@
-Black friday (Problems and data preprocessing)
+Black Friday (Problems and data preprocessing)
 ================
 2023-07-14
 
@@ -33,7 +33,7 @@ journal, Factory Management, and Maintenance. The term was used again in
 1952 and referred to the practice of workers calling in sick on that day
 to extend their holiday weekend to four days.
 
-In Philadelphia and Rochester, the police began using the terms “Black
+In Philadelphia and Rochester, the police began using the term “Black
 Friday” and “Black Saturday” in the early 1960s to describe the heavy
 traffic and chaotic crowds that accompanied the start of the Christmas
 shopping season. Despite efforts by retailers to rebrand the day as “Big
@@ -48,7 +48,7 @@ year in Philadelphia. However, the use of the term gradually became more
 widespread in subsequent years.
 
 Despite its growing popularity, some retailers in other parts of the
-country remained unaware of the term. In 1981, The Philadelphia Inquirer
+the country remained unaware of the term. In 1981, The Philadelphia Inquirer
 reported that retailers in Cincinnati and Los Angeles were still
 unfamiliar with the term “Black Friday” and were instead referring to it
 as the day after Thanksgiving or the official beginning of the Christmas
@@ -74,7 +74,7 @@ Friday, in particular, has become a cultural phenomenon in the United
 States, with some people camping outside stores for days to be the first
 in line for deals.
 
-**`To understand customer purchase behavior against various products of different categories, I need to collect and analyze data on customers demographics, purchasing history, and product preferences. So I will collect data have these characteristics.`**
+**`To understand customer purchase behavior against various products of different categories, I need to collect and analyze data on customers' demographics, purchasing history, and product preferences. So I will collect data have these characteristics.`**
 
 # Problem Statement
 
@@ -117,7 +117,7 @@ Some of the key variables included in the dataset are:
     behavior.
 
 2.  Product details: This includes product ID and product category,
-    which can be used to analyze sales by category, identify popular
+    which can be used to analyze sales by category, identify popularly
     products and the relationship between products purchased.
 
 3.  Purchase amount: This variable provides information on the amount
@@ -170,7 +170,7 @@ library(tidyverse)
     ## x dplyr::lag()    masks stats::lag()
 
 We have two datasets, the first is for training the regression model,
-developing the clustering, association rule models and for descriptive
+developing the clustering, association rule models, and for descriptive
 analysis. The test set will be used for prediction.
 
 ``` r
@@ -205,13 +205,13 @@ head(black_friday)
 
 # Data Exploration
 
-In this step I will discover the structure of the data, features, data
+In this step, I will discover the structure of the data, features, data
 types and missing values.
 
-## Check the structure of data
+## Check the structure of the data
 
 ``` r
-#display the structure of data
+#display the structure of the data
 str(black_friday)
 ```
 
@@ -317,7 +317,7 @@ values.
 
 # Data Cleaning
 
-In this step, I will clean the data, change the columns type, and fill
+In this step, I will clean the data, change the column type, and fill
 in missing values, and errors. We will transform the data into an
 organized version for analysis.
 
@@ -351,11 +351,8 @@ sapply(black_friday, class)
 
 ## Missing values treatment
 
-We have 20 unique category masked from 1 to 20. We want to fill the
-missing values in the: `Product_Category_2`, and `Product_Category_3`
-with 0. Because this indicates that this product is not included in
-multiple categories.
-
+We have 20 unique categories masked from 1 to 20. We want to impute the
+missing values in the: `Product_Category_2`, and `Product_Category_3` using the missforest algorithm.
 ``` r
 # Length of unique categories.
 unique_categories <- unique(black_friday$Product_Category_1)
@@ -427,9 +424,9 @@ library(RMySQL)
     ## Warning: package 'DBI' was built under R version 4.1.3
 
 ``` r
-#Create a connection to MySQL database
+#Create a connection to the MySQL database
 con <- dbConnect(MySQL(), user = "root", password = "3012001", host = "localhost",dbname = "fridayblack")
-dbSendQuery(con, "SET GLOBAL local_infile = true;") # <--- Added this
+dbSendQuery(con, "SET GLOBAL local_infile = true;")
 ```
 
     ## <MySQLResult:276773352,0,0>
@@ -441,7 +438,7 @@ dbWriteTable(con, "black_friday", black_friday, row.names = FALSE, overwrite = T
     ## [1] TRUE
 
 ``` r
-# write query to acces the records from a particular table
+# write a query to access the records from a particular table
 result = dbSendQuery(con, "select * from black_friday limit 5") 
 fetch(result)
 ```
@@ -465,6 +462,6 @@ fetch(result)
     ## 4                 14                 17     1057
     ## 5                 17                 17     7969
 
-Now we loaded our data from the CSV file and then cleaned, casted, and
+We loaded our data from the CSV file and cleaned, casted, and
 imputed the missing values. Then we store the preprocessed version in
 the Mysql database for analysis and modeling.
