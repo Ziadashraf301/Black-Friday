@@ -252,7 +252,6 @@ user_counts <- black_friday %>%
   summarize(num_orders = n()) %>%
   arrange(desc(num_orders)) %>%
   head(10)
-
 # Create a bar plot of the top 10 users
 ggplot(data = user_counts, 
        aes(x = reorder(User_ID, desc(num_orders)), y = 
@@ -271,7 +270,7 @@ ggplot(data = user_counts,
         axis.ticks.y = element_blank())
 ```
 
-![](Figs/unnamed-chunk-5-1.png)<!-- -->
+![](Black-friday--Data-analysis-and-hypothesis-testing-_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
 -   We can see that users `1001680` and `1004277` were the most active
     customers in the last month.
@@ -308,7 +307,7 @@ ggplot(data = user_counts,
             axis.ticks.y = element_blank())
     ```
 
-    ![](Figs/unnamed-chunk-6-1.png)<!-- -->
+    ![](Black-friday--Data-analysis-and-hypothesis-testing-_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
 -   We can see that user `1004277` is the most richer, he bought items
     with `10.54M` in the last month.
@@ -345,7 +344,7 @@ ggplot(data = user_counts,
             axis.text.y = element_blank())
     ```
 
-    ![](Figs/unnamed-chunk-7-1.png)<!-- -->
+    ![](Black-friday--Data-analysis-and-hypothesis-testing-_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
 -   The top product is `P00265242`, was sold `1880` units of it, which
     is significantly higher than the rest of the products on the list.
@@ -381,7 +380,7 @@ ggplot(data = gender_purchases,
   guides(fill = guide_legend(title = "Gender"))
 ```
 
-![](Figs/unnamed-chunk-8-1.png)<!-- -->
+![](Black-friday--Data-analysis-and-hypothesis-testing-_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
 
 -   Based on this chart, it appears that males made up the majority of
     purchases on Black Friday, with `75% of all purchases`, while
@@ -414,7 +413,7 @@ ggplot(data = age_purchases, aes(x = Age, y = num_orders)) +
         axis.ticks.x= element_blank())
 ```
 
-![](Figs/unnamed-chunk-9-1.png)<!-- -->
+![](Black-friday--Data-analysis-and-hypothesis-testing-_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
 -   It looks like there were `219,587` purchases made by the age group
     of `26-35`, followed by `110,013` purchases made by the age group of
@@ -451,7 +450,7 @@ ggplot(data = marital_status_purchases,
     position = position_stack(vjust = 0.5), size = 5)
 ```
 
-![](Figs/unnamed-chunk-10-1.png)<!-- -->
+![](Black-friday--Data-analysis-and-hypothesis-testing-_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
 
 -   It appears that a majority of the purchases (59%) were made by
     single customers, while the remaining 41% of the purchases were made
@@ -482,7 +481,7 @@ ggplot(data = marital_status_purchases,
         position = position_stack(vjust = 0.5), size = 5)
     ```
 
-    ![](Figs/unnamed-chunk-11-1.png)<!-- -->
+    ![](Black-friday--Data-analysis-and-hypothesis-testing-_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 -   It looks like there were 42% of the orders made in cities
     categorized as “B”, 31% of orders made in cities categorized as “C”,
@@ -513,7 +512,7 @@ ggplot(occupation_orders, aes(x = num_orders, y = fct_reorder(Occupation, num_or
     panel.background = element_blank())
 ```
 
-![](Figs/unnamed-chunk-12-1.png)<!-- -->
+![](Black-friday--Data-analysis-and-hypothesis-testing-_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
 
 It looks like the top three customers’ Occupation with the most orders
 in the last month are:
@@ -551,7 +550,7 @@ ggplot(most_common_duration,
   )
 ```
 
-![](Figs/unnamed-chunk-13-1.png)<!-- -->
+![](Black-friday--Data-analysis-and-hypothesis-testing-_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
 
 It looks like the most common duration of stay in the current city is “1
 year”, with 193,821 orders. The other duration of stay in descending
@@ -588,7 +587,7 @@ ggplot(black_friday, aes(x = Gender, y = Purchase)) +
   geom_boxplot()
 ```
 
-![](Figs/unnamed-chunk-14-1.png)<!-- -->
+![](Black-friday--Data-analysis-and-hypothesis-testing-_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
 We can see slightly difference between the two means. The variance of
 the two groups is not equal.
