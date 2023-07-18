@@ -1,10 +1,10 @@
-Black friday (Data analysis and hypothesis testing)
+Black Friday (Data analysis and hypothesis testing)
 ================
 2023-07-14
 
 # Load Data
 
-First we need to retrieve the data from MySQL then check the types.
+First, we need to retrieve the data from MySQL and then check the types.
 
 ``` r
 #Load the RMySQL package
@@ -51,7 +51,7 @@ library(tidyverse)
     ## x dplyr::lag()    masks stats::lag()
 
 ``` r
-#Create a connection to MySQL database
+#Create a connection to the MySQL database
 con <- dbConnect(MySQL(), user = "root", password = "3012001", host = "localhost",dbname = "fridayblack")
 dbSendQuery(con, "SET GLOBAL local_infile = true;") 
 ```
@@ -59,7 +59,7 @@ dbSendQuery(con, "SET GLOBAL local_infile = true;")
     ## <MySQLResult:0,0,0>
 
 ``` r
-# write query to acces the records
+# read the table
 black_friday = dbReadTable(con, "black_friday")
 head(black_friday)
 ```
@@ -175,7 +175,7 @@ Here are some insights based on the summary of the `black_friday` data:
     of orders.
 
 -   Product ID P00265242 appears the most frequently in the data, with
-    1880 of orders.
+    1880 orders.
 
 -   There are 135809 female users and 414259 male users in the data.
     This indicates that there are more male customers than female
@@ -198,22 +198,19 @@ Here are some insights based on the summary of the `black_friday` data:
     with a count of 74398 users
 
 -   The majority of users in the data are single with a count of 324731,
-    while the
-
--   remaining users are married.
+    while the remaining users are married.
 
 -   The most commonly purchased product main categories are category 5
     (150933), category 1 (140378), and category 8 (113925).
 
 -   For the first product subcategory, the most commonly purchased
     subcategory is 17 with a count of 74080. For the second product
-    subcategory, the most commonly purchased subcategory is also 17,
+    subcategory, the most frequently purchased subcategory is also 17,
     with a count of 172703.
 
 -   The average purchase amount is 9264 dollars, while the minimum and
-    maximum purchase amounts are 12 dollars and 23961 dollars ,
-    respectively. This indicates that the Purchase variable is right
-    skewed and have outliers.
+    maximum purchase amounts are 12 and 23961 dollars,
+    respectively. This indicates that the Purchase variable is right-skewed and has outliers.
 
 # Data analysis
 
@@ -237,11 +234,11 @@ Black Friday:
 
 8.  `What is the occupation that has the most orders in the last month?`
 
-9.  `What is the most common duration of stay in the current city  that has the most orders in the last month?`
+9.  `What is the most common duration of stay in the current city that has the most orders in the last month?`
 
-10. `Is the mean purchase amount statistically significantly different between the Gender, Age Groups?`
+10. `Is the mean purchase amount statistically different between the Gender, Age Groups?`
 
-We can answers our questions now through visualization:
+We can answer our questions now through visualization:
 
 `What are the top 10 users based on the number of orders in the last month??`
 
@@ -275,8 +272,8 @@ ggplot(data = user_counts,
 -   We can see that users `1001680` and `1004277` were the most active
     customers in the last month.
 
--   The range of the orders of the top 10 active customers range from
-    1026 to 727 order.
+-   The range of orders of the top 10 active customers ranges from
+    1026 to 727 orders.
 
     `What are the top 10 users based on the total purchases in the last month?`
 
@@ -314,7 +311,7 @@ ggplot(data = user_counts,
 
 -   We can see the most ten customers who bought items in the last
     month, the total purchase value ranges from
-    `10.54 to 6.39 Millions`.
+    `10.54 to 6.39 Million`.
 
     `What are the top 10 items sold in the last month?`
 
@@ -421,8 +418,8 @@ ggplot(data = age_purchases, aes(x = Age, y = num_orders)) +
 
 -   The remaining age groups made fewer purchases, with `45,701`
     purchases made by the age group of `46-50`, `38,501` purchases made
-    by the age group of 51-55, 21,504 purchases made by the age group of
-    55+, and 15,102 purchases made by the age group of 0-17.
+    by the age group of 51-55, 21,504 purchases were made by the age group of
+    55+, and 15,102 purchases were made by the age group of 0-17.
 
 -   We can target the top 3 age groups more than others.
 
@@ -485,7 +482,7 @@ ggplot(data = marital_status_purchases,
 
 -   It looks like there were 42% of the orders made in cities
     categorized as “B”, 31% of orders made in cities categorized as “C”,
-    and 27% of the orders made in cities categorized as “A”.
+    and 27% of the orders made in cities are categorized as “A”.
 
 `What is the customers' occupation that has the most orders in the last month?`
 
@@ -523,7 +520,7 @@ in the last month are:
 
 -   Occupation with id 7 (59,133 orders)
 
-    We can target those customers than other.
+    We can target those customers more than others.
 
     `What is the most common duration of stay in the current city  that has the most orders in the last month?`
 
@@ -589,8 +586,8 @@ ggplot(black_friday, aes(x = Gender, y = Purchase)) +
 
 ![](img/1unnamed-chunk-14-1.png)<!-- -->
 
-We can see slightly difference between the two means. The variance of
-the two groups is not equal.
+We can see a slight difference between the two means. The variance of
+the two groups are not equal.
 
 ``` r
 # Perform a t-test to compare the mean purchase amount between male and female groups
@@ -601,11 +598,11 @@ t_test_results
 ```
 
     ## 
-    ##  Welch Two Sample t-test
+    ##  Welch Two Sample T-test
     ## 
     ## data:  Purchase by Gender
     ## t = -46.358, df = 245163, p-value < 2.2e-16
-    ## alternative hypothesis: true difference in means between group F and group M is not equal to 0
+    ## Alternative hypothesis: true difference in means between group F and group M is not equal to 0
     ## 95 percent confidence interval:
     ##  -732.6806 -673.2399
     ## sample estimates:
@@ -617,7 +614,7 @@ insights:
 
 -   The t-value is -46.358 and the degrees of freedom is 245163, which
     indicates that there is a significant difference between the mean
-    purchase amount of the male and female groups.
+    the purchase amount of the male and female groups.
 
 -   The p-value is less than 2.2e-16, which is much smaller than the
     significance level of 0.05. Therefore, we can reject the null
@@ -625,9 +622,9 @@ insights:
     significantly different between the male and female groups.
 
 -   The 95% confidence interval for the difference in means between the
-    male and female groups is between -732.6806 and -673.2399. This
+    male and female groups are between -732.6806 and -673.2399. This
     interval does not contain the value of 0, which further supports the
-    conclusion that the mean purchase amount is significantly different
+    the conclusion that the mean purchase amount is significantly different
     between the male and female groups.
 
 -   The mean purchase amount for females is 8,734.566 and the mean
@@ -668,7 +665,7 @@ insights:
     Based on this output, we can make the following insights:
 
 -   The F-statistic is 40.58, which indicates that there is a
-    significant difference in the mean purchase amount between the age
+    a significant difference in the mean purchase amount between the age
     groups.
 
 -   The p-value is less than 2e-16, which is much smaller than the
@@ -676,7 +673,7 @@ insights:
     hypothesis and conclude that the mean purchase amount is
     significantly different between the age groups.
 
--   The degrees of freedom for the age group is 6, and the degrees of
+-   The degree of freedom for the age group is 6, and the degrees of
     freedom for the residuals is 550,061.
 
 -   The sum of squares for the age group is 6.140e+09, and the sum of
@@ -686,7 +683,7 @@ insights:
     for the residuals is 2.522e+07.
 
 -   Overall, these insights suggest that there is a significant
-    difference in the mean purchase amount between the age groups, and
+    the difference in the mean purchase amount between the age groups, and
     that the age group variable may be a good predictor of the purchase
     amount.
 
@@ -719,7 +716,7 @@ additional insights to create effective Black Friday offers:**
     these top users to make them feel valued and encourage them to make
     purchases on Black Friday. This can include offering early access to
     deals or products, or providing them with a personal shopping
-    assistant to help them find the products they are interested in.T
+    assistant to help them find the products they are interested in.
 
 **The marketing team can also draw the following insights for the Black
 Friday offers:**
@@ -731,7 +728,7 @@ Friday offers:**
     products.
 
 2.  Targeted promotions: Based on the gender and age group insights, the
-    marketing team can create targeted promotions for each group to
+    the marketing team can create targeted promotions for each group to
     increase their engagement and sales on Black Friday. For example,
     they can offer promotions on products that are popular among males
     or females, or offer discounts to customers in lower age groups.
