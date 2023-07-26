@@ -146,7 +146,7 @@ ggplot(data = black_friday, aes(x = Purchase)) +
   geom_boxplot()
 ```
 
-![](img/unnamed-chunk-4-1.png)<!-- -->
+![](img/2unnamed-chunk-4-1.png)<!-- -->
 
 ``` r
 #Histogram of the target variable
@@ -157,7 +157,7 @@ ggplot(data = black_friday, aes(x = Purchase)) +
        title = "Distribution of Purchase Amounts")
 ```
 
-![](img/unnamed-chunk-5-1.png)<!-- -->
+![](img/2unnamed-chunk-5-1.png)<!-- -->
 
 ``` r
 #Summary statistices of the Purchase
@@ -268,7 +268,7 @@ ggplot(data = black_friday, aes(x = Purchase)) +
   geom_boxplot()
 ```
 
-![](img/unnamed-chunk-11-1.png)<!-- -->
+![](img/2unnamed-chunk-11-1.png)<!-- -->
 
 ``` r
 # Create a histogram for Purchase without outliers
@@ -279,7 +279,7 @@ ggplot(data = black_friday, aes(x = Purchase)) +
        title = "Distribution of Purchase Amounts")
 ```
 
-![](img/unnamed-chunk-12-1.png)<!-- -->
+![](img/2unnamed-chunk-12-1.png)<!-- -->
 
 ``` r
 # Create a Q-Q plot of the Purchase
@@ -287,7 +287,7 @@ qqnorm(black_friday$Purchase)
 qqline(black_friday$Purchase)
 ```
 
-![](img/unnamed-chunk-13-1.png)<!-- -->
+![](img/2unnamed-chunk-13-1.png)<!-- -->
 
 The distribution of the purchase now approximately normal.
 
@@ -304,7 +304,7 @@ ggplot(data = black_friday, aes(x = Gender , y = Purchase)) +
   geom_boxplot()
 ```
 
-![](img/unnamed-chunk-14-1.png)<!-- -->
+![](img/2unnamed-chunk-14-1.png)<!-- -->
 
 ``` r
 ggplot(data = black_friday, aes(x = Purchase, fill = Gender)) +
@@ -312,7 +312,7 @@ ggplot(data = black_friday, aes(x = Purchase, fill = Gender)) +
   labs(x = "Purchase", y = "Density", fill = "Gender")
 ```
 
-![](img/unnamed-chunk-15-1.png)<!-- -->
+![](img/2unnamed-chunk-15-1.png)<!-- -->
 
 The purchase distribution of the male is very close to the purchase
 distribution of the female except it has a higher tail, and there isn’t
@@ -326,7 +326,7 @@ ggplot(data = black_friday, aes(x = Marital_Status , y = Purchase)) +
   geom_boxplot()
 ```
 
-![](img/unnamed-chunk-16-1.png)<!-- -->
+![](img/2unnamed-chunk-16-1.png)<!-- -->
 
 ``` r
 ggplot(data = black_friday, aes(x = Purchase, fill = Marital_Status)) +
@@ -334,7 +334,7 @@ ggplot(data = black_friday, aes(x = Purchase, fill = Marital_Status)) +
   labs(x = "Purchase", y = "Density", fill = "Marital_Status")
 ```
 
-![](img/unnamed-chunk-17-1.png)<!-- -->
+![](img/2unnamed-chunk-17-1.png)<!-- -->
 
 The purchase distribution of single customers is very close to the
 purchase distribution of the married, and there isn’t a correlation
@@ -348,7 +348,7 @@ ggplot(data = black_friday,aes(x = City_Category , y = Purchase)) +
   geom_boxplot()
 ```
 
-![](img/unnamed-chunk-18-1.png)<!-- -->
+![](img/2unnamed-chunk-18-1.png)<!-- -->
 
 ``` r
 ggplot(data = black_friday, aes(x = Purchase, fill = City_Category)) +
@@ -356,7 +356,7 @@ ggplot(data = black_friday, aes(x = Purchase, fill = City_Category)) +
   labs(x = "Purchase", y = "Density", fill = "City_Category")
 ```
 
-![](img/unnamed-chunk-19-1.png)<!-- -->
+![](img/2unnamed-chunk-19-1.png)<!-- -->
 
 The purchase distribution for each city is very close to the others, and
 there isn’t correlation between the city type and the purchase. There
@@ -369,7 +369,7 @@ ggplot(data = black_friday, aes(x = Occupation , y = Purchase)) +
   geom_boxplot()
 ```
 
-![](img/unnamed-chunk-20-1.png)<!-- -->
+![](img/2unnamed-chunk-20-1.png)<!-- -->
 
 The occupations’ purchase distributions are very close to each other,
 and there isn’t a correlation between the occupation and the purchase.
@@ -382,7 +382,7 @@ ggplot(data = black_friday, aes(x = Product_Category_1 , y = Purchase)) +
   geom_boxplot()
 ```
 
-![](img/unnamed-chunk-21-1.png)<!-- -->
+![](img/2unnamed-chunk-21-1.png)<!-- -->
 
 The product category 1 purchase distributions are very different from
 each other, and there is a noticeable correlation between them and the
@@ -395,7 +395,7 @@ ggplot(data = black_friday, aes(x = Product_Category_2 , y = Purchase)) +
   geom_boxplot()
 ```
 
-![](img/unnamed-chunk-22-1.png)<!-- -->
+![](img/2unnamed-chunk-22-1.png)<!-- -->
 
 The product category 2 purchase distributions are different, and there
 is noticeable correlation between them and the purchase. There are also
@@ -408,10 +408,9 @@ ggplot(data = black_friday, aes(x = Product_Category_3 , y = Purchase)) +
   geom_boxplot()
 ```
 
-![](img/unnamed-chunk-23-1.png)<!-- -->
+![](img/2unnamed-chunk-23-1.png)<!-- -->
 
-The product category 3 purchase distributions are different, and there
-is noticeable correlation between them and the purchase. There are also
+The product category 3 purchase distributions are different, with a noticeable correlation between them and the purchase. There are also
 some outliers in some categories.
 
 ## Age by Purchase
@@ -421,10 +420,10 @@ ggplot(data = black_friday, aes(x = Age , y = Purchase)) +
   geom_boxplot()
 ```
 
-![](img/unnamed-chunk-24-1.png)<!-- -->
+![](img/2unnamed-chunk-24-1.png)<!-- -->
 
-The Age groups distributions are very close to each other, and there
-isn’t correlation between them and the purchase.
+The Age group distributions are very close to each other, and there
+There isn't a correlation between them and the purchase.
 
 ## Stay In Current City Years by Purchase
 
@@ -433,12 +432,12 @@ ggplot(data = black_friday, aes(x = Stay_In_Current_City_Years , y = Purchase)) 
   geom_boxplot()
 ```
 
-![](img/unnamed-chunk-25-1.png)<!-- -->
+![](img/2unnamed-chunk-25-1.png)<!-- -->
 
 The stay_in_current_city_years distributions are very close to each
-other, and there isn’t correlation between them and the purchase.
+other, and there isn’t a correlation between them and the purchase.
 
-**From this analysis, we can say that most important predictors for
+**From this analysis, we can say that the most important predictors for
 estimating the purchaser:**
 
 1.  **product category 1**
@@ -587,7 +586,7 @@ The results of Pearson’s product-moment correlation test between
     (-0.1058790 to -0.1006373) suggests that we can be fairly confident
     that the true correlation falls within this interval.
 
-    **So after these analysis we can select only
+    **So after these analyses we can select only
     `Product_Category_1,Product_Category_2,Product_Category_3,Product_ID`
     to predict the purchase value.**
 
@@ -595,7 +594,7 @@ The results of Pearson’s product-moment correlation test between
 
 ## Split the data
 
-First we need to split the data for train the model and for test it.
+First, we need to split the data to train the model and test it.
 
 ``` r
 library(tidymodels)
@@ -681,7 +680,7 @@ head(Train)
 
 ``` r
 # Normalize the Purchase variable in the train data
-# by dividing each value of Purchase by the maximum value of Purchase
+# by dividing each value of Purchase by the maximum value of the Purchase
 
 # This will rescale the Purchase variable to have values between 0 and 1
 
@@ -693,7 +692,7 @@ Test$Purchase <- (Test$Purchase) / Purchase_max
 ```
 
 I scaled the purchase in the train and the test data using a max scaler
-to be between \[0,1\] to get lower scale of the error.
+to be between \[0,1\] to get a lower scale of the error.
 
 ## Linear regression
 
@@ -791,7 +790,7 @@ rsq(test_results, truth = truth,
 
 **The model performs 63.1% on the test and 62.7% on the train data. This
 suggests that a baseline model doesn’t over-fit the train data but there
-is a problem in sampling the test data so i will estimate the model
+is a problem in sampling the test data so I will estimate the model
 accuracy on 10 fold-CV.**
 
 ``` r
@@ -847,10 +846,10 @@ The goals of using the decision tree with our data:
 -   We can use all the important features and let the decision tree
     perform features selection using the Entropy.
 
--   No assumptions on the data and the model
+-   No assumptions about the data and the model
 
--   We rely in our situation on categorical variables to predict the
-    response which will not perform very well using the least square
+-   We rely in our situation on categorical variables to predict
+    the response which will not perform very well using the least square
     model.
 
 ``` r
@@ -908,7 +907,7 @@ rsq(test_results, truth = truth,
     ##   <chr>   <chr>          <dbl>
     ## 1 rsq     standard       0.673
 
-The model performs very well than the least square model. It have
+The model performs very well than the least square model. It has
 `67.5%` R-square value on the train and `67.11%` on the test data.
 
 ``` r
@@ -1039,15 +1038,15 @@ importances <- vip(final_rf_model)
 print(importances)
 ```
 
-![](img/unnamed-chunk-40-1.png)<!-- -->
+![](img/2unnamed-chunk-40-1.png)<!-- -->
 
 We can see that the `main category` of the brand is the most important
-factor to define it’s price then the `brand` itself.
+factor to define its price then the `brand` itself.
 
 # Save the models
 
 ``` r
-# Save model object to file
+# Save model object to a file
 saveRDS(final_rf_model, "rf_model.rds")
 saveRDS(tree_fitting, "tree_model.rds")
 saveRDS(fitting, "lr_model.rds")
