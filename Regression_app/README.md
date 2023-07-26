@@ -1,6 +1,6 @@
 # Black Friday Sales Prediction Web Application
 
-This web application uses Shiny to provide a simple user interface for visualizing and comparing the results of three regression models trained on Black Friday sales data: random forest, decision tree, and linear regression. The trained models are deployed in the app to make predictions on new data.
+This web application uses Shiny to provide a simple user interface for visualizing and comparing the results of three regression models trained on Black Friday data: random forest, decision tree, and linear regression. The trained models are deployed in the app to make predictions on new data.
 
 ## Functionality
 
