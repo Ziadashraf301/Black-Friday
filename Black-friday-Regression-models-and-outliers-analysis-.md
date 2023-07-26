@@ -1,10 +1,10 @@
-Black friday(Regression models and outliers analysis)
+Black Friday (Regression models and outlier analysis)
 ================
 2023-07-25
 
 # Load Data
 
-First we need to retrieve the data from MySQL then check the types.
+First, we need to retrieve the data from MySQL and then check the types.
 
 ``` r
 #Load the RMySQL package
@@ -51,7 +51,7 @@ library(tidyverse)
     ## x dplyr::lag()    masks stats::lag()
 
 ``` r
-#Create a connection to MySQL database
+#Create a connection to the MySQL database
 con <- dbConnect(MySQL(), user = "root", password = "3012001", host = "localhost",dbname = "fridayblack")
 dbSendQuery(con, "SET GLOBAL local_infile = true;") 
 ```
@@ -59,7 +59,7 @@ dbSendQuery(con, "SET GLOBAL local_infile = true;")
     ## <MySQLResult:0,0,0>
 
 ``` r
-# write query to acces the records
+# write a query to access the records
 black_friday = dbReadTable(con, "black_friday")
 head(black_friday)
 ```
@@ -160,7 +160,7 @@ ggplot(data = black_friday, aes(x = Purchase)) +
 ![](img/2unnamed-chunk-5-1.png)<!-- -->
 
 ``` r
-#Summary statistices of the Purchase
+#Summary statistics of the Purchase
 summary(black_friday$Purchase) 
 ```
 
@@ -184,7 +184,7 @@ iqr <- IQR(black_friday$Purchase)
 range_min <- q1 - (1.5 * iqr)
 range_max <- q3 + (1.5 * iqr)
 
-#The thresholds for the outliers in the two sides
+#The thresholds for the outliers on the two sides
 print(range_min)
 ```
 
@@ -201,7 +201,7 @@ print(range_max)
 We can observe that any transaction below -\$3,523.50 will be considered
 an outlier. We know that the minimum value for placing an order should
 be positive and greater than zero. However, this lower threshold is a
-result of the distribution of purchases, which are significantly below
+result of the distribution of purchases, which is significantly below
 the mean purchase by approximately three standard deviations. The
 maximum threshold is \$21400.50, any order cost above this value should
 be an outlier.
@@ -289,11 +289,11 @@ qqline(black_friday$Purchase)
 
 ![](img/2unnamed-chunk-13-1.png)<!-- -->
 
-The distribution of the purchase now approximately normal.
+The distribution of the purchase is now close to normal distribution.
 
 # Distributions analysis
 
-We want to understand more which variable is highly correlated with the
+We want to understand more about which variable is highly correlated with the
 purchase. So, I will examine using distributions of the purchases
 between each variable groups.
 
@@ -359,7 +359,7 @@ ggplot(data = black_friday, aes(x = Purchase, fill = City_Category)) +
 ![](img/2unnamed-chunk-19-1.png)<!-- -->
 
 The purchase distribution for each city is very close to the others, and
-there isn’t correlation between the city type and the purchase. There
+there isn’t a correlation between the city type and the purchase. There
 are some outliers in city A.
 
 ## Occupation by Purchase
@@ -397,8 +397,7 @@ ggplot(data = black_friday, aes(x = Product_Category_2 , y = Purchase)) +
 
 ![](img/2unnamed-chunk-22-1.png)<!-- -->
 
-The product category 2 purchase distributions are different, and there
-is noticeable correlation between them and the purchase. There are also
+The product category 2 purchase distributions are different, with a noticeable correlation between them and the purchase. There are also
 some outliers in some categories.
 
 ## Product Category 3 by Purchase
@@ -438,7 +437,7 @@ The stay_in_current_city_years distributions are very close to each
 other, and there isn’t a correlation between them and the purchase.
 
 **From this analysis, we can say that the most important predictors for
-estimating the purchaser:**
+estimating the purchase:**
 
 1.  **product category 1**
 
@@ -732,7 +731,7 @@ fitting
     ##            -0.285238              0.008984
 
 We can see that the `Product_Category_10` coefficient has the highest
-importance score at level one, followed by `Product_Category_17`. This
+importance score, followed by `Product_Category_17`. This
 finding is consistent with our analysis of outliers, which showed that
 `Category 10` is the main contributor to outliers. Additionally, our
 imputation analysis revealed that `Category 17` is highly correlated
@@ -844,7 +843,7 @@ The goals of using the decision tree with our data:
     removing them.
 
 -   We can use all the important features and let the decision tree
-    perform features selection using the Entropy.
+    perform features selection.
 
 -   No assumptions about the data and the model
 
@@ -908,7 +907,7 @@ rsq(test_results, truth = truth,
     ## 1 rsq     standard       0.673
 
 The model performs very well than the least square model. It has
-`67.5%` R-square value on the train and `67.11%` on the test data.
+`67.5%` R-square value on the train and `67.3%` on the test data.
 
 ``` r
 # Fit the model and calculate performance metrics for each fold
@@ -935,9 +934,7 @@ collect_metrics(fit_resamples_obj)
 -   The decision tree model achieved an average R-squared value of
     0.6707, with a standard error of 0.0012, across the 10 folds of the
     cross-validation. This indicates that the decision tree model
-    explains about 67.07% of the variance in the target variable, which
-    may or may not be considered good depending on the context of the
-    problem.
+    explains about 67.07% of the variance in the target variable.
 
 -   The standard errors for both metrics are quite small, which suggests
     that the estimates are relatively precise and stable across the
@@ -1012,10 +1009,10 @@ rsq(test_results, truth = truth,
     ## 1 rsq     standard       0.714
 
 The RMSE of `0.123` for the `train` set and `0.124` for the `test` set
-suggest that the model’s predictions are, on average, about 0`.12` to
+suggest that the model’s predictions are, on average, about `0.12` to
 `0.13` units away from the true values. The R-squared of `0.716` for the
 `train` set and `0.711` for the `test` set indicate that the model
-explains about `71.6% to 71.1%` of the variance in the target variable,
+explains about `71.6% to 71.4%` of the variance in the target variable,
 respectively.
 
 ``` r
@@ -1031,7 +1028,7 @@ library(vip)
     ##     vi
 
 ``` r
-# get the feature importances
+# get the feature importance
 importances <- vip(final_rf_model)
 
 # print the feature importances
@@ -1046,7 +1043,7 @@ factor to define its price then the `brand` itself.
 # Save the models
 
 ``` r
-# Save model object to a file
+# Save the models object to files
 saveRDS(final_rf_model, "rf_model.rds")
 saveRDS(tree_fitting, "tree_model.rds")
 saveRDS(fitting, "lr_model.rds")
