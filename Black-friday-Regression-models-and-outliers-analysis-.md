@@ -447,147 +447,148 @@ estimating the purchase:**
 
 # Correlation
 
-We can test the correlation between them and the target variable.
+We can test the correlation between them and the target variable using a
+analysis of variance (ANOVA) test and a Tukey’s Honestly Significant
+Difference (HSD) test to compare the mean purchase values across
+different levels of each predictor.
 
 ``` r
-#calculate point-biserial correlation
-cor.test(as.numeric(black_friday$Product_Category_1), black_friday$Purchase)
+# Perform ANOVA test
+test <- aov(black_friday$Purchase ~ black_friday$Product_Category_1)
+
+summary(test)
 ```
 
-    ## 
-    ##  Pearson's product-moment correlation
-    ## 
-    ## data:  as.numeric(black_friday$Product_Category_1) and black_friday$Purchase
-    ## t = -347.38, df = 547389, p-value < 2.2e-16
-    ## alternative hypothesis: true correlation is not equal to 0
-    ## 95 percent confidence interval:
-    ##  -0.4271749 -0.4228337
-    ## sample estimates:
-    ##        cor 
-    ## -0.4250067
-
-The results of Pearson’s product-moment correlation test between
-`Product_Category_1` and `Purchase`:
-
--   The correlation coefficient (sample estimate) between the two
-    variables is -0.4250067. This suggests a moderate negative
-    correlation between `Product_Category_1` and `Purchase`.
-
--   The t-value of -347.38 and the corresponding p-value less than
-    2.2e-16 indicate that there is strong evidence to reject the null
-    hypothesis that the true correlation between the two variables is
-    zero. In other words, there is a statistically significant
-    correlation between `Product_Category_1` and `Purchase`.
-
--   The 95% confidence interval for the correlation coefficient (
-    -0.4271749 to -0.4228337) suggests that we can be fairly confident
-    that the true correlation falls within this interval.
+    ##                                     Df    Sum Sq   Mean Sq F value Pr(>F)    
+    ## black_friday$Product_Category_1     19 8.389e+12 4.415e+11   48687 <2e-16 ***
+    ## Residuals                       547371 4.964e+12 9.068e+06                   
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
 ``` r
-#calculate point-biserial correlation
-cor.test(as.numeric(black_friday$Product_Category_2), black_friday$Purchase)
+# Perform Tukey's HSD test
+tukey <- TukeyHSD(test)
+
+# Identify pairwise comparisons that are not significantly different
+not_diff <- which(tukey$`black_friday$Product_Category_1`[,4] > 0.05)
+
+not_diff
 ```
 
-    ## 
-    ##  Pearson's product-moment correlation
-    ## 
-    ## data:  as.numeric(black_friday$Product_Category_2) and black_friday$Purchase
-    ## t = 14.741, df = 547389, p-value < 2.2e-16
-    ## alternative hypothesis: true correlation is not equal to 0
-    ## 95 percent confidence interval:
-    ##  0.01727215 0.02256826
-    ## sample estimates:
-    ##        cor 
-    ## 0.01992035
+    ##   9-1  7-10  9-15  3-17 20-19 
+    ##    19    35   112   129   147
 
-The results of Pearson’s product-moment correlation test between
-`Product_Category_2` and `Purchase`:
+-   The ANOVA test reveals that there is a significant difference in the
+    mean purchase values across the different levels of
+    `Product_Category_1`, as evidenced by the very small p-value
+    (\<2e-16) and the large F-value (48687). This means that at least
+    one of the levels of `Product_Category_1` has significantly
+    different mean purchase values compared to the other levels.
 
--   The correlation coefficient (sample estimate) between the two
-    variables is 0.01992035. This suggests a weak positive correlation
-    between `Product_Category_2` and `Purchase`.
+-   The Tukey’s HSD test is then performed to identify which pairs of
+    groups have significantly different means. The `not_diff` object
+    lists the pairwise comparisons where the adjusted p-value is greater
+    than 0.05, indicating that the difference between the means is not
+    significant.
 
--   The t-value of 14.741 and the corresponding p-value less than
-    2.2e-16 indicate that there is strong evidence to reject the null
-    hypothesis that the true correlation between the two variables is
-    zero. In other words, there is a statistically significant
-    correlation between `Product_Category_2` and `Purchase`.
+-   The results suggest that the majority of pairwise comparisons have
+    significant differences in mean purchase values, with only five
+    pairs of groups having non-significant differences. These pairs are
+    `9-1`, `7-10`, `9-15`, `3-17`, and `20-19`.
 
--   The 95% confidence interval for the correlation coefficient
-    (0.01727215 to 0.02256826) suggests that we can be fairly confident
-    that the true correlation falls within this interval.
+So we confident now that this variable is very important to estimate the
+purchase.
 
 ``` r
-#calculate point-biserial correlation
-cor.test(as.numeric(black_friday$Product_Category_3), black_friday$Purchase)
+# Perform ANOVA test
+test <- aov(black_friday$Purchase ~ black_friday$Product_Category_2)
+
+summary(test)
 ```
 
-    ## 
-    ##  Pearson's product-moment correlation
-    ## 
-    ## data:  as.numeric(black_friday$Product_Category_3) and black_friday$Purchase
-    ## t = 95.878, df = 547389, p-value < 2.2e-16
-    ## alternative hypothesis: true correlation is not equal to 0
-    ## 95 percent confidence interval:
-    ##  0.1259084 0.1311191
-    ## sample estimates:
-    ##       cor 
-    ## 0.1285146
-
-The results of Pearson’s product-moment correlation test between
-`Product_Category_3` and `Purchase`:
-
--   The correlation coefficient (sample estimate) between the two
-    variables is 0.1285146. This suggests a weak positive correlation
-    between `Product_Category_3` and `Purchase`.
-
--   The t-value of 95.878 and the corresponding p-value less than
-    2.2e-16 indicate that there is strong evidence to reject the null
-    hypothesis that the true correlation between the two variables is
-    zero. In other words, there is a statistically significant
-    correlation between `Product_Category_3` and `Purchase`.
-
--   The 95% confidence interval for the correlation coefficient
-    (0.1259084 to 0.1311191) suggests that we can be fairly confident
-    that the true correlation falls within this interval.
+    ##                                     Df    Sum Sq   Mean Sq F value Pr(>F)    
+    ## black_friday$Product_Category_2     16 2.348e+12 1.468e+11    7300 <2e-16 ***
+    ## Residuals                       547374 1.100e+13 2.010e+07                   
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
 ``` r
-#calculate point-biserial correlation
-cor.test(as.numeric(black_friday$Product_ID), black_friday$Purchase)
+# Perform Tukey's HSD test
+tukey <- TukeyHSD(test)
+
+# Identify pairwise comparisons that are not significantly different
+not_diff <- which(tukey$`black_friday$Product_Category_2`[,4] > 0.05)
+
+not_diff
 ```
 
-    ## 
-    ##  Pearson's product-moment correlation
-    ## 
-    ## data:  as.numeric(black_friday$Product_ID) and black_friday$Purchase
-    ## t = -76.807, df = 547389, p-value < 2.2e-16
-    ## alternative hypothesis: true correlation is not equal to 0
-    ## 95 percent confidence interval:
-    ##  -0.1058790 -0.1006373
-    ## sample estimates:
-    ##        cor 
-    ## -0.1032589
+    ## 15-10  5-11  4-12 18-16  8-16  9-17  8-18   6-3 
+    ##     5    27    40    83    90   100   107   118
 
-The results of Pearson’s product-moment correlation test between
-`Product_ID` and `Purchase`:
+-   The ANOVA test indicates that there is a significant difference in
+    the mean purchase values across the different levels of
+    `Product_Category_2`, as evidenced by the very small p-value
+    (\<2e-16) and the large F-value (7300). This suggests that at least
+    one of the levels of `Product_Category_2` has significantly
+    different mean purchase values compared to the other levels.
 
--   The correlation coefficient (sample estimate) between the two
-    variables is -0.1032589. This suggests a weak negative correlation
-    between `Product_ID` and `Purchase`.
+-   The Tukey’s HSD test is then performed to identify which pairs of
+    groups have significantly different means. The results suggest that
+    the majority of pairwise comparisons have significant differences in
+    mean purchase values, with only eight pairs of groups having
+    non-significant differences. These pairs are `15-10`, `5-11`,
+    `4-12`, `18-16`, `8-16`, `9-17`, `8-18`, and `6-3`.
 
--   The t-value of -76.807 and the corresponding p-value less than
-    2.2e-16 indicate that there is strong evidence to reject the null
-    hypothesis that the true correlation between the two variables is
-    zero. In other words, there is a statistically significant
-    correlation between `Product_ID` and `Purchase`.
+So we confident now that this variable is also important to estimate the
+purchase.
 
--   The 95% confidence interval for the correlation coefficient
-    (-0.1058790 to -0.1006373) suggests that we can be fairly confident
-    that the true correlation falls within this interval.
+``` r
+# Perform ANOVA test
+test <- aov(black_friday$Purchase ~ black_friday$Product_Category_3)
 
-    **So after these analyses we can select only
-    `Product_Category_1,Product_Category_2,Product_Category_3,Product_ID`
-    to predict the purchase value.**
+summary(test)
+```
+
+    ##                                     Df    Sum Sq   Mean Sq F value Pr(>F)    
+    ## black_friday$Product_Category_3     14 1.866e+12 1.333e+11    6352 <2e-16 ***
+    ## Residuals                       547376 1.149e+13 2.098e+07                   
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+``` r
+# Perform Tukey's HSD test
+tukey <- TukeyHSD(test)
+
+# Identify pairwise comparisons that are not significantly different
+not_diff <- which(tukey$`black_friday$Product_Category_3`[,4] > 0.05)
+
+not_diff
+```
+
+    ## 17-11 18-11  5-15   8-6 
+    ##    20    21    66   103
+
+-   The ANOVA test indicates that there is a significant difference in
+    the mean purchase values across the different levels of
+    `Product_Category_3`, as evidenced by the very small p-value
+    (\<2e-16) and the large F-value (6352). This suggests that at least
+    one of the levels of `Product_Category_3` has significantly
+    different mean purchase values compared to the other levels.
+
+-   The Tukey’s HSD test is then performed to identify which pairs of
+    groups have significantly different means. The results suggest that
+    the majority of pairwise comparisons have significant differences in
+    mean purchase values, with only four pairs of groups having
+    non-significant differences. These pairs are `17-11`, `18-11`,
+    `5-15`, and `8-6`.
+
+So we confident now that this variable is important to estimate the
+purchase. 
+
+Although we cannot test the significance of each individual
+product ID as there are thousands of products, we can be confident that
+most of them are different, especially if they belong to different
+categories.
 
 # Regression Models
 
