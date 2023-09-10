@@ -953,7 +953,7 @@ max = 550,nodeCo = "#EE0F0F")
 ## verbose	 =  FALSE
 ```
 
-![](img/paste-1A9DE0ED.png)
+![](img/paste-1A9DE0ED2.png)
 
 We observe clear clusters, at least two, in the association network. This reveals distinct groups of products that exhibit strong relationships or associations with each other.
 
