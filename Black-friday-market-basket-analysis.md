@@ -953,6 +953,8 @@ max = 550,nodeCo = "#EE0F0F")
 ## verbose	 =  FALSE
 ```
 
+![](img/paste-1A9DE0ED.png)
+
 We observe clear clusters, at least two, in the association network. This reveals distinct groups of products that exhibit strong relationships or associations with each other.
 
 Additionally, there is clear visibility into products that receive a substantial number of incoming links or connections from other products, indicating their popularity or influence within the network.
@@ -1133,7 +1135,7 @@ We can see that:
 
 -   Product P00270942 has the highest hub score, indicating it is strongly connected to other highly connected nodes.
 
--   ![](img/paste-196028D6.png)
+![](img/paste-196028D6.png)
 
 -   P00110742 and P00025442, which had among the highest PageRank scores, also feature in the top hub rankings. This affirms their influential positions.
 
