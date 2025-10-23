@@ -277,7 +277,7 @@ engine = "htmlwidget", asEdges = FALSE, itemCol = '#CBD2FC',
 max = 550,nodeCo = "#EE0F0F")
 ```
 
-![](img/paste-1A9DE0ED2.png)
+![](Img/paste-1A9DE0ED2.png)
 
 We observe clear clusters, at least two, in the association network. This reveals distinct groups of products that exhibit strong relationships or associations with each other.
 
@@ -313,9 +313,9 @@ indeices['page_score'] <- round(page$vector, 3)
 indeices %>% arrange(by = desc(page_score)) %>% head(10)
 ```
 
-![](img/paste-E3279812.png)
+![](Img/paste-E3279812.png)
 
-![](img/paste-32A03B2A.png)
+![](Img/paste-32A03B2A.png)
 
 We can observe that:
 
@@ -346,7 +346,7 @@ We can see that:
 
 -   Product P00270942 has the highest hub score, indicating it is strongly connected to other highly connected nodes.
 
-    ![](img/paste-196028D6.png)
+    ![](Img/paste-196028D6.png)
 
 -   P00110742 and P00025442, which had among the highest PageRank scores, also feature in the top hub rankings. This affirms their influential positions.
 
