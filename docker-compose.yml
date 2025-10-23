@@ -1,0 +1,20 @@
+version: '3.9'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_fridayblack
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 3012001
+      MYSQL_DATABASE: fridayblack
+    ports:
+      - "3306:3306"
+    command: --local-infile=1 --secure-file-priv=""
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+
+volumes:
+  mysql_data:
