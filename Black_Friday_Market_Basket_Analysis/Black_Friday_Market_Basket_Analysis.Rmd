@@ -1,0 +1,401 @@
+---
+title: "Black-friday-market-basket-analysis"
+output: 
+  html_document:
+    keep_md: true
+always_allow_html: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	fig.path = "Img/",
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+# Load Data
+
+First we need to retrieve the data from MySQL then check the types.
+
+```{r}
+#Load the RMySQL package
+library(RMySQL)
+library(tidyverse)
+
+#Create a connection to MySQL database
+con <- dbConnect(MySQL(), user = "root", password = "3012001", host = "localhost",dbname = "fridayblack")
+
+# write query to acces the records
+black_friday = dbReadTable(con, "black_friday_cleaned_table")
+head(black_friday)
+```
+
+We want to convert all the columns type to Factor type unless the purchase column.
+
+```{r}
+# Select all columns except for the "Purchase" column and convert them to factors
+cols_to_convert <- colnames(black_friday)[-12]
+  # Use lapply to apply the same function to all selected columns
+black_friday[cols_to_convert] <- lapply(black_friday[cols_to_convert], as.factor)
+
+#check the type now
+sapply(black_friday, class)
+```
+
+Now our data is ready for analysis.
+
+# Data preprocessing
+
+First, we need to convert the data into a transaction format in order to extract rules and identify the most frequently occurring items that are placed by the same user more frequently than other items.
+
+```{r}
+# Load the 'arules' library
+library(arules)
+
+# Splitting transactions
+trans_data <- split(black_friday$Product_ID,
+                    black_friday$User_ID)
+
+# Transform data into a transactional dataset
+trans_data <- as(trans_data, "transactions")
+
+# Summarize the transactional dataset
+summary(trans_data)
+```
+
+The summary of the transaction data:
+
+-   The dataset has 5891 rows, representing each user's transactions.
+
+-   It consists of 3631 columns, representing unique items.
+
+-   The density of the dataset is 0.02571586, indicating the proportion of non-zero elements in the sparse matrix representation of the dataset.
+
+The section "most frequent items" shows the five most frequently occurring items in the dataset, followed by "(Other)" which represents all other items not listed individually. The counts for the most frequent items are as follows:
+
+-   P00265242: 1880 occurrences
+
+-   P00025442: 1615 occurrences
+
+-   P00110742: 1612 occurrences
+
+-   P00112142: 1562 occurrences
+
+-   P00057642: 1470 occurrences
+
+The count 541929 represents the occurrences of all other items collectively.
+
+A density of 0.02571586 means that approximately 2.57% of the elements in the dataset are non-zero. This indicates that the dataset is relatively sparse, with a majority of the elements being zeros. This is a strong indicator to use reasonably lower values for the parameters of the Apriori algorithm in order to capture the most important rules. Lowering the support threshold and adjusting other parameters accordingly can help discover infrequent but meaningful itemsets and association rules in sparse datasets.
+
+```{r}
+# Inspect the first user's transaction in the transactional dataset
+inspect(head(trans_data, 1))
+```
+
+We can observe that these are all the unique products purchased by customer 1000001.
+
+```{r}
+# Inspect the last user's transaction in the transactional dataset
+inspect(tail(trans_data,1))
+```
+
+We can observe that these are all the unique products purchased by customer 1006040, which is a greater number of products compared to customer 1000001.
+
+Furthermore, we observe that there are subsets of products that are common to both customers. This suggests the presence of a pattern in the ordered products, indicating potential similarities or preferences in their purchasing behavior.
+
+# Frequent Itemsets
+
+First, I will find the support of the two products (P00115742, P00115842) to determine how frequently they are ordered together by the same users. This will help me understand the data better and determine the appropriate parameter space for the analysis.
+
+```{r}
+# Determine the support of both items with support 0.01
+support_P00115742_P00115842 = 
+    apriori(trans_data,
+            parameter = list(target = "frequent itemsets",
+                             supp = 0.01),
+            appearance = list(items = 
+                              c("P00115742",
+                                "P00115842")))
+# Inspect the itemsets 
+inspect(support_P00115742_P00115842)
+```
+
+The insights from the output are as follows:
+
+1.  The item "P00115742" has a support of approximately 0.0489, indicating that it appears in about 4.89% of the transactions. It has been ordered 288 times.
+
+2.  The item "P00115842" has a support of approximately 0.0687, indicating that it appears in about 6.87% of the transactions. It has been ordered 405 times.
+
+3.  Itemset {P00115742, P00115842}: The combination of items "P00115742" and "P00115842" together has a support of approximately 0.0104, indicating that they are ordered together in about 1.04% of the transactions. This itemset has occurred 61 times.
+
+    Based on the information provided, it seems that an absolute minimum support count is 58. This count indicates a reasonable number of occurrences for the itemset of interest. Therefore, I will use a support parameter of 0.01, as it aligns with the observed count and can be considered an appropriate threshold for capturing meaningful frequent itemsets.
+
+```{r}
+# Frequent itemsets for all items
+support_all = 
+    apriori(trans_data,
+            parameter = list(target="frequent itemsets",
+                             supp = 0.01))
+
+# Inspect the 5 most frequent items
+inspect(head(sort(support_all, by="support"), 5))
+```
+
+We can observe that the largest support value corresponds to approximately 32% of appearances in the dataset. However, the itemset does not exhibit a high proportion of occurrence. Therefore, to extract strong rules with the highest conditional probability, I will utilize the confidence metric in conjunction with the support value.
+
+# Apriori
+
+I will start with 40% confidence to filter the strong rules.
+
+```{r}
+# apriori algorithm
+support_all = apriori(trans_data,
+                      parameter = list(supp=0.01, conf = 0.4))
+```
+
+We can observe that we obtained a total of 1,635,435 rules by applying a support threshold of 1% and a confidence threshold of 40%. This number is quite large, indicating a significant number of associations between items in the dataset.
+
+To extract only the most important rules, it is necessary to analyze the values of support and confidence. By evaluating these values, we can determine the optimal parameters that strike a balance between the number of rules and their significance.
+
+By adjusting the support and confidence thresholds, we can refine the rule extraction process and focus on rules that are both frequent and highly reliable. This iterative analysis will help us identify the optimal parameters that yield a more manageable set of rules while still capturing meaningful associations between items.
+
+```{r}
+# Load arulesViz package
+library(arulesViz) 
+library(dplyr)
+library(ggplot2)
+
+# Take top 10K rows ordered by support 
+top_rules <- head(sort(support_all, by = "support"), 10000) 
+
+# Convert to data frame
+market_data <- as(top_rules, "data.frame") 
+
+
+# Create lift level column  
+market_data <- market_data %>%
+  mutate(lift_level = case_when(
+    lift < 2 ~ "1-2",
+    lift >= 2 & lift < 3 ~ "2-3",
+    lift >= 3 & lift < 4 ~ "3-4", 
+    lift >= 4 & lift < 5 ~ "4-5",
+    lift >= 5 & lift < 6 ~ "5-6",
+    lift >= 6 ~ "6+"
+  ))
+
+# Plot with lift levels mapped to color
+ggplot(market_data, aes(x=confidence, y=support, color=as.factor(lift_level))) +
+  geom_point(size=3, alpha=0.8, position=position_jitter(w=0.01, h=0)) + 
+  scale_color_manual(values=c("blue","green","yellow","orange","red","purple")) +
+  labs(title = "Association Rules (Top 10000 rules by Support)",
+       x = "Confidence",
+       y = "Support",
+       color="Lift Level") +
+  theme_classic() +
+  theme(legend.position="top") 
+```
+
+We observe a strong association (lift \> 1) in all 10,000 top rules.
+
+The rules with higher support tend to have lower confidence. However, the rules with higher confidence still demonstrate stronger association on average compared to other rules. Therefore, I will increase the minimum support threshold to 5% in order to filter some lower-quality rules and to include the frequentist rules.
+
+```{r}
+# apriori algorithm
+support_all = apriori(trans_data,
+                    parameter = list(supp=0.05, conf = 0.4, minlen=2))
+
+# Take top 10K rows ordered by support 
+top_rules <- head(sort(support_all, by = "support"), 1000) 
+
+# Convert to data frame
+market_data <- as(top_rules, "data.frame") 
+
+
+# Create lift level column  
+market_data <- market_data %>%
+  mutate(lift_level = case_when(
+    lift < 2 ~ "1-2",
+    lift >= 2 & lift < 3 ~ "2-3",
+    lift >= 3 & lift < 4 ~ "3-4", 
+    lift >= 4 & lift < 5 ~ "4-5",
+    lift >= 5 & lift < 6 ~ "5-6",
+    lift >= 6 ~ "6+"
+  ))
+
+# Plot with lift levels mapped to color
+ggplot(market_data, aes(x=confidence, y=support, color=as.factor(lift_level))) +
+  geom_point(size=3, alpha=0.6, position=position_jitter(w=0.01, h=0)) + 
+  scale_color_manual(values=c("blue","green","yellow","orange","red","purple")) +
+  labs(title = "Association Rules (Top rules by Support)",
+       x = "Confidence",
+       y = "Support",
+       color="Lift Level") +
+  theme_classic() +
+  theme(legend.position="top") 
+```
+
+We can explore these rules now.
+
+```{r}
+# Inspect the 10 most frequent rules
+inspect(head(sort(support_all, by="support"), 10))
+```
+
+From looking at the top 10 association rules sorted by support:
+
+-   The rules {P00025442} =\> {P00110742} and {P00110742} =\> {P00025442} have the highest support at 0.12, indicating these items are commonly purchased together. The high lift (\>1.5) also shows this is a strong association.
+
+-   P00110742,P00025442,,P00057642,P00112142 appear in multiple rules. These products seem to have strong associations with multiple other products.
+
+-   The rule {P00278642} =\> {P00265242} has high confidence (0.49) suggesting customers who buy P00278642 have a good chance of also buying P00265242.
+
+# Network analysis
+
+Now we need to utilize network analysis algorithms like PageRank and HITS to identify more patterns between the products. This analysis will help us determine which products are more likely to be purchased given that a customer has already purchased certain products. It will also help us identify products that act as good hubs, indicating that if a customer purchases them, they are likely to purchase popular products as well.
+
+The marketing team could utilize network analysis algorithms like PageRank and HITS:
+
+-   Identify product associations and affinity - The algorithms can identify patterns of products that are frequently purchased together or are related in some way. The marketing team can use these associations to make recommendations like "Customers who bought X also bought Y".
+
+-   Develop targeted cross-sell/up-sell campaigns - By understanding product associations, the team can specifically target customers who purchased one product with offers for the other associated products. This allows for more customized and potentially effective cross-selling.
+
+-   Identify authority and hub products - Authority products are purchased frequently with other items, while hub products link out to many authorities. Identifying these products allows marketing to focus promotion on authority items or bundle them with hubs.
+
+-   Inform product placement and promotions - The network patterns can inform which products are grouped together in promotions, recommended sections, store placement, and more. Related or complementary products can be bundled or placed nearby.
+
+-   Adjust inventory and purchasing - The product networks can help forecast demand and plan inventory by understanding which items are commonly purchased together. This ensures adequate stock of affiliated products.
+
+-   Identify opportunities for new products - Gaps in the product networks could indicate opportunities to introduce new products that complement existing items. The algorithms aid discovery of these network opportunities.
+
+```{r}
+# Create a HTML widget of the graph of rules
+plot(support_all,
+method = "graph",
+engine = "htmlwidget", asEdges = FALSE, itemCol = '#CBD2FC',
+max = 550,nodeCo = "#EE0F0F")
+```
+
+![](img/paste-1A9DE0ED2.png)
+
+We observe clear clusters, at least two, in the association network. This reveals distinct groups of products that exhibit strong relationships or associations with each other.
+
+Additionally, there is clear visibility into products that receive a substantial number of incoming links or connections from other products, indicating their popularity or influence within the network.
+
+Furthermore, certain parts of the network exhibit higher density. This identifies specific areas within the network where there is a higher concentration of connections or associations between products, suggesting stronger interconnections in those regions.
+
+```{r}
+# Load the tidygraph library
+library(tidygraph)
+
+# Convert rules into a graph with products as nodes and rules as edges
+library("igraph")
+
+g <- associations2igraph(support_all,associationsAsNodes = FALSE)
+
+# Convert the graph object 'g' into a tidygraph object
+g <- as_tbl_graph(g)
+
+# Convert the tidygraph object 'g' into a data frame
+indeices <- data.frame(g)
+```
+
+```{r}
+# Calculate the PageRank scores for the graph 'g'
+page <- page.rank(g)
+
+# Add a new column named 'page_score' to the 'indices' data frame with rounded PageRank scores
+indeices['page_score'] <- round(page$vector, 3)
+
+# Arrange the rows in the 'indices' data frame in descending order based on the 'page_score' column
+# Select the top 10 rows using the head() function
+indeices %>% arrange(by = desc(page_score)) %>% head(10)
+```
+
+![](img/paste-E3279812.png)
+
+![](img/paste-32A03B2A.png)
+
+We can observe that:
+
+-   Products with higher PageRank scores are more central/influential within the network structure. This indicates relatively stronger relationships and affinity with other products.
+
+-   With a PageRank score of 17.5%, product P00110742 is identified as a highly central/influential node within the product association network inferred from transaction data.
+
+-   Product P00025442 also has a high PageRank score of 15.8%, suggesting it is also an important node in the network.
+
+-   Their central positions imply they have relatively stronger relationships and affinities to other products compared to less connected nodes.
+
+-   The network topology revealed by PageRank analysis suggests there is a higher relative likelihood that customers will buy P00110742 or P00025442 if they purchase something else connected to them in the network.
+
+-   Inspecting the network graph and the above figures, we can see P00110742 and P00025442 have many incoming edges from other nodes, providing quantitative evidence of thier strategic importance as a compelling products within the analyzed customer purchase patterns.
+
+```{r}
+# Calculate hub scores
+hub <- hub_score(g)  
+
+# Add hub scores to indeices dataframe
+indeices['hub_score'] <- round(hub$vector,3)
+
+# View top 10 by hub score
+indeices %>% arrange(by = desc(hub_score)) %>% head(10)
+```
+
+We can see that:
+
+-   Product P00270942 has the highest hub score, indicating it is strongly connected to other highly connected nodes.
+
+    ![](img/paste-196028D6.png)
+
+-   P00110742 and P00025442, which had among the highest PageRank scores, also feature in the top hub rankings. This affirms their influential positions.
+
+-   While P00270942 has a much lower PageRank than the others, its high hub score shows it plays an important connecting role.
+
+-   The top hub products can be leveraged strategically as anchor points to influence related sections of the network.
+
+```{r}
+# Calculate the authority scores for the graph 'g'
+authority <- authority.score(g)
+
+# Add a new column named 'authority_score' to the 'indices' data frame with rounded authority scores
+indeices['authority_score'] <- round(authority$vector, 3)
+
+# Arrange the rows in the 'indices' data frame in descending order based on the 'authority_score' column
+# Select the top 10 rows using the head() function
+indeices %>% arrange(by = desc(authority_score)) %>% head(10)
+```
+
+We can see from the top 5 nodes by authority score:
+
+-   Product P00110742 has the highest authority score, indicating it is strongly pointed to by influential hub products.
+
+-   P00025442 maintains its position among top influential products based on PageRank, hub and authority scores.
+
+-   P00057642 and P00112142 emerge as important authorities.
+
+-   Authority scores identify products of interest specifically as targets of influential hub nodes.
+
+-   Top authorities present opportunities for marketing based on positive associations transferred from hubs.
+
+# Conclusions
+
+-   Analyzing centrality, hubness and authority scores provided a more comprehensive understanding of influential products beyond any single measure.
+
+-   P00110742 emerged as a consistently top-ranked product across different analytical methods, highlighting its strategic importance.
+
+-   Strong mutually supportive relationships were indicated between P00110742 and P00025442 based on their high co-occurrence in mined association rules.
+
+-   Products like P00110742, P00025442, P00057642, P00112142 showed evidence of broad associations through their involvement in multiple rules and connectivity patterns.
+
+# Recommendations
+
+-   Focus bundled offers and targeted ads around P00110742 as a compelling anchor product.
+
+-   Promote P00110742-P00025442 bundles to leverage their reinforced link. Offer discounts for add-ons.
+
+-   Leverage positive endorsements from major hub nodes to boost authority products.
+
+-   Test sensitivity of demand and baskets to availability changes of top items.
+
+-   Refine assortments and placements considering affiliation patterns revealed.

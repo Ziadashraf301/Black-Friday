@@ -9,25 +9,26 @@ library(tidyverse)
 Purchase_max <- 21399
 
 # Connect to the MySQL database
-con <- dbConnect(MySQL(), user = "root", password = "3012001", host = "localhost", dbname = "fridayblack")
+con <- dbConnect(MySQL(), user = "root", password = "3012001", 
+                 host = "localhost", dbname = "fridayblack")
 
 # Enable loading data from local files into MySQL database
 dbSendQuery(con, "SET GLOBAL local_infile = true;")
 
 # Load the trained models
-final_rf_model <- readRDS("rf_model.rds")
-tree <- readRDS("tree_model.rds")
-fitting <- readRDS("lr_model.rds")
+final_rf_model <- readRDS("../models/rf_model.rds")
+tree <- readRDS("../models/tree_model.rds")
+fitting <- readRDS("../models/lr_model.rds")
 
 # Function to generate the model comparison plot
 generate_plot <- function(num_points = 1, model, Purchase_max = 21399) {
   
   # Retrieve the specified number of data points from the database
   if (is.na(num_points)) {
-    query <- "SELECT Product_Category_1, Product_Category_2, Product_Category_3, Product_ID, Purchase FROM black_friday LIMIT 1"
+    query <- "SELECT Product_Category_1, Product_Category_2, Product_Category_3, Product_ID, Purchase FROM black_friday_cleaned_table LIMIT 1"
     black_friday <- dbGetQuery(con, query)
   } else {
-    query <- paste0("SELECT Product_Category_1, Product_Category_2, Product_Category_3, Product_ID, Purchase FROM black_friday LIMIT ", num_points)
+    query <- paste0("SELECT Product_Category_1, Product_Category_2, Product_Category_3, Product_ID, Purchase FROM black_friday_cleaned_table LIMIT ", num_points)
     black_friday <- dbGetQuery(con, query)
   }
   
@@ -93,7 +94,7 @@ server <- function(input, output) {
   
   # Render the data table
   output$selectedData <- renderTable({
-    query <- paste0("SELECT Product_Category_1, Product_Category_2, Product_Category_3, Product_ID, Purchase FROM black_friday LIMIT ", data_rows$query_num_points)
+    query <- paste0("SELECT Product_Category_1, Product_Category_2, Product_Category_3, Product_ID, Purchase FROM black_friday_cleaned_table LIMIT ", data_rows$query_num_points)
     dbGetQuery(con, query)
   })
   
