@@ -1,26 +1,208 @@
-# Black-Friday
-This GitHub repository aims to provide a statistical analysis of the transaction data and generate insights that can be used by the marketing team to target customers before Black Friday. The analysis will utilize regression, clustering, and association mining algorithms to identify patterns and trends in the data.
+# Black Friday Sales Analysis 🛍️
 
-![image](https://github.com/Ziadashraf301/Black-Friday/assets/111798631/d7ed21a3-3456-40cd-8c17-6ceed2990fa0)
+[![R](https://img.shields.io/badge/R-276DC3?style=flat&logo=r&logoColor=white)](https://www.r-project.org/)
+[![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?style=flat&logo=mysql&logoColor=white)](https://www.mysql.com/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
 
-The project aims to conduct a comprehensive analysis to assist the marketing team in targeting customers before Black Friday. The analysis will include the following components:
+A comprehensive statistical analysis of Black Friday transaction data to generate actionable insights for marketing teams. This project leverages machine learning algorithms including Random Forest regression, hierarchical clustering, and association mining to identify customer patterns and optimize promotional strategies.
 
-1. Top user identification: The analysis will identify high-value customers based on factors such as purchase frequency, total spending, and product preferences. This information can be used by the marketing team to create targeted promotions and loyalty rewards to retain these customers.
+![Black Friday Analytics](https://github.com/Ziadashraf301/Black-Friday/assets/111798631/d7ed21a3-3456-40cd-8c17-6ceed2990fa0)
 
-2. Product association and network analysis: The analysis will use association mining and network centrality algorithms to identify which products are frequently purchased together. This information can be used by the marketing team to create bundle deals and cross-selling opportunities to increase sales and customer engagement.
+---
 
-3. Customer segmentation: The analysis will use clustering algorithms to identify customer segments based on factors such as age, gender, occupation, duration of stay in the current city, and behavior of purchases. This information can help the marketing team target specific customer groups with personalized promotions and offers.
+## 🎯 Project Overview
 
-4. Promotions and pricing strategy: The analysis will use regression algorithms to identify factors that influence customer purchase behavior, such as product categories and brands. This information can be used by the marketing team to create targeted promotions and a pricing strategy that caters to the spending behavior of different customers.
+This analysis helps marketing teams make data-driven decisions for Black Friday campaigns by:
 
-The project was conducted using R and was divided into five parts:
+- 🔍 **Identifying high-value customers** for targeted retention and VIP programs
+- 🔗 **Discovering product relationships** to create effective bundles and cross-sells
+- 👥 **Segmenting customers** into actionable groups for personalized marketing
+- 💰 **Optimizing pricing strategies** based on customer behavior and preferences
 
-- Part 1: Data collection, imputation of missing values, and storage in MySQL. This involved collecting the transaction data and cleaning it by imputing missing values. The cleaned data was then stored in a MySQL database for further analysis.
+---
 
-- Part 2: Data Analysis and Hypothesis Testing This involved analyzing the data to identify patterns and trends and testing hypotheses to validate assumptions about the data.
+## 📊 Analysis Components
 
-- Part 3: Regression Analysis Using Random Forest and Outlier Analysis This involved using Random Forest regression to identify factors that influence customer purchase behavior, such as product categories and brands. An outlier analysis was conducted to identify any anomalies in the data that could impact the analysis.
+### 1. High-Value Customer Identification
+**Goal:** Identify top customers to maximize retention and lifetime value
 
-- Part 4: Customer segmentation using hierarchical clustering and feature engineering. This involved using hierarchical clustering algorithms to segment customers based on factors such as age, gender, occupation, duration of stay in the current city, and behavior of purchases. Feature engineering was conducted to extract relevant features from the data to improve the accuracy of the clustering, such as order frequency, total purchased, and range of the purchase value.
+**Methods:**
+- Purchase frequency analysis
+- Total spending patterns
+- Product preference profiling
 
-- Part 5: Association Mining using Apriori and Network Analysis using PageRank and HITS to Identify Products That Are Frequently Purchased Together.
+**Business Impact:** Create targeted promotions, loyalty rewards, and VIP programs for the most valuable customers.
+
+---
+
+### 2. Product Association & Network Analysis
+**Goal:** Uncover which products are frequently purchased together
+
+**Methods:**
+- Apriori algorithm for association rule mining
+- PageRank & HITS for network centrality
+- Market basket analysis
+
+**Business Impact:** Design compelling product bundles, optimize inventory placement, and create strategic cross-selling opportunities.
+
+---
+
+### 3. Customer Segmentation
+**Goal:** Group customers into distinct segments for personalized targeting
+
+**Methods:**
+- Hierarchical clustering algorithms
+- Feature engineering (order frequency, total purchased, purchase value range)
+
+**Segmentation Factors:**
+- Demographics: age, gender, occupation
+- Geographic: city category, duration in current city
+- Behavioral: purchase patterns and preferences
+
+**Business Impact:** Deliver personalized promotions and messaging that resonate with each customer segment.
+
+---
+
+### 4. Pricing & Promotion Strategy
+**Goal:** Understand factors that drive purchase decisions
+
+**Methods:**
+- Random Forest regression
+- Feature importance analysis
+- Outlier detection
+
+**Analysis Factors:**
+- Product categories
+- Brand preferences
+- Price sensitivity
+- Customer demographics
+
+**Business Impact:** Create data-driven pricing strategies and promotions tailored to different customer segments.
+
+---
+
+## 🔬 Methodology
+
+The project follows a structured 5-part analytical workflow:
+
+### **Part 1: Data Preparation**
+- Collect Black Friday transaction data
+- Impute missing values using statistical methods
+- Validate data quality
+- Store cleaned data in MySQL database
+
+### **Part 2: Exploratory Analysis**
+- Perform descriptive statistical analysis
+- Conduct hypothesis testing
+- Identify patterns and trends
+- Validate key assumptions about customer behavior
+
+### **Part 3: Regression Analysis**
+- Build Random Forest regression models
+- Identify key drivers of purchase behavior
+- Perform outlier analysis
+- Validate model performance
+
+### **Part 4: Customer Clustering**
+- Engineer relevant features from transaction data
+- Apply hierarchical clustering algorithms
+- Profile and characterize customer segments
+- Generate actionable segment insights
+
+### **Part 5: Association Mining**
+- Apply Apriori algorithm for frequent itemset mining
+- Conduct network analysis using PageRank and HITS
+- Identify product purchase patterns
+- Generate product recommendation strategies
+
+---
+
+## 🛠️ Technology Stack
+
+**Analytics & Machine Learning:**
+- R programming language
+- Random Forest (regression)
+- Hierarchical Clustering
+- Apriori Algorithm
+- PageRank & HITS Algorithms
+
+**Data Infrastructure:**
+- MySQL 8.0
+- Docker & Docker Compose
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Docker and Docker Compose
+- R (version 4.0+)
+- Git
+
+### Quick Start
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Ziadashraf301/Black-Friday.git
+   cd Black-Friday
+   ```
+
+2. **Launch MySQL database**
+   ```bash
+   docker-compose up -d
+   ```
+
+3. **Verify database**
+   ```bash
+   docker ps
+   ```
+   Confirm `mysql_fridayblack` is running on port 3306
+
+4. **Run analysis**
+   Execute R scripts sequentially (Part 1 → Part 5)
+
+### Database Configuration
+
+```yaml
+Host: localhost
+Port: 3306
+Database: fridayblack
+Root Password: 3012001
+Features: Local infile enabled for bulk imports
+```
+
+**Stop database when finished:**
+```bash
+docker-compose down
+```
+
+---
+
+## 📁 Project Structure
+
+```
+Black-Friday/
+├── docker-compose.yml    # MySQL container configuration
+├── init.sql             # Database initialization
+├── README.md            # Project documentation
+└── [Analysis Scripts]   # R scripts for 5-part analysis
+```
+
+---
+
+## 👤 Author
+
+**Ziad Ashraf**
+
+- GitHub: [@Ziadashraf301](https://github.com/Ziadashraf301)
+- Project: [Black-Friday](https://github.com/Ziadashraf301/Black-Friday)
+
+---
+
+## ⭐ Show Your Support
+
+If you find this project helpful, please consider giving it a star!
+
+---
+
+**Built with ❤️ for data-driven marketing**

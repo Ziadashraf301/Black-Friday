@@ -6,6 +6,6 @@ Data.zip
 notes.txt
 .Rmd
 .RData
-.pptx
 .RDataTmp
 .Rhistory
+.gitignore
