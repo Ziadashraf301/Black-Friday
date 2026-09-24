@@ -1,0 +1,99 @@
+# Black Friday v2 - Ordered Tasks & Milestones
+
+- [ ] **Phase 1: Infrastructure & Data Engineering**
+  - [ ] **Sprint 1.1: Docker & PostgreSQL Multi-Database Setup**
+    - [ ] Create `docker/postgres/init-multiple-dbs.sh` to initialize `fridayblack` and `mlflow` databases.
+    - [ ] Update `docker-compose.yml` to define PostgreSQL 16, MinIO, MinIO-Init, and MLflow server.
+    - [ ] Create `.env.example` with default database credentials, MinIO keys, and ports.
+    - [ ] Create `src/core/config.py` using Pydantic Settings.
+    - [ ] Create `src/core/logging.py` for structured application logging.
+  - [ ] **Sprint 1.2: Database Schema & Ingestion Engine**
+    - [ ] Create `docker/postgres/init_schema.sql` defining `raw_black_friday`, `black_friday_cleaned`, `customer_segments`, and `product_network_metrics` tables with appropriate indexes.
+    - [ ] Implement `src/data/db_connection.py` with SQLAlchemy connection pooling.
+    - [ ] Implement `src/data/repository.py` with pure parameterized SQL queries.
+    - [ ] Implement `src/pipelines/ingest.py` to bulk-insert `train.csv` into `raw_black_friday`.
+    - [ ] Initialize DVC repository and track raw dataset files.
+  - [ ] **Sprint 1.3: Data Preprocessing & Missing Value Imputation**
+    - [ ] Implement `src/features/imputation.py` using `IterativeImputer` with `ExtraTreesRegressor` (parallelized, mirroring missForest).
+    - [ ] Verify imputation accuracy matches the ~69% OOB baseline.
+    - [ ] Implement `src/pipelines/preprocess.py` to impute missing categories and write cleaned records to `black_friday_cleaned`.
+    - [ ] Track preprocessed data artifacts in DVC (`dvc.yaml`).
+
+- [ ] **Phase 2: Feature Engineering, Segmentation & Market Basket**
+  - [ ] **Sprint 2.1: Customer RFM & Behavioral Features**
+    - [ ] Implement `src/features/customer_features.py` to extract LTV, AOV, Frequency, Variability, and Popular Category per customer.
+    - [ ] Incorporate demographic variables (Gender, Marital Status, binned Age `<=50` vs `>51`).
+  - [ ] **Sprint 2.2: Gower Distance & Hierarchical Clustering Engine**
+    - [ ] Implement `src/segmentation/clustering.py` using `gower` distance and `scipy.cluster.hierarchy` complete linkage.
+    - [ ] Implement automated cluster cut at $k=10$ personas.
+    - [ ] Implement persona profiling and persist cluster assignments into `customer_segments` table.
+    - [ ] Implement `src/pipelines/segmentation.py` pipeline stage.
+  - [ ] **Sprint 2.3: Market Basket & Product Network Graph**
+    - [ ] Implement `src/features/basket_encoder.py` for user-item sparse transaction matrix creation.
+    - [ ] Implement `src/market_basket/apriori_engine.py` using `mlxtend` (support >= 0.05, conf >= 0.40).
+    - [ ] Implement `src/market_basket/network_graph.py` using `networkx` to calculate PageRank, Hubs, and Authority scores.
+    - [ ] Persist product graph metrics into `product_network_metrics` table.
+    - [ ] Implement `src/pipelines/market_basket.py` pipeline stage.
+
+- [ ] **Phase 3: Machine Learning, MLflow & ONNX**
+  - [ ] **Sprint 3.1: Outliers, Scaling & Data Splitting**
+    - [ ] Implement `src/features/preprocessor.py` for IQR outlier removal ($> \$21,400.50$).
+    - [ ] Implement max-scaler normalization ($Purchase / 21399$).
+    - [ ] Implement 90/10 train/test split with reproducible seed (1234).
+  - [ ] **Sprint 3.2: Regression Models & 10-Fold Cross-Validation**
+    - [ ] Implement `AbstractBaseModel` in `src/models/base.py`.
+    - [ ] Implement `LinearRegressionModel` (`Purchase ~ Product_Category_1`).
+    - [ ] Implement `DecisionTreeModel` (`Purchase ~ Product_Category_1..3 + Product_ID`).
+    - [ ] Implement `RandomForestModel` (100 estimators, max_features=4).
+    - [ ] Implement 10-fold cross-validation runner in `src/models/evaluate.py`.
+  - [ ] **Sprint 3.3: MLflow Tracking & ONNX Model Export**
+    - [ ] Implement `src/tracking/mlflow_tracker.py` to log parameters, metrics, and models.
+    - [ ] Implement `src/models/onnx_exporter.py` to convert scikit-learn pipelines to ONNX.
+    - [ ] Implement ONNX vs. Scikit-learn prediction parity verification test ($|y_{sk} - y_{onnx}| < 10^{-5}$).
+    - [ ] Save models to `models/onnx/` and register champion model in MLflow Model Registry.
+  - [ ] **Sprint 3.4: Automated Retraining Pipeline**
+    - [ ] Implement `src/pipelines/retrain.py` for automated data ingestion, model retraining, champion metric validation, and ONNX deployment.
+
+- [ ] **Phase 4: Jupyter Notebooks (Parity with Rmd)**
+  - [ ] **Sprint 4.1: Convert 5 Research Studies to Python Notebooks**
+    - [ ] Create `experiments/01_data_preprocessing_imputation.ipynb`.
+    - [ ] Create `experiments/02_eda_and_hypothesis_testing.ipynb` (10 questions, Welch t-test, ANOVA).
+    - [ ] Create `experiments/03_regression_and_outliers.ipynb` (outlier analysis, 3 models, 10-fold CV, MLflow).
+    - [ ] Create `experiments/04_customer_segmentation_gower.ipynb` (Gower matrix, dendrogram, 10 personas).
+    - [ ] Create `experiments/05_market_basket_and_network_analysis.ipynb` (Apriori, NetworkX, PageRank/HITS).
+
+- [ ] **Phase 5: FastAPI Production Serving**
+  - [ ] **Sprint 5.1: API Scaffolding & Schemas**
+    - [ ] Implement `src/api/main.py` with FastAPI app, CORS, error handling, and lifespan handlers.
+    - [ ] Implement Pydantic schemas in `src/api/schemas/` for request/response validation.
+  - [ ] **Sprint 5.2: API Endpoints**
+    - [ ] Implement `/health` endpoint.
+    - [ ] Implement `/predict/purchase` (ONNX single & batch inference).
+    - [ ] Implement `/predict/cluster` (Customer segment inference).
+    - [ ] Implement `/analytics/eda` and `/analytics/hypothesis-test` endpoints.
+    - [ ] Implement `/segmentation/personas` endpoint.
+    - [ ] Implement `/market-basket/recommendations` and `/market-basket/network` endpoints.
+
+- [ ] **Phase 6: Streamlit Analytical Dashboard**
+  - [ ] **Sprint 6.1: Multi-Page UI Shell & Executive EDA**
+    - [ ] Implement `src/ui/app.py` navigation, styling, and session management.
+    - [ ] Implement **Executive Overview & EDA** page with KPI cards, demographic distributions, and live hypothesis testing widgets.
+  - [ ] **Sprint 6.2: Regression Explorer & ONNX Inference**
+    - [ ] Implement **Pricing & Regression Hub** page with Observed vs. Predicted 45° scatter plot (reproducing the R Shiny view).
+    - [ ] Add interactive live ONNX purchase prediction form with feature contributions.
+  - [ ] **Sprint 6.3: Segmentation & Product Network Graph Hub**
+    - [ ] Implement **Customer Segmentation Hub** page with persona cards, cluster radar charts, and user lookup.
+    - [ ] Implement **Market Basket & Product Affinity** page with interactive network graph, association rule table, and bundle generator.
+
+- [ ] **Phase 7: Quality Assurance, DevOps & CI/CD**
+  - [ ] **Sprint 7.1: Pytest Test Suite**
+    - [ ] Write `tests/test_data_pipeline.py`.
+    - [ ] Write `tests/test_features.py`.
+    - [ ] Write `tests/test_models.py`.
+    - [ ] Write `tests/test_onnx_inference.py`.
+    - [ ] Write `tests/test_api.py`.
+  - [ ] **Sprint 7.2: Containerization & CI/CD**
+    - [ ] Create `docker/Dockerfile.api` using Python 3.11-slim with `uv`.
+    - [ ] Create `docker/Dockerfile.ui` for Streamlit.
+    - [ ] Update `docker-compose.yml` to include `model-api` and `streamlit`.
+    - [ ] Create `.github/workflows/ci-cd.yml` with linting, pytest, and docker build steps.
