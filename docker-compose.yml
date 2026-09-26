@@ -1,20 +1,164 @@
 version: '3.9'
 
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: mysql_fridayblack
-    restart: always
+  # ============================================================================
+  # POSTGRESQL 16 (Unified DB for Analytical Warehouse & MLflow Metadata)
+  # ============================================================================
+  postgres:
+    image: postgres:16
+    container_name: blackfriday_postgres
+    restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: 3012001
-      MYSQL_DATABASE: fridayblack
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${APP_DB_NAME}
+      APP_DB_NAME: ${APP_DB_NAME}
+      MLFLOW_DB_NAME: ${MLFLOW_DB_NAME}
+      MLFLOW_DB_USER: ${MLFLOW_DB_USER}
+      MLFLOW_DB_PASSWORD: ${MLFLOW_DB_PASSWORD}
     ports:
-      - "3306:3306"
-    command: --local-infile=1 --secure-file-priv=""
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - ./mysql_data:/var/lib/mysql
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init-multiple-dbs.sh:/docker-entrypoint-initdb.d/01-init-multiple-dbs.sh:ro
+      - ./docker/postgres/init_schema.sql:/docker-entrypoint-initdb.d/02-init_schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - blackfriday-net
 
+  # ============================================================================
+  # MINIO OBJECT STORAGE (S3-Compatible Artifact Store for MLflow & DVC)
+  # ============================================================================
+  minio:
+    image: quay.io/minio/minio:latest
+    container_name: blackfriday_minio
+    restart: unless-stopped
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - blackfriday-net
+
+  minio-init:
+    image: quay.io/minio/mc:latest
+    container_name: blackfriday_minio_init
+    depends_on:
+      - minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    entrypoint: >
+      /bin/sh -c "
+        until /usr/bin/mc alias set local http://minio:9000 \"$$MINIO_ROOT_USER\" \"$$MINIO_ROOT_PASSWORD\"; do
+          echo 'Waiting for MinIO...';
+          sleep 2;
+        done;
+        /usr/bin/mc mb --ignore-existing local/mlflow-artifacts;
+        echo 'MinIO buckets verified successfully.';
+      "
+    networks:
+      - blackfriday-net
+
+  # ============================================================================
+  # MLFLOW TRACKING SERVER
+  # ============================================================================
+  mlflow:
+    build:
+      context: .
+      dockerfile: docker/mlflow/Dockerfile
+    container_name: blackfriday_mlflow
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    ports:
+      - "${MLFLOW_PORT:-5000}:5000"
+    environment:
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+    command: >
+      mlflow server
+        --backend-store-uri postgresql://${MLFLOW_DB_USER}:${MLFLOW_DB_PASSWORD}@postgres:5432/${MLFLOW_DB_NAME}
+        --default-artifact-root s3://mlflow-artifacts/
+        --host 0.0.0.0
+        --port 5000
+    networks:
+      - blackfriday-net
+
+  # ============================================================================
+  # FASTAPI SERVING ENGINE (RESTful ONNX Runtime & Analytical Queries)
+  # ============================================================================
+  model-api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    container_name: blackfriday_api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mlflow:
+        condition: service_started
+    ports:
+      - "${API_PORT:-8000}:8000"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${APP_DB_NAME}
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      PYTHONPATH: /app/src
+    volumes:
+      - ./src:/app/src
+      - ./models:/app/models
+    networks:
+      - blackfriday-net
+
+  # ============================================================================
+  # STREAMLIT ANALYTICAL DASHBOARD (Frontend Client - Consumes FastAPI Only)
+  # ============================================================================
+  streamlit:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.ui
+    container_name: blackfriday_ui
+    restart: unless-stopped
+    depends_on:
+      - model-api
+    ports:
+      - "${STREAMLIT_PORT:-8501}:8501"
+    environment:
+      API_BASE_URL: http://model-api:8000
+      PYTHONPATH: /app/src
+    volumes:
+      - ./src/ui:/app/src/ui
+    networks:
+      - blackfriday-net
 
 volumes:
-  mysql_data:
+  postgres_data:
+    name: blackfriday_postgres_data
+  minio_data:
+    name: blackfriday_minio_data
+
+networks:
+  blackfriday-net:
+    name: blackfriday-net
+    driver: bridge

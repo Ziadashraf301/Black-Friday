@@ -1,5 +1,6 @@
 train.csv
 test.csv
+data/*.csv
 mysql_data/
 Black Friday.zip
 Data.zip
@@ -10,3 +11,14 @@ notes.txt
 .Rhistory
 .gitignore
 powershell.bat
+.env
+__pycache__/
+.pytest_cache/
+logs/
+*.log
+legacy_project/
+src/improvements_in_v2.md
+src/improvements*.md
+reports/
+models/
+improvements_in_v2.md

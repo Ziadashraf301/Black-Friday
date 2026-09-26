@@ -1,0 +1,25 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+COPY requirements.txt ./
+
+ENV PYTHONPATH="/app"
+
+RUN uv pip install --system --no-cache -r requirements.txt
+
+COPY core/ /app/core/
+COPY apps/ /app/apps/
+COPY config/ /app/config/
+
+EXPOSE 8501
+
+HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health || exit 1
+
+ENTRYPOINT ["streamlit", "run", "apps/ui/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
