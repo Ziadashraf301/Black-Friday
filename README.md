@@ -1,4 +1,4 @@
-# Black Friday Sales Analysis & Production ML Platform 🛍️
+# Black Friday Sales Analysis & Production ML Platform
 
 [![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
@@ -19,40 +19,9 @@ The original R statistical analysis is preserved and tagged in Git as [`v1.0.0`]
 
 ![Black Friday v2 System Architecture](docs/images/system_architecture.png)
 
-```
-+-------------------------------------------------------------------------------------------------------+
-|                                      DOCKER NETWORK: blackfriday-net                                  |
-|                                                                                                       |
-|  +--------------------+    +--------------------+    +---------------------+    +------------------+  |
-|  |     PostgreSQL 16  |    |     MinIO (S3)     |    |    MLflow Server    |    |    MinIO-Init    |  |
-|  | Port: 5432         |    | Ports: 9000 / 9001 |    | Port: 5000          |    | (Bucket auto-    |  |
-|  | - DB: fridayblack  |    | - mlflow-artifacts |    | - Backend: Postgres |    |  provisioning)   |  |
-|  | - DB: mlflow       |    +--------------------+    | - Artifacts: MinIO  |    +------------------+  |
-|  +--------------------+              ^               +---------------------+                          |
-|           ^                          |                          ^                                     |
-|           |                          +------------+             |                                     |
-|           |                                       |             |                                     |
-|           v                                       v             v                                     |
-|  +--------------------+                     +--------------------------+                              |
-|  |   FastAPI Service  |<--------------------|    Reflex Interactive    |                              |
-|  |   (model-api)      |   REST API Calls    |       Frontend UI        |                              |
-|  |   Port: 8000       |                     |     Ports: 3000 / 8001   |                              |
-|  | - ONNX Runtime     |                     | - Pure Reactive UI       |                              |
-|  | - Pure SQL Repo    |                     | - Modern Python Stack    |                              |
-|  | - Analytics REST   |                     | - State-driven           |                              |
-|  +--------------------+                     +--------------------------+                              |
-|           ^                                                                                           |
-|           |                                                                                           |
-|  +-------------------------------------------------------------------------------------------------+  |
-|  |                                    Offline Data Science Pipelines                               |  |
-|  |   (ingest | preprocess | segmentation | market_basket | train | monitor | retrain)               |  |
-|  +-------------------------------------------------------------------------------------------------+  |
-+-------------------------------------------------------------------------------------------------------+
-```
-
 ---
 
-## 🚀 Key Platform Improvements & Architectural Upgrades (v3.0.0)
+## Key Platform Improvements & Architectural Upgrades (v3.0.0)
 
 1. **Full 10-Feature Pipeline & Imputer Upgrade**:
 
@@ -81,7 +50,7 @@ The original R statistical analysis is preserved and tagged in Git as [`v1.0.0`]
 
 ---
 
-## 🧠 1. Machine Learning, Data Science & Data Engineering (70%)
+## 1. Machine Learning, Data Science & Data Engineering
 
 ### A. Data Pipeline Architecture & Zero-Leakage Preprocessing
 
@@ -181,7 +150,7 @@ API endpoints were load tested using **Locust** (`tests/locustfile.py`) under hi
 
 ---
 
-## 🖼️3. Application (Product Views)
+## 3. Application (Product Views)
 
 | Main Hero & Platform Overview | Shopper E-Commerce Storefront |
 | :---------------------------: | :---------------------------: |
@@ -197,7 +166,7 @@ API endpoints were load tested using **Locust** (`tests/locustfile.py`) under hi
 
 ---
 
-## ⚙️ 4. Backend, Database, DevOps & CI/CD (28%)
+## 4. Backend, Database, DevOps & CI/CD
 
 ### A. API Layer & Architecture (`apps/api`)
 
@@ -220,7 +189,7 @@ API endpoints were load tested using **Locust** (`tests/locustfile.py`) under hi
 
 ---
 
-## 🎨 5. Interactive Reflex Frontend (2%)
+## 5. Interactive Reflex Frontend
 
 ![Frontend UI Architecture](docs/images/frontend_ui_architecture.png)
 
@@ -230,7 +199,7 @@ The platform features an interactive, reactive web UI built entirely in Python u
 
 ---
 
-## 💻 Developer Guide: How to Run the Applications & Load Tests
+## Developer Guide: How to Run the Applications & Load Tests
 
 ### 1. Running Manually via PowerShell / Terminal
 
@@ -268,7 +237,7 @@ locust -f tests/locustfile.py --headless -u 50 -r 10 --run-time 15s --host http:
 
 ---
 
-## 🌐 Platform Endpoint Routing Table
+## Platform Endpoint Routing Table
 
 | Service / Interface                     | Base URL                                                | Functionality & Access Details                                        |
 | :-------------------------------------- | :------------------------------------------------------ | :-------------------------------------------------------------------- |
@@ -281,9 +250,6 @@ locust -f tests/locustfile.py --headless -u 50 -r 10 --run-time 15s --host http:
 
 ---
 
-## 👤 Author
+## Author
 
 **Ziad Ashraf**
-
-- GitHub: [@Ziadashraf301](https://github.com/Ziadashraf301)
-- Repository: [Black-Friday](https://github.com/Ziadashraf301/Black-Friday)
