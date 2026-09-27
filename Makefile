@@ -5,7 +5,7 @@ help:
 	@echo "======================================================================"
 	@echo "Black Friday v2 - Developer & MLOps Command Suite"
 	@echo "======================================================================"
-	@echo "  make up           - Start PostgreSQL, MinIO, MLflow, API & Streamlit"
+	@echo "  make up           - Start PostgreSQL, MinIO, MLflow, API & Reflex UI"
 	@echo "  make down         - Stop all running Docker containers"
 	@echo "  make restart      - Restart all services"
 	@echo "  make ps           - View running container status"

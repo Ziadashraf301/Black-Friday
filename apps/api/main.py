@@ -7,6 +7,10 @@ from apps.api.routes import shopper as shopper_router
 from apps.api.services.model_service import model_service
 from core.config import settings
 from core.logging import get_logger
+from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
+
 
 logger = get_logger(__name__)
 
@@ -37,6 +41,15 @@ app = FastAPI(
     version="3.0.0",
     lifespan=lifespan,
 )
+
+
+# Mount static product assets directory
+static_dir = Path(__file__).resolve().parent / "static" / "products"
+if static_dir.exists():
+    app.mount("/products", StaticFiles(directory=str(static_dir)), name="products")
+
+# GZip compression for responses > 1000 bytes
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # CORS
 app.add_middleware(

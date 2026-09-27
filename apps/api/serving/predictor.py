@@ -26,12 +26,16 @@ class ONNXPredictor:
 
     def predict(self, df: pd.DataFrame) -> np.ndarray:
         """Executes fast ONNX runtime inference on input DataFrame."""
+        model_inputs = {inp.name: inp for inp in self.session.get_inputs()}
         inputs: Dict[str, np.ndarray] = {}
-        for col in df.columns:
-            if col == "product_id":
-                inputs[col] = df[[col]].astype(str).to_numpy()
-            else:
-                inputs[col] = df[[col]].astype(np.int64).to_numpy()
+        for col, inp in model_inputs.items():
+            if col in df.columns:
+                if "string" in inp.type or col == "product_id":
+                    inputs[col] = df[[col]].astype(str).to_numpy()
+                elif "float" in inp.type:
+                    inputs[col] = df[[col]].astype(np.float32).to_numpy()
+                else:
+                    inputs[col] = df[[col]].astype(np.int64).to_numpy()
 
         preds = self.session.run(None, inputs)[0].flatten()
         return preds

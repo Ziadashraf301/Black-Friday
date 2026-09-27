@@ -22,6 +22,7 @@ class ONNXMissForestImputer:
             self.meta = json.load(f)
 
         self.cols: List[str] = self.meta["columns"]
+        self.category_mappings: Dict[str, Dict[str, int]] = self.meta.get("category_mappings", {})
         self.initial_stats = np.array(self.meta["initial_statistics"], dtype=np.float32)
         self.sessions: Dict[str, Any] = {}
 
@@ -39,14 +40,21 @@ class ONNXMissForestImputer:
         """Imputes missing Product_Category_2 and Product_Category_3 using ONNX Runtime models."""
         result = df.copy()
 
-        # Handle unlabelled batches where target (e.g. purchase) is omitted
+        # Handle unlabelled batches where target (e.g. purchase) or optional features are omitted
         temp_added_cols: List[str] = []
+        numeric_df = pd.DataFrame(index=df.index)
+
         for j, c in enumerate(self.cols):
             if c not in result.columns:
-                result[c] = self.initial_stats[j]
+                numeric_df[c] = self.initial_stats[j]
                 temp_added_cols.append(c)
+            elif c in self.category_mappings:
+                mapping = self.category_mappings[c]
+                numeric_df[c] = result[c].astype(str).map(lambda val: float(mapping.get(val, -1)))
+            else:
+                numeric_df[c] = pd.to_numeric(result[c], errors="coerce")
 
-        arr = result[self.cols].to_numpy(dtype=np.float32, copy=True)
+        arr = numeric_df[self.cols].to_numpy(dtype=np.float32, copy=True)
         missing_mask = np.isnan(arr)
 
         # 1. Fill missing values with initial statistics (mean/median)
@@ -77,11 +85,5 @@ class ONNXMissForestImputer:
                 continue
             if c in ["product_category_2", "product_category_3"]:
                 result[c] = np.round(arr[:, j]).astype(int)
-            else:
-                result[c] = arr[:, j]
-
-        for c in temp_added_cols:
-            if c in result.columns:
-                result.drop(columns=[c], inplace=True)
 
         return result

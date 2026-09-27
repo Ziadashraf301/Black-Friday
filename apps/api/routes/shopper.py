@@ -7,6 +7,8 @@ from fastapi import APIRouter, Depends
 from apps.api.schemas import (
     CatalogProductItem, BrowseProductResponse,
     ShopperPredictRequest, ShopperPredictResponse,
+    ShopperBatchPredictRequest, ShopperBatchPredictResponse,
+    CuratedProductItem,
     ShopperPurchaseResponse, PurchaseHistoryResponse
 )
 from apps.api.dependencies import get_repository
@@ -15,6 +17,12 @@ from apps.api.services.shopper_service import shopper_service
 from core.db.repository import BlackFridayRepository
 
 router = APIRouter(prefix="/shopper", tags=["Shopper Experience"])
+
+
+@router.get("/curated-catalog", response_model=List[CuratedProductItem])
+def get_curated_catalog():
+    """Returns top curated editorial vintage products with Apriori and Item2Vec associations."""
+    return shopper_service.get_curated_catalog()
 
 
 @router.get("/catalog", response_model=List[CatalogProductItem])
@@ -35,6 +43,19 @@ def browse_product(
     """Returns product details and smart recommendations."""
     detail = shopper_service.browse_product(product_id=product_id, repo=repo)
     return BrowseProductResponse(**detail)
+
+
+@router.post("/predict-price-batch", response_model=ShopperBatchPredictResponse)
+def predict_price_batch(
+    request: ShopperBatchPredictRequest,
+    repo: BlackFridayRepository = Depends(get_repository),
+):
+    """Calculates personalized batch quotes for high-concurrency cart processing."""
+    quotes = shopper_service.estimate_price_batch(
+        items=[item.model_dump() for item in request.items],
+        repo=repo
+    )
+    return ShopperBatchPredictResponse(quotes=[ShopperPredictResponse(**q) for q in quotes])
 
 
 @router.post("/predict-price", response_model=ShopperPredictResponse)

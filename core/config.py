@@ -17,12 +17,12 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Black-Friday-v2"
     ENVIRONMENT: str = "development"
     LOG_LEVEL: str = "INFO"
-    BASE_DIR: Path = Path(__file__).resolve().parent.parent.parent
-    LOG_DIR: Path = Path(__file__).resolve().parent.parent.parent / "logs"
+    BASE_DIR: Path = Path(__file__).resolve().parent.parent
+    LOG_DIR: Path = Path(__file__).resolve().parent.parent / "logs"
     LOG_FILE: str = "app.log"
 
     # Data Storage & Raw Datasets
-    DATA_DIR: Path = Path(__file__).resolve().parent.parent.parent / "data"
+    DATA_DIR: Path = Path(__file__).resolve().parent.parent / "data"
     TRAIN_DATA_PATH: str = Field(default="data/train.csv")
     TEST_DATA_PATH: str = Field(default="data/test.csv")
 
@@ -144,7 +144,7 @@ class Settings(BaseSettings):
     API_PORT: int = 8000
     API_HOST: str = "0.0.0.0"
     API_BASE_URL: str = Field(default="http://localhost:8000")
-    STREAMLIT_PORT: int = 8501
+    REFLEX_PORT: int = 3000
 
     # JWT Authentication
     SECRET_KEY: str = Field(default="blackfriday-super-secret-key-change-in-production-2024")

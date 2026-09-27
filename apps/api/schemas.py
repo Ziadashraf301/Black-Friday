@@ -147,8 +147,15 @@ class ShopperPredictRequest(BaseModel):
 class ShopperPredictResponse(BaseModel):
     product_id: str
     predicted_usd: float
+    catalog_price: Optional[float] = None
     normalized_prediction: float
     model_used: str
+
+class ShopperBatchPredictRequest(BaseModel):
+    items: List[ShopperPredictRequest]
+
+class ShopperBatchPredictResponse(BaseModel):
+    quotes: List[ShopperPredictResponse]
 
 class BrowseProductResponse(BaseModel):
     product_id: str
@@ -165,6 +172,38 @@ class CatalogProductItem(BaseModel):
     product_id: str
     order_count: int
     pagerank_score: float
+
+class CuratedBundleItem(BaseModel):
+    product_id: str
+    name: str
+    image_url: str
+    price: float
+    lift: Optional[float] = None
+    confidence: Optional[float] = None
+    cosine_similarity: Optional[float] = None
+
+class CuratedProductItem(BaseModel):
+    product_id: str
+    name: str
+    tagline: str
+    description: str
+    category_name: str
+    product_category_1: int
+    product_category_2: Optional[int] = None
+    product_category_3: Optional[int] = None
+    gender: str
+    brand: str
+    style: str
+    season: str
+    badge: Optional[str] = None
+    is_hero: bool = False
+    original_price: float
+    discounted_price: float
+    sizes: List[str] = []
+    image_url: str
+    order_count: int
+    apriori_bundles: List[CuratedBundleItem] = []
+    item2vec_similars: List[CuratedBundleItem] = []
 
 class ShopperPurchaseResponse(BaseModel):
     id: int

@@ -111,8 +111,12 @@ class ModelService:
         # Step 2: Prediction
         norm_pred = float(self.predictor.predict(df)[0])
 
-        # Step 3: Denormalize
-        usd_pred = max(0.0, float(norm_pred * settings.PURCHASE_MAX))
+        # Step 3: Denormalize from normalized (0-1) → raw INR → USD
+        # PURCHASE_MAX is the max Black Friday purchase in INR (Indian Rupees).
+        # Exchange rate ≈ 80 INR/USD (contemporary approximation for display).
+        INR_TO_USD = 80.0
+        raw_inr = max(0.0, float(norm_pred * settings.PURCHASE_MAX))
+        usd_pred = raw_inr / INR_TO_USD
 
         return {
             "usd": round(usd_pred, 2),

@@ -132,9 +132,9 @@ services:
       - blackfriday-net
 
   # ============================================================================
-  # STREAMLIT ANALYTICAL DASHBOARD (Frontend Client - Consumes FastAPI Only)
+  # REFLEX ANALYTICAL DASHBOARD (Frontend Client - Consumes FastAPI Only)
   # ============================================================================
-  streamlit:
+  reflex-ui:
     build:
       context: .
       dockerfile: docker/Dockerfile.ui
@@ -143,12 +143,10 @@ services:
     depends_on:
       - model-api
     ports:
-      - "${STREAMLIT_PORT:-8501}:8501"
+      - "${REFLEX_PORT:-3000}:3000"
+      - "8001:8001"
     environment:
       API_BASE_URL: http://model-api:8000
-      PYTHONPATH: /app/src
-    volumes:
-      - ./src/ui:/app/src/ui
     networks:
       - blackfriday-net
 

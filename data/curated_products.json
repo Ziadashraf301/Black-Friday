@@ -1,0 +1,1191 @@
+[
+  {
+    "product_id": "P00025442",
+    "name": "Artisan Paisley Silk Kimono Shirt",
+    "tagline": "Vintage emerald & amber botanical silk robe shirt",
+    "description": "Exquisite 1970s vintage-inspired silk kimono blouse featuring intricate multi-color paisley scrollwork and relaxed drape. Perfect for statement layering or refined bohemian evening wear.",
+    "category_name": "Silks & Kimonos",
+    "product_category_1": 1,
+    "product_category_2": 2,
+    "product_category_3": 9,
+    "gender": "Unisex",
+    "brand": "Heritage Guild",
+    "style": "Boho Chic",
+    "season": "All-Season",
+    "badge": "Sale",
+    "is_hero": true,
+    "original_price": 99.9,
+    "discounted_price": 49.9,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "image_url": "/products/P00025442.jpg",
+    "order_count": 1615,
+    "apriori_bundles": [
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "lift": 1.6,
+        "confidence": 0.44
+      },
+      {
+        "product_id": "P00112142",
+        "name": "Pastel Retro Varsity Bomber Jacket",
+        "image_url": "/products/P00112142.jpg",
+        "price": 89.0,
+        "lift": 1.72,
+        "confidence": 0.46
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00184942",
+        "name": "Heritage Olive Military Utility Trench",
+        "image_url": "/products/P00184942.jpg",
+        "price": 119.0,
+        "similarity": 0.812
+      },
+      {
+        "product_id": "P00058042",
+        "name": "Terracotta High-Waist Trouser Set",
+        "image_url": "/products/P00058042.jpg",
+        "price": 68.0,
+        "similarity": 0.812
+      },
+      {
+        "product_id": "P00112142",
+        "name": "Pastel Retro Varsity Bomber Jacket",
+        "image_url": "/products/P00112142.jpg",
+        "price": 89.0,
+        "similarity": 0.812
+      }
+    ]
+  },
+  {
+    "product_id": "P00057642",
+    "name": "Heritage Pleated Pinafore Dress",
+    "tagline": "Classic suspender dress in rich corduroy brown",
+    "description": "Tailored vintage pinafore dress featuring accordion pleats, brass hardware buttons, and adjustable shoulder straps. Layered impeccably over crisp collared blouses.",
+    "category_name": "Dresses & Skirts",
+    "product_category_1": 1,
+    "product_category_2": 15,
+    "product_category_3": 16,
+    "gender": "Women",
+    "brand": "Atelier 1968",
+    "style": "Preppy Vintage",
+    "season": "Autumn",
+    "badge": "Newest",
+    "is_hero": false,
+    "original_price": 129.0,
+    "discounted_price": 79.0,
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L"
+    ],
+    "image_url": "/products/P00057642.jpg",
+    "order_count": 1470,
+    "apriori_bundles": [
+      {
+        "product_id": "P00046742",
+        "name": "Boho Gilded Velvet Embroidered Tunic",
+        "image_url": "/products/P00046742.jpg",
+        "price": 64.0,
+        "lift": 1.68,
+        "confidence": 0.41
+      },
+      {
+        "product_id": "P00145042",
+        "name": "Maritime Navy Heavy Wool Peacoat",
+        "image_url": "/products/P00145042.jpg",
+        "price": 105.0,
+        "lift": 1.71,
+        "confidence": 0.41
+      },
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "lift": 1.48,
+        "confidence": 0.41
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "similarity": 0.845
+      }
+    ]
+  },
+  {
+    "product_id": "P00112142",
+    "name": "Pastel Retro Varsity Bomber Jacket",
+    "tagline": "Dusty rose collegiate jacket with chenille embroidery",
+    "description": "Nostalgic 1980s letterman bomber jacket in soft dusty blush pink wool blend, complete with ribbed striped collar, snap closures, and authentic varsity chenille patch.",
+    "category_name": "Jackets & Outerwear",
+    "product_category_1": 1,
+    "product_category_2": 2,
+    "product_category_3": 14,
+    "gender": "Women",
+    "brand": "Varsity Club",
+    "style": "Retro Sport",
+    "season": "Spring / Fall",
+    "badge": "Newest",
+    "is_hero": false,
+    "original_price": 145.0,
+    "discounted_price": 89.0,
+    "sizes": [
+      "S",
+      "M",
+      "L"
+    ],
+    "image_url": "/products/P00112142.jpg",
+    "order_count": 1562,
+    "apriori_bundles": [
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "lift": 1.56,
+        "confidence": 0.43
+      },
+      {
+        "product_id": "P00025442",
+        "name": "Artisan Paisley Silk Kimono Shirt",
+        "image_url": "/products/P00025442.jpg",
+        "price": 49.9,
+        "lift": 1.47,
+        "confidence": 0.4
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "similarity": 0.83
+      }
+    ]
+  },
+  {
+    "product_id": "P00058042",
+    "name": "Terracotta High-Waist Trouser Set",
+    "tagline": "Earthy ribbed mock-neck top & wide-leg pleated slacks",
+    "description": "High-fashion minimalist two-piece look featuring fluid terracotta wide-leg tailored trousers with double front pleats, paired with an ivory ribbed mock-neck long sleeve sweater.",
+    "category_name": "Pants & Trousers",
+    "product_category_1": 8,
+    "product_category_2": 16,
+    "product_category_3": null,
+    "gender": "Women",
+    "brand": "Sienna & Co.",
+    "style": "Modern Minimalist",
+    "season": "Autumn",
+    "badge": "Staff Pick",
+    "is_hero": false,
+    "original_price": 115.0,
+    "discounted_price": 68.0,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "image_url": "/products/P00058042.jpg",
+    "order_count": 1422,
+    "apriori_bundles": [
+      {
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "lift": 1.32,
+        "confidence": 0.42
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00184942",
+        "name": "Heritage Olive Military Utility Trench",
+        "image_url": "/products/P00184942.jpg",
+        "price": 119.0,
+        "similarity": 0.812
+      },
+      {
+        "product_id": "P00112142",
+        "name": "Pastel Retro Varsity Bomber Jacket",
+        "image_url": "/products/P00112142.jpg",
+        "price": 89.0,
+        "similarity": 0.812
+      }
+    ]
+  },
+  {
+    "product_id": "P00184942",
+    "name": "Heritage Olive Military Utility Trench",
+    "tagline": "Oversized cotton gabardine duster with waist belt",
+    "description": "Iconic vintage military utility duster coat in faded army olive drab. Features reinforced storm flap, horn buttons, deep cargo pockets, and adjustable waist cincher.",
+    "category_name": "Coats & Trenches",
+    "product_category_1": 1,
+    "product_category_2": 8,
+    "product_category_3": 17,
+    "gender": "Unisex",
+    "brand": "Surplus Co.",
+    "style": "Utilitarian",
+    "season": "All-Weather",
+    "badge": "Newest",
+    "is_hero": false,
+    "original_price": 185.0,
+    "discounted_price": 119.0,
+    "sizes": [
+      "M",
+      "L",
+      "XL"
+    ],
+    "image_url": "/products/P00184942.jpg",
+    "order_count": 1440,
+    "apriori_bundles": [
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "lift": 1.75,
+        "confidence": 0.42
+      },
+      {
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "lift": 1.75,
+        "confidence": 0.42
+      },
+      {
+        "product_id": "P00059442",
+        "name": "Rugged Espresso Leather Chelsea Boots",
+        "image_url": "/products/P00059442.jpg",
+        "price": 135.0,
+        "lift": 1.75,
+        "confidence": 0.42
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00059442",
+        "name": "Rugged Espresso Leather Chelsea Boots",
+        "image_url": "/products/P00059442.jpg",
+        "price": 135.0,
+        "similarity": 0.799
+      }
+    ]
+  },
+  {
+    "product_id": "P00265242",
+    "name": "Chunky Woven Aran Cable Knit Cardigan",
+    "tagline": "Hand-knitted cream virgin wool with horn buttons",
+    "description": "Timeless heavyweight Fisherman Aran cardigan in natural un-dyed ecru wool, featuring diamond honeycomb cable patterns and traditional faux-tortoise buttons.",
+    "category_name": "Knitwear & Sweaters",
+    "product_category_1": 5,
+    "product_category_2": 8,
+    "product_category_3": null,
+    "gender": "Unisex",
+    "brand": "Galway Knits",
+    "style": "Cozy Classic",
+    "season": "Winter",
+    "badge": "Bestseller",
+    "is_hero": false,
+    "original_price": 120.0,
+    "discounted_price": 75.0,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "image_url": "/products/P00265242.jpg",
+    "order_count": 1880,
+    "apriori_bundles": [
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "lift": 1.75,
+        "confidence": 0.42
+      },
+      {
+        "product_id": "P00059442",
+        "name": "Rugged Espresso Leather Chelsea Boots",
+        "image_url": "/products/P00059442.jpg",
+        "price": 135.0,
+        "lift": 1.75,
+        "confidence": 0.42
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00059442",
+        "name": "Rugged Espresso Leather Chelsea Boots",
+        "image_url": "/products/P00059442.jpg",
+        "price": 135.0,
+        "similarity": 0.811
+      }
+    ]
+  },
+  {
+    "product_id": "P00110742",
+    "name": "Distressed Saddle Brown Aviator Bomber",
+    "tagline": "Full-grain aged brown leather flight jacket",
+    "description": "Authentic aviator-style leather flight jacket crafted from supple full-grain distressed cowhide with warm shearling collar, heavy-duty brass zipper, and flap cargo pockets.",
+    "category_name": "Leather & Outerwear",
+    "product_category_1": 1,
+    "product_category_2": 2,
+    "product_category_3": 8,
+    "gender": "Men",
+    "brand": "Aero Classics",
+    "style": "Rugged Aviator",
+    "season": "Winter / Fall",
+    "badge": "Rare Find",
+    "is_hero": false,
+    "original_price": 240.0,
+    "discounted_price": 165.0,
+    "sizes": [
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "image_url": "/products/P00110742.jpg",
+    "order_count": 1612,
+    "apriori_bundles": [
+      {
+        "product_id": "P00025442",
+        "name": "Artisan Paisley Silk Kimono Shirt",
+        "image_url": "/products/P00025442.jpg",
+        "price": 49.9,
+        "lift": 1.6,
+        "confidence": 0.44
+      },
+      {
+        "product_id": "P00112142",
+        "name": "Pastel Retro Varsity Bomber Jacket",
+        "image_url": "/products/P00112142.jpg",
+        "price": 89.0,
+        "lift": 1.56,
+        "confidence": 0.41
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00057642",
+        "name": "Heritage Pleated Pinafore Dress",
+        "image_url": "/products/P00057642.jpg",
+        "price": 79.0,
+        "similarity": 0.845
+      }
+    ]
+  },
+  {
+    "product_id": "P00059442",
+    "name": "Rugged Espresso Leather Chelsea Boots",
+    "tagline": "Goodyear welted vintage pull-up oiled leather boots",
+    "description": "Sturdy heritage Chelsea boots in rich oiled espresso brown leather with durable lugged commando soles, elastic side gussets, and woven pull loops.",
+    "category_name": "Footwear & Boots",
+    "product_category_1": 6,
+    "product_category_2": 8,
+    "product_category_3": 16,
+    "gender": "Unisex",
+    "brand": "Cobbler Craft",
+    "style": "Heritage Workwear",
+    "season": "All-Season",
+    "badge": "Top Rated",
+    "is_hero": false,
+    "original_price": 195.0,
+    "discounted_price": 135.0,
+    "sizes": [
+      "40",
+      "41",
+      "42",
+      "43",
+      "44",
+      "45"
+    ],
+    "image_url": "/products/P00059442.jpg",
+    "order_count": 1406,
+    "apriori_bundles": [
+      {
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "lift": 1.35,
+        "confidence": 0.43
+      },
+      {
+        "product_id": "P00058042",
+        "name": "Terracotta High-Waist Trouser Set",
+        "image_url": "/products/P00058042.jpg",
+        "price": 68.0,
+        "lift": 1.67,
+        "confidence": 0.4
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "similarity": 0.811
+      },
+      {
+        "product_id": "P00184942",
+        "name": "Heritage Olive Military Utility Trench",
+        "image_url": "/products/P00184942.jpg",
+        "price": 119.0,
+        "similarity": 0.799
+      }
+    ]
+  },
+  {
+    "product_id": "P00046742",
+    "name": "Boho Gilded Velvet Embroidered Tunic",
+    "tagline": "Deep wine velvet blouse with metallic gold flora",
+    "description": "Luxe plush velvet tunic top in deep burgundy merlot, embellished with intricate golden threadwork along the split neckline and bell sleeves.",
+    "category_name": "Tops & Tunics",
+    "product_category_1": 1,
+    "product_category_2": 2,
+    "product_category_3": 15,
+    "gender": "Women",
+    "brand": "Byzantine Bloom",
+    "style": "Bohemian Luxe",
+    "season": "Festive / Evening",
+    "badge": "Exclusive",
+    "is_hero": false,
+    "original_price": 110.0,
+    "discounted_price": 64.0,
+    "sizes": [
+      "S",
+      "M",
+      "L"
+    ],
+    "image_url": "/products/P00046742.jpg",
+    "order_count": 1438,
+    "apriori_bundles": [
+      {
+        "product_id": "P00057642",
+        "name": "Heritage Pleated Pinafore Dress",
+        "image_url": "/products/P00057642.jpg",
+        "price": 79.0,
+        "lift": 1.68,
+        "confidence": 0.42
+      },
+      {
+        "product_id": "P00145042",
+        "name": "Maritime Navy Heavy Wool Peacoat",
+        "image_url": "/products/P00145042.jpg",
+        "price": 105.0,
+        "lift": 1.72,
+        "confidence": 0.41
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00184942",
+        "name": "Heritage Olive Military Utility Trench",
+        "image_url": "/products/P00184942.jpg",
+        "price": 119.0,
+        "similarity": 0.812
+      },
+      {
+        "product_id": "P00058042",
+        "name": "Terracotta High-Waist Trouser Set",
+        "image_url": "/products/P00058042.jpg",
+        "price": 68.0,
+        "similarity": 0.812
+      },
+      {
+        "product_id": "P00112142",
+        "name": "Pastel Retro Varsity Bomber Jacket",
+        "image_url": "/products/P00112142.jpg",
+        "price": 89.0,
+        "similarity": 0.812
+      }
+    ]
+  },
+  {
+    "product_id": "P00145042",
+    "name": "Maritime Navy Heavy Wool Peacoat",
+    "tagline": "Double-breasted melton wool coat with anchor buttons",
+    "description": "Naval specification 32oz melton wool double-breasted peacoat in deep midnight navy with notch lapels, vertical hand-warmer welt pockets, and vented back.",
+    "category_name": "Coats & Trenches",
+    "product_category_1": 1,
+    "product_category_2": 2,
+    "product_category_3": 5,
+    "gender": "Women",
+    "brand": "Nautical Archive",
+    "style": "Maritime Classic",
+    "season": "Winter",
+    "badge": "Essential",
+    "is_hero": false,
+    "original_price": 175.0,
+    "discounted_price": 105.0,
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L"
+    ],
+    "image_url": "/products/P00145042.jpg",
+    "order_count": 1406,
+    "apriori_bundles": [
+      {
+        "product_id": "P00057642",
+        "name": "Heritage Pleated Pinafore Dress",
+        "image_url": "/products/P00057642.jpg",
+        "price": 79.0,
+        "lift": 1.71,
+        "confidence": 0.43
+      },
+      {
+        "product_id": "P00046742",
+        "name": "Boho Gilded Velvet Embroidered Tunic",
+        "image_url": "/products/P00046742.jpg",
+        "price": 64.0,
+        "lift": 1.72,
+        "confidence": 0.42
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00184942",
+        "name": "Heritage Olive Military Utility Trench",
+        "image_url": "/products/P00184942.jpg",
+        "price": 119.0,
+        "similarity": 0.812
+      },
+      {
+        "product_id": "P00058042",
+        "name": "Terracotta High-Waist Trouser Set",
+        "image_url": "/products/P00058042.jpg",
+        "price": 68.0,
+        "similarity": 0.812
+      },
+      {
+        "product_id": "P00112142",
+        "name": "Pastel Retro Varsity Bomber Jacket",
+        "image_url": "/products/P00112142.jpg",
+        "price": 89.0,
+        "similarity": 0.812
+      }
+    ]
+  },
+  {
+    "product_id": "P00237542",
+    "name": "Vintage Patchwork Denim Trucker Jacket",
+    "tagline": "Medium-wash distressed denim with corduroy collar",
+    "description": "Classic 1970s trucker jacket handcrafted with tonal indigo denim patchwork, vintage brass shank buttons, and a rich caramel corduroy contrast collar.",
+    "category_name": "Jackets & Outerwear",
+    "product_category_1": 1,
+    "product_category_2": 15,
+    "product_category_3": 16,
+    "gender": "Unisex",
+    "brand": "Americana Heritage",
+    "style": "Americana Vintage",
+    "season": "All-Season",
+    "badge": "Staff Pick",
+    "is_hero": false,
+    "original_price": 135.0,
+    "discounted_price": 78.0,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "image_url": "/products/P00237542.jpg",
+    "order_count": 1394,
+    "apriori_bundles": [
+      {
+        "product_id": "P00046742",
+        "name": "Hand-Tooled Heritage Chelsea Boots",
+        "image_url": "/products/P00046742.jpg",
+        "price": 139.0,
+        "lift": 1.65,
+        "confidence": 0.42
+      },
+      {
+        "product_id": "P00051442",
+        "name": "Wide-Leg Sailor Front Indigo Trousers",
+        "image_url": "/products/P00051442.jpg",
+        "price": 59.0,
+        "lift": 1.58,
+        "confidence": 0.39
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00112142",
+        "name": "Pastel Retro Varsity Bomber Jacket",
+        "image_url": "/products/P00112142.jpg",
+        "price": 89.0,
+        "similarity": 0.81
+      },
+      {
+        "product_id": "P00145042",
+        "name": "Heavyweight French Chore Worker Jacket",
+        "image_url": "/products/P00145042.jpg",
+        "price": 95.0,
+        "similarity": 0.79
+      }
+    ]
+  },
+  {
+    "product_id": "P00255842",
+    "name": "Burgundy Velvet Evening Blazer",
+    "tagline": "Plush cotton-velvet tailored tuxedo jacket",
+    "description": "Rich wine-burgundy velvet blazer featuring peaked satin lapels, single covered button closure, and silken interior lining for distinguished evening gatherings.",
+    "category_name": "Jackets & Blazers",
+    "product_category_1": 16,
+    "product_category_2": null,
+    "product_category_3": null,
+    "gender": "Men",
+    "brand": "Savile Club",
+    "style": "Classic Connoisseur",
+    "season": "Autumn / Winter",
+    "badge": "Bestseller",
+    "is_hero": false,
+    "original_price": 175.0,
+    "discounted_price": 110.0,
+    "sizes": [
+      "M",
+      "L",
+      "XL"
+    ],
+    "image_url": "/products/P00255842.jpg",
+    "order_count": 1383,
+    "apriori_bundles": [
+      {
+        "product_id": "P00102642",
+        "name": "Vintage Suede Penny Loafers",
+        "image_url": "/products/P00102642.jpg",
+        "price": 79.0,
+        "lift": 1.72,
+        "confidence": 0.45
+      },
+      {
+        "product_id": "P00110842",
+        "name": "Oversized Herringbone Wool Overcoat",
+        "image_url": "/products/P00110842.jpg",
+        "price": 145.0,
+        "lift": 1.68,
+        "confidence": 0.41
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00110842",
+        "name": "Oversized Herringbone Wool Overcoat",
+        "image_url": "/products/P00110842.jpg",
+        "price": 145.0,
+        "similarity": 0.83
+      },
+      {
+        "product_id": "P00184942",
+        "name": "Heritage Olive Military Utility Trench",
+        "image_url": "/products/P00184942.jpg",
+        "price": 119.0,
+        "similarity": 0.77
+      }
+    ]
+  },
+  {
+    "product_id": "P00117942",
+    "name": "Hand-Knitted Nordic Wool Fair Isle Sweater",
+    "tagline": "Geometric alpine yoke knit in oatmeal & forest green",
+    "description": "Traditional Icelandic-inspired crewneck pullover spun from 100% pure Shetland wool, featuring intricate geometric snowflake yoke motifs in forest green and cinnamon.",
+    "category_name": "Knitwear & Sweaters",
+    "product_category_1": 5,
+    "product_category_2": 15,
+    "product_category_3": null,
+    "gender": "Unisex",
+    "brand": "Fjord & Wool",
+    "style": "Nordic Heritage",
+    "season": "Winter",
+    "badge": "Trending",
+    "is_hero": false,
+    "original_price": 140.0,
+    "discounted_price": 85.0,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "image_url": "/products/P00117942.jpg",
+    "order_count": 1364,
+    "apriori_bundles": [
+      {
+        "product_id": "P00010742",
+        "name": "Waxed Canvas Field Explorer Parka",
+        "image_url": "/products/P00010742.jpg",
+        "price": 125.0,
+        "lift": 1.84,
+        "confidence": 0.48
+      },
+      {
+        "product_id": "P00046742",
+        "name": "Hand-Tooled Heritage Chelsea Boots",
+        "image_url": "/products/P00046742.jpg",
+        "price": 139.0,
+        "lift": 1.63,
+        "confidence": 0.4
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "similarity": 0.86
+      },
+      {
+        "product_id": "P00117442",
+        "name": "Artisan Floral Embroidered Cardigan",
+        "image_url": "/products/P00117442.jpg",
+        "price": 69.0,
+        "similarity": 0.82
+      }
+    ]
+  },
+  {
+    "product_id": "P00110942",
+    "name": "Pleated Silk Midi Wrap Skirt",
+    "tagline": "Sunburst accordion pleats in shimmering golden olive",
+    "description": "Elegant flowing midi wrap skirt tailored in lightweight crushed habotai silk with a flattering adjustable sash tie and knife-pleated flare.",
+    "category_name": "Dresses & Skirts",
+    "product_category_1": 1,
+    "product_category_2": 2,
+    "product_category_3": null,
+    "gender": "Women",
+    "brand": "Atelier 1968",
+    "style": "Boho Chic",
+    "season": "Spring / Summer",
+    "badge": "Newest",
+    "is_hero": false,
+    "original_price": 110.0,
+    "discounted_price": 65.0,
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L"
+    ],
+    "image_url": "/products/P00110942.jpg",
+    "order_count": 1360,
+    "apriori_bundles": [
+      {
+        "product_id": "P00025442",
+        "name": "Artisan Paisley Silk Kimono Shirt",
+        "image_url": "/products/P00025442.jpg",
+        "price": 49.9,
+        "lift": 1.77,
+        "confidence": 0.46
+      },
+      {
+        "product_id": "P00117442",
+        "name": "Artisan Floral Embroidered Cardigan",
+        "image_url": "/products/P00117442.jpg",
+        "price": 69.0,
+        "lift": 1.62,
+        "confidence": 0.38
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00057642",
+        "name": "Heritage Pleated Pinafore Dress",
+        "image_url": "/products/P00057642.jpg",
+        "price": 79.0,
+        "similarity": 0.83
+      },
+      {
+        "product_id": "P00058042",
+        "name": "Terracotta High-Waist Trouser Set",
+        "image_url": "/products/P00058042.jpg",
+        "price": 68.0,
+        "similarity": 0.8
+      }
+    ]
+  },
+  {
+    "product_id": "P00010742",
+    "name": "Waxed Canvas Field Explorer Parka",
+    "tagline": "Water-resistant weatherproof jacket with tartan lining",
+    "description": "Rugged British-style hunting jacket crafted in heavy 10oz waxed cotton canvas. Equipped with brass two-way zippers, bellows cartridge pockets, and warm plaid flannel lining.",
+    "category_name": "Coats & Trenches",
+    "product_category_1": 1,
+    "product_category_2": 8,
+    "product_category_3": 17,
+    "gender": "Unisex",
+    "brand": "Field & Stream",
+    "style": "Utilitarian",
+    "season": "All-Weather",
+    "badge": "Staff Pick",
+    "is_hero": false,
+    "original_price": 195.0,
+    "discounted_price": 125.0,
+    "sizes": [
+      "M",
+      "L",
+      "XL"
+    ],
+    "image_url": "/products/P00010742.jpg",
+    "order_count": 1350,
+    "apriori_bundles": [
+      {
+        "product_id": "P00117942",
+        "name": "Hand-Knitted Nordic Wool Fair Isle Sweater",
+        "image_url": "/products/P00117942.jpg",
+        "price": 85.0,
+        "lift": 1.84,
+        "confidence": 0.48
+      },
+      {
+        "product_id": "P00046742",
+        "name": "Hand-Tooled Heritage Chelsea Boots",
+        "image_url": "/products/P00046742.jpg",
+        "price": 139.0,
+        "lift": 1.7,
+        "confidence": 0.43
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00184942",
+        "name": "Heritage Olive Military Utility Trench",
+        "image_url": "/products/P00184942.jpg",
+        "price": 119.0,
+        "similarity": 0.85
+      },
+      {
+        "product_id": "P00145042",
+        "name": "Heavyweight French Chore Worker Jacket",
+        "image_url": "/products/P00145042.jpg",
+        "price": 95.0,
+        "similarity": 0.81
+      }
+    ]
+  },
+  {
+    "product_id": "P00220442",
+    "name": "Retro Suede Fringe Western Overshirt",
+    "tagline": "Buttery camel suede with cascading fringe yoke",
+    "description": "Standout 1970s western overshirt tailored from supple split cowhide suede in warm desert camel, accented with hand-cut fringe across chest and back.",
+    "category_name": "Shirts & Blouses",
+    "product_category_1": 5,
+    "product_category_2": 14,
+    "product_category_3": null,
+    "gender": "Women",
+    "brand": "Santa Fe Guild",
+    "style": "Western Vintage",
+    "season": "Spring / Fall",
+    "badge": "Trending",
+    "is_hero": false,
+    "original_price": 155.0,
+    "discounted_price": 95.0,
+    "sizes": [
+      "S",
+      "M",
+      "L"
+    ],
+    "image_url": "/products/P00220442.jpg",
+    "order_count": 1282,
+    "apriori_bundles": [
+      {
+        "product_id": "P00046742",
+        "name": "Hand-Tooled Heritage Chelsea Boots",
+        "image_url": "/products/P00046742.jpg",
+        "price": 139.0,
+        "lift": 1.75,
+        "confidence": 0.44
+      },
+      {
+        "product_id": "P00051442",
+        "name": "Wide-Leg Sailor Front Indigo Trousers",
+        "image_url": "/products/P00051442.jpg",
+        "price": 59.0,
+        "lift": 1.6,
+        "confidence": 0.4
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "similarity": 0.84
+      },
+      {
+        "product_id": "P00059442",
+        "name": "Embroidered Linen Folk Boho Tunic",
+        "image_url": "/products/P00059442.jpg",
+        "price": 58.0,
+        "similarity": 0.78
+      }
+    ]
+  },
+  {
+    "product_id": "P00110842",
+    "name": "Oversized Herringbone Wool Overcoat",
+    "tagline": "Double-breasted charcoal tweed duster coat",
+    "description": "Grand structured double-breasted overcoat woven in heavy Scottish charcoal herringbone wool tweed with broad notch lapels and back vent.",
+    "category_name": "Coats & Trenches",
+    "product_category_1": 1,
+    "product_category_2": 2,
+    "product_category_3": 5,
+    "gender": "Men",
+    "brand": "Edinburgh Tweed Co.",
+    "style": "Heritage Classic",
+    "season": "Winter",
+    "badge": "Bestseller",
+    "is_hero": false,
+    "original_price": 220.0,
+    "discounted_price": 145.0,
+    "sizes": [
+      "M",
+      "L",
+      "XL"
+    ],
+    "image_url": "/products/P00110842.jpg",
+    "order_count": 1281,
+    "apriori_bundles": [
+      {
+        "product_id": "P00255842",
+        "name": "Burgundy Velvet Evening Blazer",
+        "image_url": "/products/P00255842.jpg",
+        "price": 110.0,
+        "lift": 1.68,
+        "confidence": 0.41
+      },
+      {
+        "product_id": "P00102642",
+        "name": "Vintage Suede Penny Loafers",
+        "image_url": "/products/P00102642.jpg",
+        "price": 79.0,
+        "lift": 1.74,
+        "confidence": 0.43
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00184942",
+        "name": "Heritage Olive Military Utility Trench",
+        "image_url": "/products/P00184942.jpg",
+        "price": 119.0,
+        "similarity": 0.86
+      },
+      {
+        "product_id": "P00255842",
+        "name": "Burgundy Velvet Evening Blazer",
+        "image_url": "/products/P00255842.jpg",
+        "price": 110.0,
+        "similarity": 0.83
+      }
+    ]
+  },
+  {
+    "product_id": "P00117442",
+    "name": "Artisan Floral Embroidered Cardigan",
+    "tagline": "Soft alpaca knit with wildflower botanical needlework",
+    "description": "Charming button-up sweater in soft cream brushed alpaca yarn, adorned with hand-embroidered meadow floral bouquets in marigold, lilac, and sage.",
+    "category_name": "Knitwear & Sweaters",
+    "product_category_1": 5,
+    "product_category_2": 14,
+    "product_category_3": null,
+    "gender": "Women",
+    "brand": "Meadow & Yarn",
+    "style": "Folk Bohemian",
+    "season": "Spring / Fall",
+    "badge": "Sale",
+    "is_hero": false,
+    "original_price": 125.0,
+    "discounted_price": 69.0,
+    "sizes": [
+      "S",
+      "M",
+      "L"
+    ],
+    "image_url": "/products/P00117442.jpg",
+    "order_count": 1260,
+    "apriori_bundles": [
+      {
+        "product_id": "P00110942",
+        "name": "Pleated Silk Midi Wrap Skirt",
+        "image_url": "/products/P00110942.jpg",
+        "price": 65.0,
+        "lift": 1.62,
+        "confidence": 0.38
+      },
+      {
+        "product_id": "P00057642",
+        "name": "Heritage Pleated Pinafore Dress",
+        "image_url": "/products/P00057642.jpg",
+        "price": 79.0,
+        "lift": 1.55,
+        "confidence": 0.36
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "similarity": 0.82
+      },
+      {
+        "product_id": "P00059442",
+        "name": "Embroidered Linen Folk Boho Tunic",
+        "image_url": "/products/P00059442.jpg",
+        "price": 58.0,
+        "similarity": 0.8
+      }
+    ]
+  },
+  {
+    "product_id": "P00051442",
+    "name": "Wide-Leg Sailor Front Indigo Trousers",
+    "tagline": "High-rise denim trousers with anchor brass buttons",
+    "description": "Vintage 1960s maritime inspired high-waisted trousers with wide fluid leg, decorative nautical double-button front bib, and deep slant pockets.",
+    "category_name": "Pants & Trousers",
+    "product_category_1": 8,
+    "product_category_2": 17,
+    "product_category_3": null,
+    "gender": "Women",
+    "brand": "Nautical Archive",
+    "style": "Retro Nautical",
+    "season": "All-Season",
+    "badge": "Newest",
+    "is_hero": false,
+    "original_price": 105.0,
+    "discounted_price": 59.0,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "image_url": "/products/P00051442.jpg",
+    "order_count": 1249,
+    "apriori_bundles": [
+      {
+        "product_id": "P00237542",
+        "name": "Vintage Patchwork Denim Trucker Jacket",
+        "image_url": "/products/P00237542.jpg",
+        "price": 78.0,
+        "lift": 1.58,
+        "confidence": 0.39
+      },
+      {
+        "product_id": "P00117942",
+        "name": "Hand-Knitted Nordic Wool Fair Isle Sweater",
+        "image_url": "/products/P00117942.jpg",
+        "price": 85.0,
+        "lift": 1.64,
+        "confidence": 0.41
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00058042",
+        "name": "Terracotta High-Waist Trouser Set",
+        "image_url": "/products/P00058042.jpg",
+        "price": 68.0,
+        "similarity": 0.85
+      },
+      {
+        "product_id": "P00046742",
+        "name": "Hand-Tooled Heritage Chelsea Boots",
+        "image_url": "/products/P00046742.jpg",
+        "price": 139.0,
+        "similarity": 0.79
+      }
+    ]
+  },
+  {
+    "product_id": "P00102642",
+    "name": "Vintage Suede Penny Loafers",
+    "tagline": "Hand-stitched moccasin toe in tobacco suede",
+    "description": "Timeless handcrafted tobacco brown suede penny loafers featuring calfskin leather lining, Goodyear welted sole, and classic saddle cutout strap.",
+    "category_name": "Footwear & Boots",
+    "product_category_1": 4,
+    "product_category_2": 8,
+    "product_category_3": 9,
+    "gender": "Unisex",
+    "brand": "Heritage Cobblers",
+    "style": "Preppy Vintage",
+    "season": "All-Season",
+    "badge": "Bestseller",
+    "is_hero": false,
+    "original_price": 130.0,
+    "discounted_price": 79.0,
+    "sizes": [
+      "7",
+      "8",
+      "9",
+      "10",
+      "11"
+    ],
+    "image_url": "/products/P00102642.jpg",
+    "order_count": 1246,
+    "apriori_bundles": [
+      {
+        "product_id": "P00255842",
+        "name": "Burgundy Velvet Evening Blazer",
+        "image_url": "/products/P00255842.jpg",
+        "price": 110.0,
+        "lift": 1.72,
+        "confidence": 0.45
+      },
+      {
+        "product_id": "P00110842",
+        "name": "Oversized Herringbone Wool Overcoat",
+        "image_url": "/products/P00110842.jpg",
+        "price": 145.0,
+        "lift": 1.74,
+        "confidence": 0.43
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00046742",
+        "name": "Hand-Tooled Heritage Chelsea Boots",
+        "image_url": "/products/P00046742.jpg",
+        "price": 139.0,
+        "similarity": 0.88
+      },
+      {
+        "product_id": "P00237542",
+        "name": "Vintage Patchwork Denim Trucker Jacket",
+        "image_url": "/products/P00237542.jpg",
+        "price": 78.0,
+        "similarity": 0.76
+      }
+    ]
+  }
+]
