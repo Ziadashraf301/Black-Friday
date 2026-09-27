@@ -18,6 +18,12 @@ from core.config import settings
 @pytest.fixture
 def train_data():
     return pd.DataFrame({
+        "gender": ["F", "F", "M", "M", "F", "F", "M", "M"],
+        "age": ["0-17", "0-17", "26-35", "26-35", "36-45", "36-45", "55+", "55+"],
+        "occupation": [10, 10, 16, 16, 10, 10, 16, 16],
+        "city_category": ["A", "A", "C", "C", "A", "A", "C", "C"],
+        "stay_in_current_city_years": ["2", "2", "4+", "4+", "2", "2", "4+", "4+"],
+        "marital_status": [0, 0, 1, 1, 0, 0, 1, 1],
         "product_category_1": [1, 2, 3, 1, 2, 3, 1, 2],
         "product_category_2": [4, 5, 6, 4, 5, 6, 4, 5],
         "product_category_3": [7, 8, 9, 7, 8, 9, 7, 8],

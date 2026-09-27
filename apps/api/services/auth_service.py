@@ -55,6 +55,12 @@ class AuthService:
             "sub": str(user["user_id"]),
             "name": user["name"],
             "email": user["email"],
+            "gender": user.get("gender"),
+            "age": user.get("age"),
+            "city_category": user.get("city_category"),
+            "marital_status": user.get("marital_status"),
+            "occupation": user.get("occupation"),
+            "stay_in_current_city_years": user.get("stay_in_current_city_years"),
         })
 
         return {
@@ -85,6 +91,12 @@ class AuthService:
             "sub": str(user["user_id"]),
             "name": user["name"],
             "email": user["email"],
+            "gender": user.get("gender"),
+            "age": user.get("age"),
+            "city_category": user.get("city_category"),
+            "marital_status": user.get("marital_status"),
+            "occupation": user.get("occupation"),
+            "stay_in_current_city_years": user.get("stay_in_current_city_years"),
         })
 
         return {

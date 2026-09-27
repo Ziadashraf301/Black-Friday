@@ -32,9 +32,13 @@ class ModelExplainability:
                     self.explainer = shap.LinearExplainer(regressor, transformed_bg)
                 else:
                     logger.info(f"Initializing shap.TreeExplainer for {type(regressor).__name__}...")
-                    self.explainer = shap.TreeExplainer(regressor, transformed_bg)
+                    try:
+                        self.explainer = shap.TreeExplainer(regressor)
+                    except Exception as tree_err:
+                        logger.warning(f"TreeExplainer default initialization failed: {tree_err}, trying background sample...")
+                        self.explainer = shap.TreeExplainer(regressor, transformed_bg)
             except Exception as e:
-                logger.warning(f"Could not initialize SHAP explainer: {e}")
+                logger.warning(f"Could not initialize SHAP explainer for {type(regressor).__name__}: {e}")
 
     def explain(self, eval_df: pd.DataFrame) -> Tuple[Optional[Any], Optional[Any]]:
         """Transforms eval_df and computes SHAP attribution values.

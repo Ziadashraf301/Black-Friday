@@ -37,4 +37,10 @@ def get_current_user(
         "user_id": int(user_id),
         "name": payload.get("name", ""),
         "email": payload.get("email", ""),
+        "gender": payload.get("gender"),
+        "age": payload.get("age"),
+        "city_category": payload.get("city_category"),
+        "marital_status": payload.get("marital_status"),
+        "occupation": payload.get("occupation"),
+        "stay_in_current_city_years": payload.get("stay_in_current_city_years"),
     }

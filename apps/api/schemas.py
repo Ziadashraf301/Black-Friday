@@ -87,19 +87,6 @@ class EDASummaryResponse(BaseModel):
     avg_order_value: float
     total_revenue: float
 
-
-# --- EDA + Stats Combined Response ---
-class DimensionEDAResponse(BaseModel):
-    dimension: str
-    categories: List[Dict[str, Any]]   # [{category, order_count, avg_purchase, total_purchase}]
-    test_name: str
-    test_statistic: float
-    p_value: float
-    is_significant: bool
-    interpretation: str
-    details: Dict[str, Any]
-
-
 # --- Auth Schemas ---
 class SignupRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=80, example="Ahmed Hassan")
@@ -143,6 +130,12 @@ class ShopperPredictRequest(BaseModel):
     product_category_1: Optional[int] = Field(default=None, ge=1, le=20, example=1)
     product_category_2: Optional[int] = Field(default=None, ge=1, le=20, example=6)
     product_category_3: Optional[int] = Field(default=None, ge=1, le=20, example=14)
+    gender: Optional[str] = Field(default=None, example="M")
+    age: Optional[str] = Field(default=None, example="26-35")
+    occupation: Optional[int] = Field(default=None, example=4)
+    city_category: Optional[str] = Field(default=None, example="B")
+    stay_in_current_city_years: Optional[str] = Field(default=None, example="2")
+    marital_status: Optional[int] = Field(default=None, example=0)
 
 class ShopperPredictResponse(BaseModel):
     product_id: str

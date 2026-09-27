@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 import pandas as pd
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -305,6 +305,7 @@ class Visualizer:
     def generate_shap_summary_plot(
         shap_values: Any,
         eval_features: pd.DataFrame,
+        feature_names: Optional[List[str]] = None,
         output_dir: str = "reports/shap"
     ) -> Optional[str]:
         """Generates and saves SHAP summary beeswarm plot as PNG artifact."""
@@ -325,8 +326,14 @@ class Visualizer:
             if hasattr(shap_values, "shap_values"):
                 shap_values = shap_values.shap_values(eval_features)
 
+            # Validate feature_names length matches transformed feature matrix columns
+            n_cols = eval_features.shape[1] if hasattr(eval_features, "shape") and len(eval_features.shape) > 1 else None
+            if feature_names is not None and n_cols is not None and len(feature_names) != n_cols:
+                logger.info(f"SHAP feature_names count ({len(feature_names)}) != transformed matrix columns ({n_cols}); using auto indexing.")
+                feature_names = None
+
             plt.figure(figsize=(10, 6))
-            shap.summary_plot(shap_values, eval_features, show=False)
+            shap.summary_plot(shap_values, eval_features, feature_names=feature_names, show=False)
             plt.tight_layout()
             plt.savefig(out_path, dpi=300)
             plt.close()

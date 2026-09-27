@@ -1,7 +1,7 @@
 """
 Shopper routes — catalog browsing, recommendations, tailored pricing, and purchase history.
 """
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Depends
 
 from apps.api.schemas import (
@@ -48,12 +48,24 @@ def browse_product(
 @router.post("/predict-price-batch", response_model=ShopperBatchPredictResponse)
 def predict_price_batch(
     request: ShopperBatchPredictRequest,
+    current_user: Optional[Dict[str, Any]] = Depends(get_current_user),
     repo: BlackFridayRepository = Depends(get_repository),
 ):
     """Calculates personalized batch quotes for high-concurrency cart processing."""
+    user_id = current_user.get("user_id") if current_user else None
+    user_demo = {
+        "gender": current_user.get("gender") if current_user else None,
+        "age": current_user.get("age") if current_user else None,
+        "city_category": current_user.get("city_category") if current_user else None,
+        "marital_status": current_user.get("marital_status") if current_user else None,
+        "occupation": current_user.get("occupation") if current_user else None,
+        "stay_in_current_city_years": current_user.get("stay_in_current_city_years") if current_user else None,
+    }
     quotes = shopper_service.estimate_price_batch(
         items=[item.model_dump() for item in request.items],
-        repo=repo
+        repo=repo,
+        user_id=user_id,
+        user_demographics=user_demo,
     )
     return ShopperBatchPredictResponse(quotes=[ShopperPredictResponse(**q) for q in quotes])
 
@@ -70,7 +82,14 @@ def predict_price_for_shopper(
         cat1=request.product_category_1,
         cat2=request.product_category_2,
         cat3=request.product_category_3,
-        repo=repo
+        repo=repo,
+        user_id=current_user.get("user_id"),
+        gender=current_user.get("gender"),
+        age=current_user.get("age"),
+        city_category=current_user.get("city_category"),
+        marital_status=current_user.get("marital_status"),
+        occupation=current_user.get("occupation"),
+        stay_in_current_city_years=current_user.get("stay_in_current_city_years"),
     )
     return ShopperPredictResponse(**res)
 

@@ -60,6 +60,41 @@ class UserRepository(BaseRepository):
             result = conn.execute(query, {"user_id": user_id}).mappings().first()
             return dict(result) if result else None
 
+    def get_user_demographics(self, user_id: int) -> Optional[Dict[str, Any]]:
+        """Retrieves exact demographic vector for user_id from app_users or black_friday_cleaned table."""
+        # 1. Check app_users table
+        user = self.get_user_by_id(user_id)
+        if user and user.get("gender") and user.get("age"):
+            return {
+                "gender": user["gender"],
+                "age": user["age"],
+                "city_category": user["city_category"],
+                "stay_in_current_city_years": str(user["stay_in_current_city_years"]),
+                "marital_status": int(user["marital_status"]) if user["marital_status"] is not None else 0,
+                "occupation": int(user["occupation"]) if user["occupation"] is not None else 0,
+            }
+
+        # 2. Check black_friday_cleaned table
+        query = text("""
+            SELECT gender, age, occupation, city_category, stay_in_current_city_years, marital_status
+            FROM black_friday_cleaned
+            WHERE user_id = :user_id
+            LIMIT 1
+        """)
+        with self.engine.connect() as conn:
+            res = conn.execute(query, {"user_id": user_id}).mappings().first()
+            if res:
+                d = dict(res)
+                return {
+                    "gender": d["gender"],
+                    "age": d["age"],
+                    "city_category": d["city_category"],
+                    "stay_in_current_city_years": str(d["stay_in_current_city_years"]),
+                    "marital_status": int(d["marital_status"]) if d["marital_status"] is not None else 0,
+                    "occupation": int(d["occupation"]) if d["occupation"] is not None else 0,
+                }
+        return None
+
     def create_user(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Insert a new user and return the created record."""
         query = text("""

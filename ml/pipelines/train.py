@@ -89,10 +89,21 @@ def run_training_pipeline(model_names: list = None):
         bg_sample = train_df[model.features].head(100)
         explainer = ModelExplainability(model.pipeline, background_sample=bg_sample)
         shap_values, X_eval = explainer.explain(test_df[model.features].head(200))
+        # Extract exact transformed feature names matching ColumnTransformer output columns
+        feature_names = model.features
+        try:
+            preproc = model.pipeline.named_steps.get("preprocessor")
+            if hasattr(preproc, "get_feature_names_out"):
+                raw_names = preproc.get_feature_names_out()
+                feature_names = [str(name).split("__")[-1] for name in raw_names]
+        except Exception:
+            pass
+
         if shap_values is not None:
             shap_plot_path = Visualizer.generate_shap_summary_plot(
                 shap_values=shap_values,
                 eval_features=X_eval,
+                feature_names=feature_names,
                 output_dir=f"reports/shap_{model_name}"
             )
             if shap_plot_path:

@@ -154,16 +154,34 @@ class ShopperService:
     def estimate_price_batch(
         cls,
         items: List[Dict[str, Any]],
-        repo: BlackFridayRepository
+        repo: BlackFridayRepository,
+        user_id: Optional[int] = None,
+        user_demographics: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, Any]]:
-        """Batch-processes price predictions for high-throughput shopping carts."""
+        """Batch-processes price predictions for catalog browsing / cart items."""
         results = []
+        if not user_demographics and user_id is not None:
+            user_demographics = repo.get_user_demographics(user_id)
+
         for item in items:
             product_id = item.get("product_id") or ""
             cat1 = item.get("product_category_1")
             cat2 = item.get("product_category_2")
             cat3 = item.get("product_category_3")
-            results.append(cls.estimate_price(product_id, cat1, cat2, cat3, repo))
+            results.append(cls.estimate_price(
+                product_id=product_id,
+                cat1=cat1,
+                cat2=cat2,
+                cat3=cat3,
+                repo=repo,
+                user_id=user_id,
+                gender=item.get("gender") or (user_demographics.get("gender") if user_demographics else None),
+                age=item.get("age") or (user_demographics.get("age") if user_demographics else None),
+                occupation=item.get("occupation") if item.get("occupation") is not None else (user_demographics.get("occupation") if user_demographics else None),
+                city_category=item.get("city_category") or (user_demographics.get("city_category") if user_demographics else None),
+                stay_in_current_city_years=item.get("stay_in_current_city_years") or (user_demographics.get("stay_in_current_city_years") if user_demographics else None),
+                marital_status=item.get("marital_status") if item.get("marital_status") is not None else (user_demographics.get("marital_status") if user_demographics else None),
+            ))
         return results
 
     @staticmethod
@@ -172,14 +190,31 @@ class ShopperService:
         cat1: Optional[int],
         cat2: Optional[int],
         cat3: Optional[int],
-        repo: BlackFridayRepository
+        repo: BlackFridayRepository,
+        user_id: Optional[int] = None,
+        gender: Optional[str] = None,
+        age: Optional[str] = None,
+        occupation: Optional[int] = None,
+        city_category: Optional[str] = None,
+        stay_in_current_city_years: Optional[str] = None,
+        marital_status: Optional[int] = None,
     ) -> Dict[str, Any]:
         """Calculates personalized member price using local ONNX model pipeline.
         
-        The member price represents an exclusive personalized discount calibrated to
-        the product's catalog price using the customer's propensity prediction.
-        Guaranteed to be lower than the regular catalog price.
+        Fetches true user demographics from PostgreSQL database using user_id if not present in request.
+        Fails immediately with 400 error if user demographics are missing and cannot be retrieved.
         """
+        # Populate demographics from DB if user_id is provided and payload is incomplete
+        if user_id is not None and (gender is None or age is None or occupation is None):
+            user_demo = repo.get_user_demographics(user_id)
+            if user_demo:
+                gender = gender or user_demo.get("gender")
+                age = age or user_demo.get("age")
+                occupation = occupation if occupation is not None else user_demo.get("occupation")
+                city_category = city_category or user_demo.get("city_category")
+                stay_in_current_city_years = stay_in_current_city_years or user_demo.get("stay_in_current_city_years")
+                marital_status = marital_status if marital_status is not None else user_demo.get("marital_status")
+
         if cat1 is None:
             db_cats = repo.get_product_categories(product_id)
             if db_cats:
@@ -189,12 +224,29 @@ class ShopperService:
             else:
                 cat1 = 1
 
-        pred_res = model_service.predict_price(
-            product_id=product_id,
-            cat1=cat1,
-            cat2=cat2,
-            cat3=cat3
-        )
+        try:
+            pred_res = model_service.predict_price(
+                product_id=product_id,
+                cat1=cat1,
+                cat2=cat2,
+                cat3=cat3,
+                gender=gender,
+                age=age,
+                occupation=occupation,
+                city_category=city_category,
+                stay_in_current_city_years=stay_in_current_city_years,
+                marital_status=marital_status,
+            )
+        except ValueError as val_err:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Price Prediction Failed: {val_err}"
+            )
+        except RuntimeError as run_err:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Inference Service Failure: {run_err}"
+            )
 
         # Lookup catalog base price
         curated = ShopperService.get_curated_catalog()

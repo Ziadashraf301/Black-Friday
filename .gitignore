@@ -23,3 +23,6 @@ reports/
 models/
 improvements_in_v2.md
 docs/poc.mp4
+apps/reflex_app/assets/*
+reflex.lock
+/apps/reflex_app/assets

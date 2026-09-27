@@ -138,14 +138,7 @@ def test_analytics_summary(client):
     assert data["total_orders"] == 550068
     assert data["total_revenue"] == 5095812740.0
 
-def test_eda_with_stats_gender(client):
-    response = client.get("/analytics/eda-with-stats/gender")
-    assert response.status_code == 200
-    data = response.json()
-    assert data["dimension"] == "gender"
-    assert "test_statistic" in data
-    assert "is_significant" in data
-    assert len(data["categories"]) > 0
+
 
 def test_auth_signup_and_me(client, mock_repo):
     signup_payload = {

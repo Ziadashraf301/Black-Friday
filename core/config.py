@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Any
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field, field_validator
 import os
@@ -110,21 +110,23 @@ class Settings(BaseSettings):
     CHAMPION_MIN_IMPROVEMENT_DELTA: float = 0.0050
 
     # Decision Tree Hyperparameters
-    DT_MAX_DEPTH: Optional[int] = Field(default=16)
+    DT_MAX_DEPTH: Optional[int] = Field(default=18)
     DT_MIN_SAMPLES_LEAF: int = Field(default=5)
 
     # Random Forest Hyperparameters
     RF_N_ESTIMATORS: int = Field(default=100)
-    RF_MAX_FEATURES: int = Field(default=4)
+    RF_MAX_FEATURES: Optional[Any] = Field(default=1.0)
     RF_MAX_DEPTH: Optional[int] = Field(default=16)
     RF_MIN_SAMPLES_LEAF: int = Field(default=5)
     RF_N_JOBS: int = Field(default=-1)
 
     # LightGBM Hyperparameters
-    LGBM_N_ESTIMATORS: int = Field(default=250)
-    LGBM_LEARNING_RATE: float = Field(default=0.08)
-    LGBM_NUM_LEAVES: int = Field(default=255)
+    LGBM_N_ESTIMATORS: int = Field(default=350)
+    LGBM_LEARNING_RATE: float = Field(default=0.05)
+    LGBM_NUM_LEAVES: int = Field(default=127)
     LGBM_MAX_DEPTH: int = Field(default=-1)
+    LGBM_SUBSAMPLE: float = Field(default=0.8)
+    LGBM_COLSAMPLE_BYTREE: float = Field(default=0.8)
     LGBM_N_JOBS: int = Field(default=-1)
 
     @field_validator("DT_MAX_DEPTH", "RF_MAX_DEPTH", mode="before")

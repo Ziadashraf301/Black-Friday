@@ -189,6 +189,7 @@ class ShoppingState(rx.State):
     active_selected_size: str = "M"
 
     # --- ONNX pricing ---
+    cached_price_estimates: Dict[str, float] = {}
     estimated_price_usd: float = 0.0
     price_prediction_model: str = ""
     is_predicting_price: bool = False
@@ -531,6 +532,8 @@ class ShoppingState(rx.State):
         self.user_cluster_persona = _format_cluster_persona(raw_persona, self.user_cluster_id)
         # Fetch full profile to populate gender, age, occupation, etc.
         self._fetch_me()
+        # Batch fetch personalized pricing for all catalog items into local frontend cache
+        self.fetch_batch_ai_price_estimates()
         # Preserve offline cart items and recalculate member pricing for each
         if self.cart_items:
             self._reprice_cart()
@@ -715,12 +718,52 @@ class ShoppingState(rx.State):
             self.auth_error = ""
 
     # ── ONNX pricing ────────────────────────────────────────────────────
+    def fetch_batch_ai_price_estimates(self):
+        """Batch fetches personalized pricing quotes for all catalog items once upon login or catalog load."""
+        if not self.auth_token or not self.products:
+            return
+        items_payload = [
+            {
+                "product_id": p.get("product_id", ""),
+                "product_category_1": p.get("product_category_1", 1),
+                "product_category_2": p.get("product_category_2"),
+                "product_category_3": p.get("product_category_3"),
+            }
+            for p in self.products if p.get("product_id")
+        ]
+        if not items_payload:
+            return
+        try:
+            with httpx.Client(timeout=6.0) as client:
+                resp = client.post(
+                    f"{API_BASE_URL}/shopper/predict-price-batch",
+                    json={"items": items_payload},
+                    headers={"Authorization": f"Bearer {self.auth_token}"}
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    for quote in data.get("quotes", []):
+                        pid = quote.get("product_id")
+                        p_usd = quote.get("predicted_usd")
+                        if pid and p_usd is not None:
+                            self.cached_price_estimates[pid] = round(float(p_usd), 2)
+        except Exception:
+            pass
+
     def fetch_ai_price_estimate(self, product: Dict[str, Any]):
         if not self.auth_token:
             return
+
+        pid = product.get("product_id", "")
+        # Check local Reflex frontend cache first to eliminate unnecessary HTTP round-trips while scrolling/browsing
+        if pid and pid in self.cached_price_estimates:
+            self.estimated_price_usd = self.cached_price_estimates[pid]
+            self.price_prediction_model = "Production Champion (Cached)"
+            return
+
         self.is_predicting_price = True
         payload = {
-            "product_id": product.get("product_id", ""),
+            "product_id": pid,
             "product_category_1": product.get("product_category_1", 1),
             "product_category_2": product.get("product_category_2"),
             "product_category_3": product.get("product_category_3"),
@@ -734,8 +777,11 @@ class ShoppingState(rx.State):
                 )
                 if resp.status_code == 200:
                     d = resp.json()
-                    self.estimated_price_usd = round(float(d.get("predicted_usd", 0.0)), 2)
+                    est = round(float(d.get("predicted_usd", 0.0)), 2)
+                    self.estimated_price_usd = est
                     self.price_prediction_model = str(d.get("model_used", "ONNX"))
+                    if pid:
+                        self.cached_price_estimates[pid] = est
                     self.is_predicting_price = False
                     return
         except Exception:
