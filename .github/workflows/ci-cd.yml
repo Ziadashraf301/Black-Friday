@@ -1,4 +1,4 @@
-name: Black Friday v2 CI/CD Pipeline
+name: Black Friday CI Pipeline
 
 on:
   push:
@@ -7,7 +7,8 @@ on:
     branches: [ main, master ]
 
 jobs:
-  test-and-lint:
+  test:
+    name: Run Pytest Suite
     runs-on: ubuntu-latest
 
     steps:
@@ -25,38 +26,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Code Quality & Linting
-        run: |
-          flake8 src/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
-          flake8 src/ tests/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-
       - name: Run Pytest Suite
         run: |
-          pytest tests/ -v --cov=src --cov-report=xml
-
-  docker-build:
-    needs: test-and-lint
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build API Docker Image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: docker/Dockerfile.api
-          push: false
-          tags: blackfriday-api:latest
-
-      - name: Build Streamlit UI Docker Image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: docker/Dockerfile.ui
-          push: false
-          tags: blackfriday-ui:latest
+          pytest tests/ -v

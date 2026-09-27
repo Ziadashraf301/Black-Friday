@@ -15,38 +15,20 @@ The original R statistical analysis is preserved and tagged in Git as [`v1.0.0`]
 
 ---
 
-## 🏗️ High-Level System Architecture
+## High-Level System Architecture
 
 ![Black Friday v2 System Architecture](docs/images/system_architecture.png)
 
 ---
 
-## Key Platform Improvements & Architectural Upgrades (v3.0.0)
+## Key Platform Improvements & Architectural Upgrades
 
-1. **Full 10-Feature Pipeline & Imputer Upgrade**:
-
-   - Upgraded `MissForestImputer` and all 4 pricing regression models (`LinearRegression`, `DecisionTree`, `RandomForest`, `LightGBM`) to fit on **all 10 dataset features**: `gender`, `age`, `occupation`, `city_category`, `stay_in_current_city_years`, `marital_status`, `product_category_1..3`, and `product_id`.
-   - Achieved **$R^2 = 72.84\%$** ($\text{RMSE} = 0.1207$) on LightGBM.
-2. **Dynamically Aligned SHAP Attributions & Windows C-Extension Stability**:
-
-   - Derived transformed feature names dynamically via `preprocessor.get_feature_names_out()`, ensuring exact label alignment on SHAP beeswarm summary plots (`reports/shap_*/shap_summary_plot.png`).
-   - Resolved Windows C-extension memory access violations (`0xC0000005`) by instantiating `shap.TreeExplainer(regressor)` directly for tree models.
-3. **Single-Source-of-Truth MLflow Production Champion Loading**:
-
-   - Refactored `ModelService` to load the registered MLflow Production Champion ONNX model (`champion_model.onnx` / `lightgbm.onnx`).
-   - Enforced strict startup validation: if no valid Production Champion model is present, `ModelService` fails immediately (`RuntimeError`) instead of falling back to dummy or random models.
-4. **Cryptographically Signed JWT Demographic Claims & Zero DB Leakage**:
-
-   - Embedded verified user demographics (`gender`, `age`, `occupation`, `city_category`, `stay_in_current_city_years`, `marital_status`) directly inside HMAC-SHA256 signed JWT tokens during registration and authentication.
-   - Decodes demographic claims in $<1\text{ms}$ with **0 database queries** and **0 risk of client-side feature spoofing or price tampering**.
-5. **Batch Prediction & Reflex Frontend Pricing Cache**:
-
-   - Implemented `fetch_batch_ai_price_estimates()` in Reflex `ShoppingState`, executing a single batch quote request (`POST /shopper/predict-price-batch`) upon login or catalog load.
-   - Added `cached_price_estimates: Dict[str, float]` to state, eliminating redundant HTTP round-trips while scrolling or opening product modals.
-6. **Locust High-Concurrency Load Test Validation**:
-
-   - Benchmark validated under multi-worker conditions (`uvicorn --workers 4`, 150 concurrent users, spawn rate = 20 users/sec, 60s run time).
-   - Achieved **0.00% error rate across all 488 requests** and **0.00% error rate on 150 concurrent user registrations**.
+1. **Full 10-Feature Pipeline & Imputer Matrix Upgrade**: Upgraded feature engineering and MissForest imputation to fit across all 10 domain features (`gender`, `age`, `occupation`, `city_category`, `stay_in_current_city_years`, `marital_status`, `product_category_1..3`, `product_id`). This lifted LightGBM Test $R^2$ from **64.00% to 72.84%** (Test RMSE = **0.1207**) and Random Forest Test $R^2$ from **60.10% to 72.32%** (Test RMSE = **0.1219**).
+2. **Dynamically Aligned SHAP Attributions & Stability**: Aligned feature attributions dynamically with ColumnTransformer outputs, ensuring exact label ordering across SHAP summary beeswarm plots and stabilizing tree explainer calculations on Windows.
+3. **Production Champion Model Loading**: Refactored ModelService to load the registered MLflow Production Champion ONNX model (`lightgbm.onnx`), enforcing strict startup validation that fails fast if no valid champion model is present.
+4. **Cryptographically Signed JWT Demographic Claims**: Embedded verified user demographic claims directly inside signed JWT payloads, allowing sub-millisecond authentication with zero database queries and zero risk of client-side feature tampering.
+5. **Batch Prediction & Reflex Frontend Pricing Cache**: Implemented batch price quote estimation (`POST /shopper/predict-price-batch`) and a local Reflex state pricing cache, eliminating redundant HTTP network requests during catalog browsing.
+6. **Locust Multi-Worker Load Test Validation**: Load tested under multi-worker conditions (`uvicorn --workers 4`, 150 concurrent users, spawn rate = 20 users/sec, 60s duration), achieving a **0.00% error rate across all 488 requests**.
 
 ---
 
@@ -58,8 +40,7 @@ The original R statistical analysis is preserved and tagged in Git as [`v1.0.0`]
 
 1. **High-Speed Ingestion Pipeline (`ml/pipelines/ingest.py`)**:
 
-   - Replaced row-by-row batch loops (~120s latency) with PostgreSQL native `COPY` in-memory streaming via `StringIO` buffer (**~7s total execution for 550,068 records**, 94.2% latency speedup).
-   - Citation: [`reports/preprocessing/preprocessing_summary.json:L25`](<file:///c:/Users/MSI/OneDrive/Desktop/work/prtofolio/Black%20Friday/reports/preprocessing/preprocessing_summary.json#L25>).
+   - Replaced row-by-row batch loops (120s latency) with PostgreSQL native `COPY` in-memory streaming via `StringIO` buffer (**7s** total execution for **550,068 records**, 94.2% latency speedup).
 2. **Data Contracts & Pandera Validation (`ml/features/data_contract.py`)**:
 
    - Enforces runtime schema types, value domain constraints, non-null guarantees, and missingness checks on `raw_black_friday` and `black_friday_cleaned` dataframes.
@@ -67,7 +48,6 @@ The original R statistical analysis is preserved and tagged in Git as [`v1.0.0`]
 
    - Partitions raw transactions into Train (90%, 495,061 records) and Test (10%, 55,007 records) splits **prior** to fitting any transformers.
    - `MissForestImputer` fits exclusively on `train_raw`, computing authentic Out-Of-Bag (OOB) error estimates (`imputer.stats["oob_errors"]`).
-   - Citation: [`reports/preprocessing/preprocessing_summary.json:L26-L27, L52-L53`](<file:///c:/Users/MSI/OneDrive/Desktop/work/prtofolio/Black%20Friday/reports/preprocessing/preprocessing_summary.json#L26>).
 4. **Tree-Constrained ONNX Imputer Compression**:
 
    - Converted unconstrained ExtraTrees ensembles (previously 490 MB `.joblib` files) into tree-constrained ONNX graphs (`max_depth=12`, `min_samples_leaf=5`).
@@ -90,10 +70,10 @@ The original R statistical analysis is preserved and tagged in Git as [`v1.0.0`]
 
 | Model Architecture                   | 10-Fold CV$R^2$ | 10-Fold CV RMSE |   Test$R^2$ |    Test RMSE    | Inference Latency | Serving Throughput |       Status       |                      |                    |
 | :----------------------------------- | :-------------------------------------------------: | :--------------: | :---------------: | :----------------: | :----------------: | :-------------------: | :----------------- |
-| **Linear Regression Baseline** |                       0.1529                       |      0.2123      |      0.1513      |       0.2134       |      < 1.0 ms      |      > 900 req/s      | Baseline           |
-| **Decision Tree Regressor**    |                       0.6988                       |      0.1266      |      0.7025      |       0.1264       |      < 1.1 ms      |      > 800 req/s      | Candidate          |
-| **Random Forest Regressor**    |                       0.7095                       |      0.1243      |      0.7126      |       0.1242       |      < 1.5 ms      |      > 650 req/s      | Challenger         |
-| **LightGBM Regressor**         |                  **0.7334**                  | **0.1191** | **0.7376** |  **0.1187**  | **< 1.3 ms** | **> 750 req/s** | **Champion** |
+| **Linear Regression Baseline** |                       0.6395                       |      0.1385      |      0.6393      |       0.1391       |      < 1.0 ms      |      > 950 req/s      | Baseline           |
+| **Decision Tree Regressor**    |                       0.6762                       |      0.1317      |      0.6758      |       0.1319       |      < 1.1 ms      |      > 850 req/s      | Candidate          |
+| **Random Forest Regressor**    |                       0.7211                       |      0.1218      |      0.7232      |       0.1219       |      < 1.5 ms      |      > 650 req/s      | Challenger         |
+| **LightGBM Regressor**         |                  **0.7254**                  | **0.1209** | **0.7284** |  **0.1207**  | **< 1.3 ms** | **> 750 req/s** | **Champion** |
 
 #### SHAP Explainability & Feature Importance
 
@@ -110,12 +90,12 @@ The original R statistical analysis is preserved and tagged in Git as [`v1.0.0`]
 ![Product Network Graph Centrality Leaders](docs/images/product_network_centrality.png)
 
 1. **Apriori Association Mining (`ml/market_basket/apriori_engine.py`)**:
-   - Mined `508` high-confidence rules ($\text{support} \ge 0.05, \text{confidence} \ge 0.40$, [`reports/market_basket/market_basket_summary.json:L14`](<file:///c:/Users/MSI/OneDrive/Desktop/work/prtofolio/Black%20Friday/reports/market_basket/market_basket_summary.json#L14>)).
+   - Mined `508` high-confidence rules ($\text{support} \ge 0.05, \text{confidence} \ge 0.40$)
 2. **Item2Vec Embedding Quality (`ml/market_basket/item2vec.py`)**:
    - Dense 32-dimensional skip-gram vector space learned directly from co-purchased baskets.
-   - **Catalog Coverage**: **96.03%** of products embedded (`3,487` unique product vectors, [`market_basket_summary.json:L19-L20`](<file:///c:/Users/MSI/OneDrive/Desktop/work/prtofolio/Black%20Friday/reports/market_basket/market_basket_summary.json#L19>)).
-   - **Cosine Similarity Compactness**: Average top-5 nearest neighbor similarity = **0.8628** ([`market_basket_summary.json:L21`](<file:///c:/Users/MSI/OneDrive/Desktop/work/prtofolio/Black%20Friday/reports/market_basket/market_basket_summary.json#L21>)).
-   - **Apriori Rule Alignment Score**: **0.6716** (67.16% average cosine similarity for items in mined Apriori rules, [`market_basket_summary.json:L23`](<file:///c:/Users/MSI/OneDrive/Desktop/work/prtofolio/Black%20Friday/reports/market_basket/market_basket_summary.json#L23>)).
+   - **Catalog Coverage**: **96.03%** of products embedded (`3,487` unique product vectors).
+   - **Cosine Similarity Compactness**: Average top-5 nearest neighbor similarity = **0.8628**).
+   - **Apriori Rule Alignment Score**: **0.6716** (67.16% average cosine similarity for items in mined Apriori rules).
 
 ---
 
@@ -125,8 +105,8 @@ The original R statistical analysis is preserved and tagged in Git as [`v1.0.0`]
 | :-------------------------------------------------------------------------------: | :-------------------------------------------------------------------------: |
 | ![Customer Personas Distribution](docs/images/customer_personas_distribution.png) | ![Customer Personas Profiling](docs/images/customer_personas_profiling.png) |
 
-- **Algorithm**: Complete-linkage Hierarchical Clustering over Gower dissimilarity matrix ($k=10$ personas, [`reports/segmentation/segmentation_summary.json:L3-L4, L16`](<file:///c:/Users/MSI/OneDrive/Desktop/work/prtofolio/Black%20Friday/reports/segmentation/segmentation_summary.json#L3>)).
-- **Customer Base**: Analyzed `5,891` distinct customer profiles derived from `550,068` transactions ([`segmentation_summary.json:L14-L15`](<file:///c:/Users/MSI/OneDrive/Desktop/work/prtofolio/Black%20Friday/reports/segmentation/segmentation_summary.json#L14>)).
+- **Algorithm**: Complete-linkage Hierarchical Clustering over Gower dissimilarity matrix ($k=10$ personas).
+- **Customer Base**: Analyzed `5,891` distinct customer profiles derived from `550,068` transactions.
 
 ---
 
