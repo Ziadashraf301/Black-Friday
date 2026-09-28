@@ -2,7 +2,7 @@ import pytest
 import os
 import pandas as pd
 import numpy as np
-from ml.models.regression import (
+from ml.models import (
     LinearRegressionModel,
     DecisionTreeModel,
     RandomForestModel,

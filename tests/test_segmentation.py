@@ -1,10 +1,6 @@
 import pandas as pd
 import pytest
-
-try:
-    from ml.segmentation.clustering import CustomerSegmentationEngine
-except ImportError:
-    from ml.segmentation.clustering import CustomerSegmentationEngine
+from ml.segmentation.clustering import CustomerSegmentationEngine
 
 
 def test_compute_cluster_statistics():
