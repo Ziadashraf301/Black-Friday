@@ -45,7 +45,9 @@ An enterprise-grade, end-to-end Data Engineering, Data Science, and Machine Lear
 3. **Zero Data Leakage Preprocessing (`ml/pipelines/preprocess.py`)**:
 
    - Partitions raw transactions into Train (90%, 495,061 records) and Test (10%, 55,007 records) splits **prior** to fitting any transformers.
-   - `MissForestImputer` fits exclusively on `train_raw`, computing authentic Out-Of-Bag (OOB) error estimates (`imputer.stats["oob_errors"]`).
+   - `MissForestImputer` fits exclusively on `train_raw`, computing authentic Out-Of-Bag (OOB) error estimates (`product_category_3` OOB $R^2 = \mathbf{85.92\%}$, `product_category_1` OOB $R^2 = \mathbf{76.40\%}$, `product_category_2` OOB $R^2 = \mathbf{75.10\%}$).
+   - Evaluated on holdout test set (16,772 samples): Category 2 MAE = 4.75, Category 3 MAE = 3.01.
+
 4. **Tree-Constrained ONNX Imputer Compression**:
 
    - Converted unconstrained ExtraTrees ensembles (previously 490 MB `.joblib` files) into tree-constrained ONNX graphs (`max_depth=12`, `min_samples_leaf=5`).
@@ -105,6 +107,22 @@ An enterprise-grade, end-to-end Data Engineering, Data Science, and Machine Lear
 
 - **Algorithm**: Complete-linkage Hierarchical Clustering over Gower dissimilarity matrix ($k=10$ personas).
 - **Customer Base**: Analyzed `5,891` distinct customer profiles derived from `550,068` transactions.
+
+#### 10 Empirical Customer Business Personas Breakdown
+
+| Persona ID | Persona Name | Customer Count | Share (%) | Mean LTV ($) | Mean AOV ($) | Mean Freq | Recommended Business Strategy |
+| :---: | :--- | :---: | :---: | :---: | :---: | :---: | :--- |
+| **1** | Single females $\le 50$ | 866 | 14.70% | $732,768 | $8,897 | 84.7 | Target lifestyle-oriented ads, health, wellness & personal care deals. |
+| **2** | Single males $\le 50$ (Low-to-moderate spenders) | 2,268 | 38.50% | $928,807 | $9,814 | 98.1 | Offer introductory discount codes, gadgets & gaming deals. |
+| **3** | Married males $\le 50$ (Moderate spenders) | 1,323 | 22.46% | $931,688 | $9,864 | 98.6 | Send notifications of family items, tech deals & cross-category coupons. |
+| **4** | Single females $> 50$ | 81 | 1.37% | $612,062 | $9,100 | 67.8 | Focus on high-quality lifestyle, travel & premium personal goods. |
+| **5** | Married females $\le 50$ | 559 | 9.49% | $744,914 | $9,015 | 85.0 | Target family-oriented deals, home appliances & kitchenware. |
+| **6** | Single older males $> 50$ | 188 | 3.19% | $688,390 | $9,888 | 70.4 | Focus on hobby goods, sports equipment, DIY tools & outdoor travel. |
+| **7** | Married older males $> 50$ | 424 | 7.20% | $715,096 | $9,626 | 75.0 | Market home improvement, premium electronics & warranty perks. |
+| **8** | Married females $> 50$ | 160 | 2.72% | $535,448 | $9,090 | 59.3 | Family home upgrades, holiday gift bundles & loyalty incentives. |
+| **9** | Single males $\le 50$ (High-spending VIP) | 14 | 0.24% | $6,344,387 | $8,783 | 724.4 | VIP loyalty tier, exclusive midnight early-access & high-end tech. |
+| **10** | Married males $\le 50$ (Ultra High-Value Whales) | 8 | 0.14% | $6,122,903 | $7,928 | 770.0 | Dedicated account perks, luxury bundle discounts & priority delivery. |
+
 
 ---
 
