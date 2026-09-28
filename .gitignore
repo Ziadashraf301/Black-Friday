@@ -20,7 +20,7 @@ legacy_project/
 src/improvements_in_v2.md
 src/improvements*.md
 reports/
-models/
+/models/
 improvements_in_v2.md
 docs/poc.mp4
 apps/reflex_app/assets/*

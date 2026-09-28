@@ -101,15 +101,39 @@ class ONNXExporter:
         sample_df: pd.DataFrame,
         tolerance: float = 1e-4
     ) -> bool:
-        """Validates that ONNX Runtime inference matches Scikit-Learn predictions within tolerance."""
+        """Validates that ONNX Runtime inference matches Scikit-Learn predictions within tolerance and logs latency performance comparison."""
         logger.info(f"Verifying ONNX inference parity against Scikit-Learn on {len(sample_df)} sample rows...")
+        import time
+
+        predictor = ONNXPredictor(onnx_model_path=onnx_path)
+
+        # Warm-up pass
+        predictor.predict(sample_df.head(1))
+
+        # Measure Scikit-Learn / Python inference timing
+        t0_sk = time.perf_counter()
         sk_preds = sklearn_model.predict(sample_df)
-        onnx_preds = cls.run_onnx_inference(onnx_path, sample_df)
+        t_sk_ms = (time.perf_counter() - t0_sk) * 1000.0
+
+        # Measure ONNX Runtime C++ inference timing
+        t0_onnx = time.perf_counter()
+        onnx_preds = predictor.predict(sample_df)
+        t_onnx_ms = (time.perf_counter() - t0_onnx) * 1000.0
+
+        n_samples = len(sample_df)
+        sk_per_item_ms = t_sk_ms / max(1, n_samples)
+        onnx_per_item_ms = t_onnx_ms / max(1, n_samples)
+        speedup = t_sk_ms / max(1e-6, t_onnx_ms)
 
         max_diff = float(np.max(np.abs(sk_preds - onnx_preds)))
         is_parity_ok = max_diff < tolerance
 
+        logger.info(f"=== Model Serving Latency Benchmark ({n_samples} samples) ===")
+        logger.info(f"Scikit-Learn / Python Runtime Latency : {t_sk_ms:.2f} ms total ({sk_per_item_ms:.4f} ms/sample)")
+        logger.info(f"ONNX Runtime C++ Engine Latency        : {t_onnx_ms:.2f} ms total ({onnx_per_item_ms:.4f} ms/sample)")
+        logger.info(f"ONNX Graph Acceleration Ratio          : {speedup:.2f}x Speedup")
         logger.info(f"Parity check completed. Max absolute difference: {max_diff:.6f}. Passed: {is_parity_ok}")
+
         if not is_parity_ok:
             raise ValueError(f"ONNX parity check failed! Max difference {max_diff} exceeds tolerance {tolerance}.")
         return is_parity_ok

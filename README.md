@@ -66,12 +66,12 @@ An enterprise-grade, end-to-end Data Engineering, Data Science, and Machine Lear
 
 #### Model Benchmark Comparison Table (10-Feature Pipeline Evaluation)
 
-| Model Architecture                   | 10-Fold CV$R^2$ | 10-Fold CV RMSE |   Test$R^2$ |    Test RMSE    | Inference Latency | Serving Throughput |       Status       |                      |                    |
-| :----------------------------------- | :-------------------------------------------------: | :--------------: | :---------------: | :----------------: | :----------------: | :-------------------: | :----------------- |
-| **Linear Regression Baseline** |                       0.6395                       |      0.1385      |      0.6393      |       0.1391       |      < 1.0 ms      |      > 950 req/s      | Baseline           |
-| **Decision Tree Regressor**    |                       0.6762                       |      0.1317      |      0.6758      |       0.1319       |      < 1.1 ms      |      > 850 req/s      | Candidate          |
-| **Random Forest Regressor**    |                       0.7211                       |      0.1218      |      0.7232      |       0.1219       |      < 1.5 ms      |      > 650 req/s      | Challenger         |
-| **LightGBM Regressor**         |                  **0.7254**                  | **0.1209** | **0.7284** |  **0.1207**  | **< 1.3 ms** | **> 750 req/s** | **Champion** |
+| Model Architecture | 10-Fold CV $R^2$ | 10-Fold CV RMSE | Test $R^2$ | Test RMSE | Inference Latency | Serving Throughput | Status |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
+| **Linear Regression Baseline** | 0.6395 | 0.1385 | 0.6393 | 0.1391 | < 1.0 ms | > 950 req/s | Baseline |
+| **Decision Tree Regressor** | 0.6762 | 0.1317 | 0.6758 | 0.1319 | < 1.1 ms | > 850 req/s | Candidate |
+| **Random Forest Regressor** | 0.7211 | 0.1218 | 0.7232 | 0.1219 | < 1.5 ms | > 650 req/s | Challenger |
+| **LightGBM Regressor** | **0.7254** | **0.1209** | **0.7284** | **0.1207** | **< 1.3 ms** | **> 750 req/s** | **Champion** |
 
 #### SHAP Explainability & Feature Importance
 
@@ -108,18 +108,18 @@ An enterprise-grade, end-to-end Data Engineering, Data Science, and Machine Lear
 
 #### 10 Empirical Customer Business Personas Breakdown
 
-|  Persona ID  | Persona Name                                      | Customer Count | Share (%) | Mean LTV ($) | Mean AOV ($) | Mean Freq | Recommended Business Strategy |                                                                          |
-| :----------: | :------------------------------------------------ | :------------: | :-------: | :---------------------------: | :-------: | :---------------------------: | :----------------------------------------------------------------------- |
-| **1** | Single females$\le 50$                          |      866      |  14.70%  |           $732,768           |  $8,897  |             84.7             | Target lifestyle-oriented ads, health, wellness & personal care deals.   |
-| **2** | Single males$\le 50$ (Low-to-moderate spenders) |     2,268     |  38.50%  |           $928,807           |  $9,814  |             98.1             | Offer introductory discount codes, gadgets & gaming deals.               |
-| **3** | Married males$\le 50$ (Moderate spenders)       |     1,323     |  22.46%  |           $931,688           |  $9,864  |             98.6             | Send notifications of family items, tech deals & cross-category coupons. |
-| **4** | Single females$> 50$                            |       81       |   1.37%   |           $612,062           |  $9,100  |             67.8             | Focus on high-quality lifestyle, travel & premium personal goods.        |
-| **5** | Married females$\le 50$                         |      559      |   9.49%   |           $744,914           |  $9,015  |             85.0             | Target family-oriented deals, home appliances & kitchenware.             |
-| **6** | Single older males$> 50$                        |      188      |   3.19%   |           $688,390           |  $9,888  |             70.4             | Focus on hobby goods, sports equipment, DIY tools & outdoor travel.      |
-| **7** | Married older males$> 50$                       |      424      |   7.20%   |           $715,096           |  $9,626  |             75.0             | Market home improvement, premium electronics & warranty perks.           |
-| **8** | Married females$> 50$                           |      160      |   2.72%   |           $535,448           |  $9,090  |             59.3             | Family home upgrades, holiday gift bundles & loyalty incentives.         |
-| **9** | Single males$\le 50$ (High-spending VIP)        |       14       |   0.24%   |          $6,344,387          |  $8,783  |             724.4             | VIP loyalty tier, exclusive midnight early-access & high-end tech.       |
-| **10** | Married males$\le 50$ (Ultra High-Value Whales) |       8       |   0.14%   |          $6,122,903          |  $7,928  |             770.0             | Dedicated account perks, luxury bundle discounts & priority delivery.    |
+| Persona ID | Persona Name | Customer Count | Share (%) | Mean LTV ($) | Mean AOV ($) | Mean Freq | Recommended Business Strategy |
+| :---: | :--- | :---: | :---: | :---: | :---: | :---: | :--- |
+| **1** | Single females $\le 50$ | 866 | 14.70% | $732,768 | $8,897 | 84.7 | Target lifestyle-oriented ads, health, wellness & personal care deals. |
+| **2** | Single males $\le 50$ (Low-to-moderate spenders) | 2,268 | 38.50% | $928,807 | $9,814 | 98.1 | Offer introductory discount codes, gadgets & gaming deals. |
+| **3** | Married males $\le 50$ (Moderate spenders) | 1,323 | 22.46% | $931,688 | $9,864 | 98.6 | Send notifications of family items, tech deals & cross-category coupons. |
+| **4** | Single females $> 50$ | 81 | 1.37% | $612,062 | $9,100 | 67.8 | Focus on high-quality lifestyle, travel & premium personal goods. |
+| **5** | Married females $\le 50$ | 559 | 9.49% | $744,914 | $9,015 | 85.0 | Target family-oriented deals, home appliances & kitchenware. |
+| **6** | Single older males $> 50$ | 188 | 3.19% | $688,390 | $9,888 | 70.4 | Focus on hobby goods, sports equipment, DIY tools & outdoor travel. |
+| **7** | Married older males $> 50$ | 424 | 7.20% | $715,096 | $9,626 | 75.0 | Market home improvement, premium electronics & warranty perks. |
+| **8** | Married females $> 50$ | 160 | 2.72% | $535,448 | $9,090 | 59.3 | Family home upgrades, holiday gift bundles & loyalty incentives. |
+| **9** | Single males $\le 50$ (High-spending VIP) | 14 | 0.24% | $6,344,387 | $8,783 | 724.4 | VIP loyalty tier, exclusive midnight early-access & high-end tech. |
+| **10** | Married males $\le 50$ (Ultra High-Value Whales) | 8 | 0.14% | $6,122,903 | $7,928 | 770.0 | Dedicated account perks, luxury bundle discounts & priority delivery. |
 
 ---
 
