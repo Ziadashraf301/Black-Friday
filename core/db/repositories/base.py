@@ -22,11 +22,20 @@ class BaseRepository:
         "customer_segments",
         "product_network_metrics",
         "app_users",
-        "user_purchases"
+        "user_purchases",
+        "curated_products"
     }
 
     def __init__(self, engine=None):
         self.engine = engine or get_db_engine()
+
+    def create_app_tables(self):
+        """Creates all registered SQLAlchemy ORM database tables if they do not exist."""
+        from core.db.models import Base
+        Base.metadata.create_all(bind=self.engine)
+
+
+
 
     def truncate_table(self, table_name: str, restart_identity: bool = False):
         """Safely truncates an authorized warehouse table."""

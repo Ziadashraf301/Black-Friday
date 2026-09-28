@@ -65,6 +65,10 @@ monitor:
 retrain:
 	python -m ml.pipelines.retrain $(if $(NEW_DATA),--new-data $(NEW_DATA),) $(if $(OLD_DATA),--old-data $(OLD_DATA),) $(if $(MODEL),--model $(MODEL),) $(if $(DEMO),--demo,) $(ARGS)
 
+cron:
+	python -m ml.pipelines.cron_scheduler
+
+
 # Quality Assurance & Code Standards
 test:
 	pytest tests/ -v

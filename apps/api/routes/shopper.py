@@ -107,6 +107,12 @@ def record_purchase(
         cat1=request.product_category_1,
         cat2=request.product_category_2,
         cat3=request.product_category_3,
+        gender=request.gender or current_user.get("gender"),
+        age=request.age or current_user.get("age"),
+        occupation=request.occupation if request.occupation is not None else current_user.get("occupation"),
+        city_category=request.city_category or current_user.get("city_category"),
+        stay_in_current_city_years=request.stay_in_current_city_years or current_user.get("stay_in_current_city_years"),
+        marital_status=request.marital_status if request.marital_status is not None else current_user.get("marital_status"),
         repo=repo
     )
     return ShopperPurchaseResponse(**res)

@@ -58,6 +58,14 @@ class Settings(BaseSettings):
     MINIO_PORT: int = Field(default=9000)
     MINIO_BUCKET_MLFLOW: str = Field(default="mlflow-artifacts")
 
+    # Redis Cache Configuration (6-Hour Persistent TTL = 21,600 Seconds)
+    REDIS_HOST: str = Field(default="localhost")
+    REDIS_PORT: int = Field(default=6379)
+    REDIS_PASSWORD: Optional[str] = Field(default=None)
+    REDIS_DB: int = Field(default=0)
+    REDIS_DEFAULT_TTL: int = Field(default=21600)  # 6 hours in seconds
+
+
     # MLflow Tracking
     MLFLOW_TRACKING_URI: str = Field(default="http://localhost:5000")
     MLFLOW_EXPERIMENT_NAME: str = Field(default="black-friday-sales-prediction")

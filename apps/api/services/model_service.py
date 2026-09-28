@@ -7,11 +7,13 @@ Loads the champion ONNX regressor and MissForest imputer strictly from the local
 import os
 import pandas as pd
 from typing import Optional, Dict, Any
+import numpy as np
 
 from apps.api.serving.predictor import ONNXPredictor
 from apps.api.serving.imputer import ONNXMissForestImputer
 from core.config import settings
 from core.logging import get_logger
+
 
 logger = get_logger(__name__)
 
@@ -162,6 +164,48 @@ class ModelService:
             "model_used": self.model_name,
         }
 
+    def predict_price_batch_matrix(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Executes high-performance 2D matrix vectorized batch inference in ONNX Runtime.
+        Accepts a DataFrame of N items and returns a DataFrame with 'usd' and 'normalized' predictions.
+        """
+        if self.predictor is None:
+            raise RuntimeError("ModelService error: Production Champion Predictor is not loaded.")
+
+        if df.empty:
+            return pd.DataFrame(columns=["usd", "normalized", "model_used"])
+
+        df = df.copy()
+
+        # Step 1: Batch imputation for missing category 2 or 3
+        if self.imputer is not None and (df["product_category_2"].isna().any() or df["product_category_3"].isna().any()):
+            for col in ["product_category_2", "product_category_3"]:
+                df[col] = pd.to_numeric(df[col], errors="coerce")
+            df = self.imputer.transform(df)
+        else:
+            df["product_category_2"] = df["product_category_2"].fillna(df["product_category_1"])
+            df["product_category_3"] = df["product_category_3"].fillna(df["product_category_1"])
+
+        for col in ["occupation", "marital_status", "product_category_1", "product_category_2", "product_category_3"]:
+            df[col] = df[col].astype(int)
+
+        # Step 2: Parallel 2D Matrix ONNX Runtime Batch Prediction
+        norm_preds = self.predictor.predict(df)
+
+        # Step 3: Vectorized Denormalization
+        INR_TO_USD = 80.0
+        raw_inr = np.maximum(0.0, norm_preds * float(settings.PURCHASE_MAX))
+        usd_preds = np.round(raw_inr / INR_TO_USD, 2)
+        norm_preds_rounded = np.round(norm_preds, 5)
+
+        result_df = pd.DataFrame({
+            "usd": usd_preds,
+            "normalized": norm_preds_rounded,
+            "model_used": self.model_name,
+        })
+        return result_df
+
 
 # Global singleton instance
 model_service = ModelService()
+
