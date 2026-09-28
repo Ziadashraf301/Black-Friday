@@ -11,8 +11,6 @@
 
 An enterprise-grade, end-to-end Data Engineering, Data Science, and Machine Learning platform built on Black Friday retail transactions (~550k records). **Version 2** transitions the original R exploratory codebase into a production-ready Python architecture featuring **FastAPI serving with ONNX Runtime**, an interactive **Reflex web UI**, a **PostgreSQL 16 warehouse**, **MLflow tracking with MinIO S3 storage**, **Pandera data contracts**, **SHAP explainability**, **Evidently AI drift monitoring**, and automated **Champion vs. Challenger model promotion**.
 
-The original R statistical analysis is preserved and tagged in Git as [`v1.0.0`](https://github.com/Ziadashraf301/Black-Friday/releases/tag/v1.0.0).
-
 ---
 
 ## High-Level System Architecture
@@ -68,13 +66,12 @@ The original R statistical analysis is preserved and tagged in Git as [`v1.0.0`]
 
 #### Model Benchmark Comparison Table (10-Feature Pipeline Evaluation)
 
-| Model Architecture | 10-Fold CV $R^2$ | 10-Fold CV RMSE | Test $R^2$ | Test RMSE | Inference Latency | Serving Throughput | Status |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
-| **Linear Regression Baseline** | 0.6395 | 0.1385 | 0.6393 | 0.1391 | < 1.0 ms | > 950 req/s | Baseline |
-| **Decision Tree Regressor** | 0.6762 | 0.1317 | 0.6758 | 0.1319 | < 1.1 ms | > 850 req/s | Candidate |
-| **Random Forest Regressor** | 0.7211 | 0.1218 | 0.7232 | 0.1219 | < 1.5 ms | > 650 req/s | Challenger |
-| **LightGBM Regressor** | **0.7254** | **0.1209** | **0.7284** | **0.1207** | **< 1.3 ms** | **> 750 req/s** | **Champion** |
-
+| Model Architecture                   | 10-Fold CV$R^2$ | 10-Fold CV RMSE |   Test$R^2$   |    Test RMSE    | Inference Latency |  Serving Throughput  | Status             |
+| :----------------------------------- | :---------------: | :--------------: | :--------------: | :--------------: | :----------------: | :-------------------: | :----------------- |
+| **Linear Regression Baseline** |      0.6395      |      0.1385      |      0.6393      |      0.1391      |      < 1.0 ms      |      > 950 req/s      | Baseline           |
+| **Decision Tree Regressor**    |      0.6762      |      0.1317      |      0.6758      |      0.1319      |      < 1.1 ms      |      > 850 req/s      | Candidate          |
+| **Random Forest Regressor**    |      0.7211      |      0.1218      |      0.7232      |      0.1219      |      < 1.5 ms      |      > 650 req/s      | Challenger         |
+| **LightGBM Regressor**         | **0.7254** | **0.1209** | **0.7284** | **0.1207** | **< 1.3 ms** | **> 750 req/s** | **Champion** |
 
 #### SHAP Explainability & Feature Importance
 
