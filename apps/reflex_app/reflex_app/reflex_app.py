@@ -14,6 +14,8 @@ from reflex_app.components.quick_view_modal import quick_view_modal
 from reflex_app.components.cart_drawer import cart_drawer
 from reflex_app.components.auth_modal import auth_modal
 from reflex_app.components.dashboard_modal import dashboard_modal
+from reflex_app.components.bot_drawer import bot_drawer, bot_trigger_button
+
 
 
 def decorative_elements() -> rx.Component:
@@ -84,6 +86,8 @@ def index() -> rx.Component:
         cart_drawer(),
         auth_modal(),
         dashboard_modal(),
+        bot_drawer(),
+        bot_trigger_button(),
         width="100%",
         min_height="100vh",
         background="#fbf6ec",

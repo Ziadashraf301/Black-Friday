@@ -2,6 +2,8 @@
 SQLAlchemy ORM models for warehouse tables (raw, cleaned, segments, network metrics).
 """
 from sqlalchemy import Column, Integer, BigInteger, String, Float, Boolean, Text, JSON
+from sqlalchemy.dialects.postgresql import TSVECTOR
+from pgvector.sqlalchemy import Vector
 from core.db.models.base import Base
 
 
@@ -106,5 +108,8 @@ class CuratedProduct(Base):
     product_category_3 = Column(Integer, nullable=True)
     apriori_bundles = Column(JSON, nullable=True)
     item2vec_similars = Column(JSON, nullable=True)
+    embedding = Column(Vector(768), nullable=True)
+    search_vector = Column(TSVECTOR, nullable=True)
+
 
 

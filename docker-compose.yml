@@ -5,7 +5,7 @@ services:
   # POSTGRESQL 16 (Unified DB for Analytical Warehouse & MLflow Metadata)
   # ============================================================================
   postgres:
-    image: postgres:16
+    image: pgvector/pgvector:pg16
     container_name: blackfriday_postgres
     restart: unless-stopped
     environment:

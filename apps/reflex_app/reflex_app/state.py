@@ -211,6 +211,15 @@ class ShoppingState(rx.State):
     show_dashboard: bool = False
     dashboard_dimension: str = "gender"
 
+    # --- Bot Assistant Drawer (Phase 1 Layer 1) ---
+    is_bot_open: bool = False
+    bot_messages: List[Dict[str, str]] = []
+    bot_input_text: str = ""
+    bot_loading: bool = False
+    bot_auth_warning: str = ""
+    bot_auth_checked: bool = False
+    bot_action_chips: List[str] = ["Top Deals Today", "Sale Products", "Under $50", "Style Advisor"]
+
     # ── Auth computed vars ──────────────────────────────────────────────
     @rx.var
     def is_authenticated(self) -> bool:
@@ -1046,3 +1055,79 @@ class ShoppingState(rx.State):
             self.dashboard_demographics = self.dashboard_cache[dim]
         else:
             self.load_dashboard()
+
+    # ── Bot Assistant Handlers (Phase 1 Layer 1) ───────────────────────
+    def set_is_bot_open(self, val: bool):
+        self.is_bot_open = val
+
+    def set_bot_input_text(self, val: str):
+        self.bot_input_text = val
+
+    def handle_bot_trigger_click(self):
+        """Floating trigger click: performs JWT auth check before drawer access."""
+        self.bot_auth_checked = True
+        if not self.is_authenticated:
+            self.bot_auth_warning = "Please sign in to unlock your personal AI shopping assistant and member deals."
+            self.show_auth = True
+            return False
+        
+        self.bot_auth_warning = ""
+        self.is_bot_open = True
+        if not self.bot_messages:
+            name = self.user_name or "Shopper"
+            persona = self.user_cluster_persona or "Vintage Enthusiast"
+            self.bot_messages = [
+                {
+                    "role": "assistant",
+                    "content": f"Welcome back, {name}! ({persona})\nHow can I assist you with our curated archives and personalized member pricing today?"
+                }
+            ]
+        return True
+
+    def open_bot_drawer(self):
+        return self.handle_bot_trigger_click()
+
+    def close_bot_drawer(self):
+        self.is_bot_open = False
+
+    def toggle_bot(self):
+        if self.is_bot_open:
+            self.is_bot_open = False
+        else:
+            self.handle_bot_trigger_click()
+
+    def prompt_bot_login(self):
+        self.is_bot_open = False
+        self.show_auth = True
+
+    def click_action_chip(self, chip: str):
+        """Processes preset action chips (*'Top Deals Today'*, *'Sale Products'*)."""
+        if not self.is_authenticated:
+            self.bot_auth_warning = "Please sign in to use personalized shopping actions."
+            self.show_auth = True
+            return
+
+        self.bot_messages.append({"role": "user", "content": chip})
+
+        chip_lower = chip.lower()
+        if "top deals" in chip_lower or "deal" in chip_lower:
+            reply = "Here are our top recommended deals today: Check out the Artisan Paisley Silk Kimono Shirt ($49.90, 50% off) and the Midnight Ribbed Merino Wool Duster Coat ($119.90)!"
+        elif "sale" in chip_lower:
+            reply = "We currently have archival discounts across Jackets, Silks, and Knitwear! Explore our Sale badges for member-exclusive pricing."
+        elif "under $50" in chip_lower or "50" in chip_lower:
+            reply = "Top archival finds under $50: Vintage Brushed Flannel Camp Shirt ($44.90), Retro Gum-Sole Court Sneakers ($49.00), and Artisan Paisley Silk Kimono ($49.90)."
+        elif "style" in chip_lower or "advisor" in chip_lower:
+            persona = self.user_cluster_persona or "Modern Vintage"
+            reply = f"Based on your {persona} profile, I recommend pairing tailored high-waist trousers with our hand-knitted cable cardigans and leather footwear."
+        else:
+            reply = f"Searching our archives for '{chip}'... Let me know if you would like me to calculate personalized member pricing!"
+
+        self.bot_messages.append({"role": "assistant", "content": reply})
+
+    def send_bot_message(self):
+        if not self.bot_input_text.strip():
+            return
+        msg = self.bot_input_text.strip()
+        self.bot_input_text = ""
+        self.click_action_chip(msg)
+

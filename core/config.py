@@ -161,4 +161,6 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = Field(default="HS256")
     JWT_EXPIRY_HOURS: int = Field(default=24)
 
+    GEMINI_API_KEY: str
+
 settings = Settings()

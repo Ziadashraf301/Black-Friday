@@ -5,6 +5,8 @@
 
 \connect fridayblack;
 
+CREATE EXTENSION IF NOT EXISTS vector;
+
 -- 1. Raw Staging Table (Exact 1:1 match with Train.csv, accepts nulls)
 CREATE TABLE IF NOT EXISTS raw_black_friday (
     id SERIAL PRIMARY KEY,
@@ -92,4 +94,39 @@ CREATE TABLE IF NOT EXISTS product_network_metrics (
 CREATE INDEX IF NOT EXISTS idx_prod_pagerank ON product_network_metrics (pagerank_score DESC);
 CREATE INDEX IF NOT EXISTS idx_prod_hub ON product_network_metrics (hub_score DESC);
 CREATE INDEX IF NOT EXISTS idx_prod_authority ON product_network_metrics (authority_score DESC);
+
+-- 5. Curated Products Table with pgvector (768-dim) and Full-Text Search tsvector
+CREATE TABLE IF NOT EXISTS curated_products (
+    product_id VARCHAR(32) PRIMARY KEY,
+    name VARCHAR(255),
+    title VARCHAR(255),
+    tagline TEXT,
+    description TEXT,
+    category_name VARCHAR(100),
+    category VARCHAR(100),
+    gender VARCHAR(50),
+    brand VARCHAR(100),
+    style VARCHAR(100),
+    season VARCHAR(50),
+    badge VARCHAR(50),
+    is_hero BOOLEAN DEFAULT FALSE,
+    sizes JSONB,
+    rating FLOAT DEFAULT 4.5,
+    review_count INTEGER DEFAULT 100,
+    original_price FLOAT DEFAULT 99.9,
+    discounted_price FLOAT DEFAULT 49.9,
+    image_url TEXT,
+    order_count INTEGER DEFAULT 0,
+    product_category_1 INTEGER DEFAULT 1,
+    product_category_2 INTEGER,
+    product_category_3 INTEGER,
+    apriori_bundles JSONB,
+    item2vec_similars JSONB,
+    embedding vector(768),
+    search_vector tsvector
+);
+
+CREATE INDEX IF NOT EXISTS idx_curated_embedding_hnsw ON curated_products USING hnsw (embedding vector_cosine_ops);
+CREATE INDEX IF NOT EXISTS idx_curated_search_vector ON curated_products USING gin (search_vector);
+
 
