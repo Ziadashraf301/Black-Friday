@@ -1853,5 +1853,945 @@
         "similarity": 0.843
       }
     ]
+  },
+  {
+    "product_id": "P00000142",
+    "name": "Merino Ribbed High-Neck Knit Sweater",
+    "tagline": "Fine-spun Australian merino wool in charcoal heather",
+    "description": "Crafted from 100% extra-fine Australian merino wool, this chunky ribbed turtleneck pullover balances effortless warmth and refined minimalist tailoring. Featuring raglan sleeves and reinforced cuffs.",
+    "category_name": "Knitwear & Sweaters",
+    "product_category_1": 3,
+    "product_category_2": 4,
+    "product_category_3": 5,
+    "gender": "Unisex",
+    "brand": "Nordic Loom",
+    "style": "Minimalist Nordic",
+    "season": "Winter",
+    "badge": "Bestseller",
+    "is_hero": false,
+    "original_price": 110.0,
+    "discounted_price": 68.0,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "image_url": "/products/P00000142.jpg",
+    "order_count": 1152,
+    "rating": 4.6,
+    "review_count": 128,
+    "apriori_bundles": [
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "lift": 1.65,
+        "confidence": 0.42
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "similarity": 0.805
+      }
+    ]
+  },
+  {
+    "product_id": "P00112542",
+    "name": "Double-Breasted Camel Wool Overcoat",
+    "tagline": "Tailored Italian melton wool winter overcoat",
+    "description": "Distinguished double-breasted longline coat crafted from dense Italian camel melton wool. Structured peak lapels, horn buttons, viscose silk lining, and deep welt pockets.",
+    "category_name": "Leather & Outerwear",
+    "product_category_1": 1,
+    "product_category_2": 11,
+    "product_category_3": 15,
+    "gender": "Men",
+    "brand": "Sartorial Heritage",
+    "style": "Tailored Luxury",
+    "season": "Winter",
+    "badge": "Rare Find",
+    "is_hero": false,
+    "original_price": 245.0,
+    "discounted_price": 159.0,
+    "sizes": [
+      "M",
+      "L",
+      "XL"
+    ],
+    "image_url": "/products/P00112542.jpg",
+    "order_count": 1131,
+    "rating": 4.8,
+    "review_count": 94,
+    "apriori_bundles": [
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "lift": 1.65,
+        "confidence": 0.42
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "similarity": 0.805
+      }
+    ]
+  },
+  {
+    "product_id": "P00044442",
+    "name": "Vintage Cafe Racer Leather Jacket",
+    "tagline": "Burnished full-grain steerhide moto jacket with brass hardware",
+    "description": "Iconic cafe racer silhouette crafted from heavy oiled steerhide leather that ages with character. Features snap mandarin collar, heavy-duty antique brass zippers, and quilted shoulder gussets.",
+    "category_name": "Leather & Outerwear",
+    "product_category_1": 1,
+    "product_category_2": 16,
+    "product_category_3": 17,
+    "gender": "Men",
+    "brand": "Aero Classics",
+    "style": "Rugged Moto",
+    "season": "Fall / Winter",
+    "badge": "Bestseller",
+    "is_hero": false,
+    "original_price": 210.0,
+    "discounted_price": 135.0,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "image_url": "/products/P00044442.jpg",
+    "order_count": 1111,
+    "rating": 4.7,
+    "review_count": 142,
+    "apriori_bundles": [
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "lift": 1.65,
+        "confidence": 0.42
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "similarity": 0.805
+      }
+    ]
+  },
+  {
+    "product_id": "P00334242",
+    "name": "Nordic Fair Isle Shetland Wool Sweater",
+    "tagline": "Heritage Scottish Shetland wool geometric yoke sweater",
+    "description": "Traditional Fair Isle patterned crewneck spun from pure Shetland wool in earthy navy, moss green, and cream hues. Seamless circular knit construction with brushed softness.",
+    "category_name": "Knitwear & Sweaters",
+    "product_category_1": 1,
+    "product_category_2": 8,
+    "product_category_3": 16,
+    "gender": "Unisex",
+    "brand": "Highland Craft",
+    "style": "Heritage Nordic",
+    "season": "Winter",
+    "badge": "Sale",
+    "is_hero": false,
+    "original_price": 125.0,
+    "discounted_price": 79.0,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "image_url": "/products/P00334242.jpg",
+    "order_count": 1093,
+    "rating": 4.6,
+    "review_count": 110,
+    "apriori_bundles": [
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "lift": 1.65,
+        "confidence": 0.42
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "similarity": 0.805
+      }
+    ]
+  },
+  {
+    "product_id": "P00111142",
+    "name": "Expedition Thermal Storm Parka",
+    "tagline": "Waterproof ripstop shell with faux-fur trimmed hood",
+    "description": "Heavyweight sub-zero parka engineered with waterproof sealed nylon, 700-fill duck down insulation, detachable faux-fur hood trim, and thermal fleece-lined handwarmer pockets.",
+    "category_name": "Leather & Outerwear",
+    "product_category_1": 1,
+    "product_category_2": 15,
+    "product_category_3": 16,
+    "gender": "Unisex",
+    "brand": "Tundra Gear",
+    "style": "Alpine Utilitarian",
+    "season": "Winter",
+    "badge": "Bestseller",
+    "is_hero": false,
+    "original_price": 195.0,
+    "discounted_price": 129.0,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "image_url": "/products/P00111142.jpg",
+    "order_count": 1015,
+    "rating": 4.8,
+    "review_count": 185,
+    "apriori_bundles": [
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "lift": 1.65,
+        "confidence": 0.42
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "similarity": 0.805
+      }
+    ]
+  },
+  {
+    "product_id": "P00277642",
+    "name": "Heritage Wingtip Brogue Leather Shoes",
+    "tagline": "Goodyear-welted burnished cognac calfskin brogues",
+    "description": "Hand-finished English-style dress brogues cut from full-grain cognac calf leather with intricate medallion perforations, Dainite rubber studded outsoles, and stacked leather heels.",
+    "category_name": "Footwear",
+    "product_category_1": 2,
+    "product_category_2": 3,
+    "product_category_3": 10,
+    "gender": "Men",
+    "brand": "Cobbler & Son",
+    "style": "Classic Formal",
+    "season": "All-Season",
+    "badge": "Rare Find",
+    "is_hero": false,
+    "original_price": 175.0,
+    "discounted_price": 115.0,
+    "sizes": [
+      "8",
+      "9",
+      "10",
+      "11",
+      "12"
+    ],
+    "image_url": "/products/P00277642.jpg",
+    "order_count": 989,
+    "rating": 4.7,
+    "review_count": 88,
+    "apriori_bundles": [
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "lift": 1.65,
+        "confidence": 0.42
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "similarity": 0.805
+      }
+    ]
+  },
+  {
+    "product_id": "P00052842",
+    "name": "Oversized Houndstooth Wool Trench Coat",
+    "tagline": "Bold monochrome wool check double-breasted trench",
+    "description": "Statement trench coat cut in an oversized silhouette from heavy wool-blend houndstooth twill. Detailed with wide storm flaps, waist tie belt, tortoiseshell buttons, and deep back vent.",
+    "category_name": "Leather & Outerwear",
+    "product_category_1": 10,
+    "product_category_2": 15,
+    "product_category_3": 16,
+    "gender": "Women",
+    "brand": "Atelier Noire",
+    "style": "Parisian Chic",
+    "season": "Fall / Winter",
+    "badge": "Bestseller",
+    "is_hero": false,
+    "original_price": 185.0,
+    "discounted_price": 119.0,
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L"
+    ],
+    "image_url": "/products/P00052842.jpg",
+    "order_count": 982,
+    "rating": 4.9,
+    "review_count": 115,
+    "apriori_bundles": [
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "lift": 1.65,
+        "confidence": 0.42
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "similarity": 0.805
+      }
+    ]
+  },
+  {
+    "product_id": "P00116842",
+    "name": "Chunky Merino Ribbed Beanie & Scarf Set",
+    "tagline": "Ultra-soft ribbed winter accessory set in oat beige",
+    "description": "Luxurious cold-weather pairing spun from 100% extra-fine merino wool. Includes a cuffed fold-over fisherman beanie and an oversized wraparound ribbed scarf for cozy warmth.",
+    "category_name": "Accessories",
+    "product_category_1": 2,
+    "product_category_2": 5,
+    "product_category_3": 8,
+    "gender": "Unisex",
+    "brand": "Galway Knits",
+    "style": "Cozy Classic",
+    "season": "Winter",
+    "badge": "Sale",
+    "is_hero": false,
+    "original_price": 85.0,
+    "discounted_price": 49.0,
+    "sizes": [
+      "One Size"
+    ],
+    "image_url": "/products/P00116842.jpg",
+    "order_count": 979,
+    "rating": 4.5,
+    "review_count": 78,
+    "apriori_bundles": [
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "lift": 1.65,
+        "confidence": 0.42
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "similarity": 0.805
+      }
+    ]
+  },
+  {
+    "product_id": "P00005042",
+    "name": "Retro Low-Top Suede Court Trainers",
+    "tagline": "Vintage off-white suede and gum sole casual sneakers",
+    "description": "1980s archive-inspired low-profile sneakers crafted from buttery pigskin suede and breathable cotton canvas. Features retro gum cupsole, orthotic cushioned footbed, and padded leather collar.",
+    "category_name": "Footwear",
+    "product_category_1": 6,
+    "product_category_2": 16,
+    "product_category_3": 17,
+    "gender": "Unisex",
+    "brand": "Pace Heritage",
+    "style": "Retro Streetwear",
+    "season": "All-Season",
+    "badge": "Bestseller",
+    "is_hero": false,
+    "original_price": 95.0,
+    "discounted_price": 58.0,
+    "sizes": [
+      "7",
+      "8",
+      "9",
+      "10",
+      "11",
+      "12"
+    ],
+    "image_url": "/products/P00005042.jpg",
+    "order_count": 969,
+    "rating": 4.6,
+    "review_count": 164,
+    "apriori_bundles": [
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "lift": 1.65,
+        "confidence": 0.42
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "similarity": 0.805
+      }
+    ]
+  },
+  {
+    "product_id": "P00086442",
+    "name": "Linen Band Collar Relaxed Tunic Shirt",
+    "tagline": "Breathable pure French flax linen shirt in washed sage",
+    "description": "Garment-washed pure French linen button-up tunic featuring a clean band collar, mother-of-pearl buttons, curved hem, and relaxed drape for effortless warm-weather and layered style.",
+    "category_name": "Shirts & Polos",
+    "product_category_1": 8,
+    "product_category_2": 13,
+    "product_category_3": 15,
+    "gender": "Men",
+    "brand": "Aegis & Isle",
+    "style": "Coastal Resort",
+    "season": "All-Season",
+    "badge": "Sale",
+    "is_hero": false,
+    "original_price": 78.0,
+    "discounted_price": 45.0,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "image_url": "/products/P00086442.jpg",
+    "order_count": 966,
+    "rating": 4.4,
+    "review_count": 86,
+    "apriori_bundles": [
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "lift": 1.65,
+        "confidence": 0.42
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "similarity": 0.805
+      }
+    ]
+  },
+  {
+    "product_id": "P00258742",
+    "name": "Heavyweight Loopback Cotton Sweatpants",
+    "tagline": "450gsm French terry relaxed jogger trousers in heather grey",
+    "description": "Ultra-dense 450gsm loopback combed cotton sweatpants engineered with flatlock seam detailing, custom braided drawstring, elasticated cuffs, and deep jersey-lined slash pockets.",
+    "category_name": "Activewear & Loungewear",
+    "product_category_1": 5,
+    "product_category_2": 11,
+    "product_category_3": 12,
+    "gender": "Unisex",
+    "brand": "Kinetic Atelier",
+    "style": "Athleisure Luxe",
+    "season": "All-Season",
+    "badge": "Bestseller",
+    "is_hero": false,
+    "original_price": 75.0,
+    "discounted_price": 42.0,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "image_url": "/products/P00258742.jpg",
+    "order_count": 964,
+    "rating": 4.7,
+    "review_count": 130,
+    "apriori_bundles": [
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "lift": 1.65,
+        "confidence": 0.42
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "similarity": 0.805
+      }
+    ]
+  },
+  {
+    "product_id": "P00085942",
+    "name": "Alpaca Wool Slouchy Open Cardigan",
+    "tagline": "Featherweight brushed alpaca cocoon knit in dusty cedar",
+    "description": "Cocoon-draped longline cardigan spun from an airy brushed Peruvian baby alpaca blend. Dropped shoulders, ribbed cuffs, patch pockets, and open flowing front.",
+    "category_name": "Knitwear & Sweaters",
+    "product_category_1": 2,
+    "product_category_2": 4,
+    "product_category_3": 8,
+    "gender": "Women",
+    "brand": "Andean Loom",
+    "style": "Boho Cozy",
+    "season": "Fall / Winter",
+    "badge": "Rare Find",
+    "is_hero": false,
+    "original_price": 140.0,
+    "discounted_price": 89.0,
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L"
+    ],
+    "image_url": "/products/P00085942.jpg",
+    "order_count": 963,
+    "rating": 4.8,
+    "review_count": 72,
+    "apriori_bundles": [
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "lift": 1.65,
+        "confidence": 0.42
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "similarity": 0.805
+      }
+    ]
+  },
+  {
+    "product_id": "P00216342",
+    "name": "Waffle Knit Organic Cotton Henley",
+    "tagline": "Thermal textured waffle knit layering shirt in washed olive",
+    "description": "100% certified organic cotton long-sleeve henley with thermal honeycomb waffle weave. Features four-button placket, tonal cat-eye buttons, and rib-knit neckband and cuffs.",
+    "category_name": "Shirts & Polos",
+    "product_category_1": 3,
+    "product_category_2": 4,
+    "product_category_3": 5,
+    "gender": "Men",
+    "brand": "Heritage Guild",
+    "style": "Rugged Heritage",
+    "season": "Fall / Winter",
+    "badge": "Sale",
+    "is_hero": false,
+    "original_price": 65.0,
+    "discounted_price": 38.0,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "image_url": "/products/P00216342.jpg",
+    "order_count": 943,
+    "rating": 4.5,
+    "review_count": 98,
+    "apriori_bundles": [
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "lift": 1.65,
+        "confidence": 0.42
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "similarity": 0.805
+      }
+    ]
+  },
+  {
+    "product_id": "P00073842",
+    "name": "Raw Selvedge Denim Trucker Vest",
+    "tagline": "14oz unwashed Japanese redline selvedge utility vest",
+    "description": "Rugged western utility vest constructed from 14oz shuttle-loomed Japanese selvedge denim. Solid copper rivets, button-flap chest pockets, side adjusters, and contrast tobacco stitching.",
+    "category_name": "Denim & Jeans",
+    "product_category_1": 1,
+    "product_category_2": 15,
+    "product_category_3": 17,
+    "gender": "Men",
+    "brand": "Iron & Weft",
+    "style": "Workwear Heritage",
+    "season": "All-Season",
+    "badge": "Bestseller",
+    "is_hero": false,
+    "original_price": 115.0,
+    "discounted_price": 69.0,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "image_url": "/products/P00073842.jpg",
+    "order_count": 936,
+    "rating": 4.6,
+    "review_count": 82,
+    "apriori_bundles": [
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "lift": 1.65,
+        "confidence": 0.42
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "similarity": 0.805
+      }
+    ]
+  },
+  {
+    "product_id": "P00128942",
+    "name": "British Waxed Cotton Field Jacket",
+    "tagline": "Weatherproof dry-waxed cotton coat with corduroy collar",
+    "description": "Traditional British countryside utility jacket crafted from weatherproof 8oz waxed cotton canvas. Includes heavy brass two-way zip, storm fly front, storm cuffs, and soft moleskin-lined pockets.",
+    "category_name": "Leather & Outerwear",
+    "product_category_1": 1,
+    "product_category_2": 11,
+    "product_category_3": 15,
+    "gender": "Unisex",
+    "brand": "Highland Craft",
+    "style": "Country Heritage",
+    "season": "Fall / Winter",
+    "badge": "Bestseller",
+    "is_hero": false,
+    "original_price": 180.0,
+    "discounted_price": 118.0,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "image_url": "/products/P00128942.jpg",
+    "order_count": 936,
+    "rating": 4.7,
+    "review_count": 150,
+    "apriori_bundles": [
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "lift": 1.65,
+        "confidence": 0.42
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "similarity": 0.805
+      }
+    ]
+  },
+  {
+    "product_id": "P00113242",
+    "name": "Heavy Moleskin Workwear Chore Jacket",
+    "tagline": "Dense brushed cotton French chore coat in midnight navy",
+    "description": "Durable archival French chore coat tailored from velvety 400gsm brushed cotton moleskin. Three exterior patch pockets, interior chest pocket, and corozo nut buttons.",
+    "category_name": "Leather & Outerwear",
+    "product_category_1": 1,
+    "product_category_2": 6,
+    "product_category_3": 8,
+    "gender": "Unisex",
+    "brand": "Atelier Noire",
+    "style": "French Workwear",
+    "season": "Fall / Winter",
+    "badge": "Sale",
+    "is_hero": false,
+    "original_price": 135.0,
+    "discounted_price": 82.0,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "image_url": "/products/P00113242.jpg",
+    "order_count": 933,
+    "rating": 4.6,
+    "review_count": 105,
+    "apriori_bundles": [
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "lift": 1.65,
+        "confidence": 0.42
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "similarity": 0.805
+      }
+    ]
+  },
+  {
+    "product_id": "P00112442",
+    "name": "Handcrafted Suede Chelsea Dress Boots",
+    "tagline": "Velvety dark chocolate Italian suede slip-on boots",
+    "description": "Sleek ankle boot crafted from supple Italian reverse suede treated with water-resistant finish. Elastic gore side panels, leather pull tabs, Goodyear-welted leather sole with rubber grip insert.",
+    "category_name": "Footwear",
+    "product_category_1": 6,
+    "product_category_2": 8,
+    "product_category_3": 14,
+    "gender": "Men",
+    "brand": "Cobbler & Son",
+    "style": "Modern Dapper",
+    "season": "All-Season",
+    "badge": "Bestseller",
+    "is_hero": false,
+    "original_price": 160.0,
+    "discounted_price": 98.0,
+    "sizes": [
+      "8",
+      "9",
+      "10",
+      "11",
+      "12"
+    ],
+    "image_url": "/products/P00112442.jpg",
+    "order_count": 923,
+    "rating": 4.8,
+    "review_count": 112,
+    "apriori_bundles": [
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "lift": 1.65,
+        "confidence": 0.42
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "similarity": 0.805
+      }
+    ]
+  },
+  {
+    "product_id": "P00105142",
+    "name": "Tiered Floral Silk Chiffon Midi Dress",
+    "tagline": "Floaty vintage floral silk print dress with ruffled hem",
+    "description": "Romantic long-sleeve midi dress tailored from airy mulberry silk chiffon adorned with moody autumn floral motifs. Features smocked waist, high neck tie, and tiered flounce skirt.",
+    "category_name": "Dresses & Jumpsuits",
+    "product_category_1": 1,
+    "product_category_2": 2,
+    "product_category_3": 15,
+    "gender": "Women",
+    "brand": "Silk & Petal",
+    "style": "Boho Romantic",
+    "season": "All-Season",
+    "badge": "Rare Find",
+    "is_hero": false,
+    "original_price": 165.0,
+    "discounted_price": 95.0,
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L"
+    ],
+    "image_url": "/products/P00105142.jpg",
+    "order_count": 917,
+    "rating": 4.7,
+    "review_count": 89,
+    "apriori_bundles": [
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "lift": 1.65,
+        "confidence": 0.42
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "similarity": 0.805
+      }
+    ]
+  },
+  {
+    "product_id": "P0097242",
+    "name": "Deep-Pile Retro Sherpa Fleece Zip Jacket",
+    "tagline": "High-loft recycled fleece jacket with contrasting nylon pocket",
+    "description": "Plush, vintage outdoor high-loft fleece jacket in oatmeal and forest green. YKK zip front, stand-up storm collar, zippered chest pocket, and bound elastic trim for cold-weather adventures.",
+    "category_name": "Leather & Outerwear",
+    "product_category_1": 1,
+    "product_category_2": 16,
+    "product_category_3": 17,
+    "gender": "Unisex",
+    "brand": "Tundra Gear",
+    "style": "Outdoor Retro",
+    "season": "Winter",
+    "badge": "Sale",
+    "is_hero": false,
+    "original_price": 115.0,
+    "discounted_price": 68.0,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "image_url": "/products/P0097242.jpg",
+    "order_count": 912,
+    "rating": 4.5,
+    "review_count": 135,
+    "apriori_bundles": [
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "lift": 1.65,
+        "confidence": 0.42
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "similarity": 0.805
+      }
+    ]
+  },
+  {
+    "product_id": "P00147942",
+    "name": "Indigo Selvedge Denim Western Snap Shirt",
+    "tagline": "Sawtooth western shirt in 8oz rope-dyed indigo denim",
+    "description": "Classic American western shirt constructed from lightweight 8oz rope-dyed indigo selvedge denim. Pointed western yokes, pearl snap fastenings, double sawtooth pockets, and chainstitch runoff.",
+    "category_name": "Denim & Jeans",
+    "product_category_1": 1,
+    "product_category_2": 16,
+    "product_category_3": 17,
+    "gender": "Men",
+    "brand": "Iron & Weft",
+    "style": "Vintage Americana",
+    "season": "All-Season",
+    "badge": "Bestseller",
+    "is_hero": false,
+    "original_price": 90.0,
+    "discounted_price": 55.0,
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "image_url": "/products/P00147942.jpg",
+    "order_count": 911,
+    "rating": 4.6,
+    "review_count": 94,
+    "apriori_bundles": [
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "lift": 1.65,
+        "confidence": 0.42
+      }
+    ],
+    "item2vec_similars": [
+      {
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "similarity": 0.805
+      }
+    ]
   }
 ]

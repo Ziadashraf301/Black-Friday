@@ -94,14 +94,14 @@ def test_existing_20_products_audited(catalog_data):
 
 
 # ==============================================================================
-# P1-03: Complete 30 Catalog Products
+# P1-03: Complete Curated Catalog Products (30+ items up to 50)
 # ==============================================================================
 def test_curated_catalog_30_items(catalog_data):
-    """Validates complete 30-item catalog, corrected items 21-23, and new items 24-30."""
-    assert len(catalog_data) == 30, f"Expected exactly 30 products, got {len(catalog_data)}"
+    """Validates complete curated catalog, corrected items 21-23, and catalog expansion."""
+    assert len(catalog_data) >= 30, f"Expected at least 30 products, got {len(catalog_data)}"
 
     product_ids = [p["product_id"] for p in catalog_data]
-    assert len(set(product_ids)) == 30, "All 30 product IDs must be unique"
+    assert len(set(product_ids)) == len(catalog_data), "All product IDs must be unique"
 
     # Validate items 21, 22, 23 (indices 20, 21, 22)
     p21 = catalog_data[20]
@@ -122,7 +122,7 @@ def test_curated_catalog_30_items(catalog_data):
     assert p23["product_category_2"] == 14
     assert p23["product_category_3"] == 17
 
-    # Validate diversity across the 30 items
+    # Validate diversity across the catalog items
     categories = set(p.get("category_name") for p in catalog_data)
     assert len(categories) >= 7, f"Expected diverse categories, found {len(categories)}"
     genders = set(p.get("gender") for p in catalog_data)
@@ -130,11 +130,11 @@ def test_curated_catalog_30_items(catalog_data):
 
 
 # ==============================================================================
-# P1-04: Generate 30 Product Image Assets
+# P1-04: Product Image Asset Coverage
 # ==============================================================================
 def test_product_image_paths_exist(catalog_data):
-    """Verifies that all 30 product images exist in Reflex assets and compiled web public directories."""
-    assert len(catalog_data) == 30
+    """Verifies that all product images exist in Reflex assets and compiled web public directories."""
+    assert len(catalog_data) >= 30
     dirs = [
         settings.BASE_DIR / "apps" / "reflex_app" / "assets" / "products",
         settings.BASE_DIR / "apps" / "reflex_app" / ".web" / "public" / "products",
@@ -250,9 +250,10 @@ def test_frontend_bot_auth_check():
 # ==============================================================================
 def test_catalog_embeddings_incremental_skip(repo):
     """Validates incremental embedding pipeline: skips existing non-null vectors."""
-    # 1. Verify 30 products exist in DB and all have non-null embeddings
+    # 1. Verify curated products exist in DB and all have non-null embeddings
     products = repo.get_curated_products()
-    assert len(products) == 30, f"Expected 30 products in DB, got {len(products)}"
+    total_count = len(products)
+    assert total_count >= 30, f"Expected at least 30 products in DB, got {total_count}"
     for p in products:
         assert p["has_embedding"] is True, f"Product {p['product_id']} missing embedding"
 
@@ -260,6 +261,6 @@ def test_catalog_embeddings_incremental_skip(repo):
     seeder = CuratedCatalogSeeder(repo=repo)
     result = seeder.run(force_reembed=False)
 
-    assert result["seeded_count"] == 30
+    assert result["seeded_count"] == total_count
     assert result["embedded_count"] == 0, "Incremental skip should embed 0 items when all are present"
-    assert result["skipped_count"] == 30, "Incremental skip should skip all 30 existing products"
+    assert result["skipped_count"] == total_count, f"Incremental skip should skip all {total_count} existing products"
