@@ -245,8 +245,9 @@ class ShoppingState(rx.State):
     @rx.var
     def filtered_products(self) -> List[Dict[str, Any]]:
         result = []
+        hero_id = self.hero_product.get("product_id")
         for p in self.products:
-            if p.get("is_hero"):
+            if hero_id and p.get("product_id") == hero_id:
                 continue
             if self.search_query.strip():
                 q = self.search_query.lower()
