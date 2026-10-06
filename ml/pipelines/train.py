@@ -3,7 +3,7 @@ import json
 
 from core.db.repository import BlackFridayRepository
 from ml.models.registry import ModelRegistry
-from ml.models.evaluate import ModelEvaluator
+from evaluation.ml import ModelEvaluator
 from ml.models.onnx_exporter import ONNXExporter
 from ml.tracking.mlflow_tracker import MLflowTracker
 from ml.tracking.explainability import ModelExplainability

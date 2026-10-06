@@ -1,5 +1,8 @@
-# TODO-remove: Compatibility shim for ai.services.embedding_service -> core.embeddings
-from core.embeddings import (  # noqa: F401
+"""
+Core embeddings package.
+Provides multimodal and text embedding providers and service interfaces.
+"""
+from core.embeddings.service import (
     BaseEmbeddingProvider,
     GeminiEmbeddingProvider,
     DeterministicSemanticProvider,

@@ -211,3 +211,14 @@ class ModelEvaluator:
             "mean_b": round(float(np.mean(sample_b)), 4),
             "diff_in_means": round(float(np.mean(sample_a) - np.mean(sample_b)), 4)
         }
+
+
+if __name__ == "__main__":
+    logger.info("Executing standalone model evaluation entry point...")
+    evaluator = ModelEvaluator(n_splits=5)
+    dummy_true = np.array([100.0, 150.0, 200.0, 250.0])
+    dummy_pred = np.array([105.0, 145.0, 205.0, 240.0])
+    sample_metrics = evaluator.evaluate_holdout(dummy_true, dummy_pred)
+    print("ModelEvaluator baseline verification:")
+    for k, v in sample_metrics.items():
+        print(f"  {k}: {v}")

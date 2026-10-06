@@ -22,8 +22,8 @@ from core.db.repository import BlackFridayRepository
 from ml.models.registry import ModelRegistry
 from ml.tracking.drift_monitor import DriftMonitor, DriftResult
 from ml.tracking.mlflow_tracker import MLflowTracker
-from apps.api.serving.predictor import ONNXPredictor
-from apps.api.serving.imputer import ONNXMissForestImputer
+from ml.serving.predictor import ONNXPredictor
+from ml.serving.imputer import ONNXMissForestImputer
 from core.config import settings
 from core.logging import get_logger
 

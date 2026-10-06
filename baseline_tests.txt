@@ -1,0 +1,112 @@
+﻿python : 2026/10/06 10:56:49 WARNING mlflow.tracing.export.mlflow_v3: Failed to send trace to MLflow backend: Unable to locate 
+credentials
+At line:1 char:1
++ python -m pytest tests/ -q *>&1 | Out-File -FilePath baseline_tests.t ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (2026/10/06 10:5...ate credentials:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+2026/10/06 10:56:49 WARNING mlflow.tracing.export.mlflow_v3: Failed to send trace to MLflow backend: Unable to locate credentials
+2026/10/06 10:56:49 WARNING mlflow.tracing.export.mlflow_v3: Failed to send trace to MLflow backend: Unable to locate credentials
+2026/10/06 10:56:49 WARNING mlflow.tracing.export.mlflow_v3: Failed to send trace to MLflow backend: Unable to locate credentials
+2026/10/06 10:56:49 WARNING mlflow.tracing.export.mlflow_v3: Failed to send trace to MLflow backend: Unable to locate credentials
+............................................FF.......................... [ 90%]
+........                                                                 [100%]
+================================== FAILURES ===================================
+___________________ test_search_agent_node_hybrid_execution ___________________
+
+    def test_search_agent_node_hybrid_execution():
+        """Asserts hybrid search retrieves relevant items within budget and constraints."""
+        query = "Looking for a winter coat or jacket under $100"
+        state_input: AgentState = {
+            "query": query,
+            "user_id": "shopper_1",
+            "session_id": "session_search",
+        }
+        result = shopping_graph.invoke(state_input)
+    
+>       assert result["current_node"] == "response_synthesis_node"
+E       AssertionError: assert 'guardrail_router_node' == 'response_synthesis_node'
+E         
+E         - response_synthesis_node
+E         + guardrail_router_node
+
+tests\test_phase3_langgraph_agent.py:121: AssertionError
+---------------------------- Captured stdout call -----------------------------
+2026-10-06 10:56:48 | INFO    | ai.nodes.router_node:guardrail_router_node:31 - [GRAPH: ROUTER-NODE] Evaluating query: 'Looking for a winter coat or jacket under $100...' for user=shopper_1
+2026-10-06 10:56:48 | INFO    | ai.services.cache_service:get_exact_llm_response:86 - [CACHE: TIER-0 HIT] Query hash=8f3150fd0b found in 6h LLM response cache (1.74ms)
+2026-10-06 10:56:48 | INFO    | ai.nodes.router_node:guardrail_router_node:43 - [GRAPH: ROUTER-NODE] Tier-0 6h cache HIT for query='Looking for a winter coat or jacket unde'
+2026-10-06 10:56:48 | INFO    | ai.workflow.edges:route_after_guardrail:24 - [EDGE: ROUTE] Fast-path Tier 0 cache hit routed directly to END
+------------------------------ Captured log call ------------------------------
+INFO     ai.nodes.router_node:router_node.py:31 [GRAPH: ROUTER-NODE] Evaluating query: 'Looking for a winter coat or jacket under $100...' for user=shopper_1
+INFO     ai.services.cache_service:cache_service.py:86 [CACHE: TIER-0 HIT] Query hash=8f3150fd0b found in 6h LLM response cache (1.74ms)
+INFO     ai.nodes.router_node:router_node.py:43 [GRAPH: ROUTER-NODE] Tier-0 6h cache HIT for query='Looking for a winter coat or jacket unde'
+INFO     ai.workflow.edges:edges.py:24 [EDGE: ROUTE] Fast-path Tier 0 cache hit routed directly to END
+______________________ test_details_agent_node_retrieval ______________________
+
+    def test_details_agent_node_retrieval():
+        """Asserts product specifications, fabrics, and care instructions are returned."""
+        query = "What materials and care instructions are for P00025442?"
+        state_input: AgentState = {
+            "query": query,
+            "user_id": "shopper_2",
+            "session_id": "session_details",
+        }
+        result = shopping_graph.invoke(state_input)
+    
+>       assert result["current_node"] == "response_synthesis_node"
+E       AssertionError: assert 'guardrail_router_node' == 'response_synthesis_node'
+E         
+E         - response_synthesis_node
+E         + guardrail_router_node
+
+tests\test_phase3_langgraph_agent.py:145: AssertionError
+---------------------------- Captured stdout call -----------------------------
+2026-10-06 10:56:50 | INFO    | ai.nodes.router_node:guardrail_router_node:31 - [GRAPH: ROUTER-NODE] Evaluating query: 'What materials and care instructions are for P00025442?...' for user=shopper_2
+2026-10-06 10:56:50 | INFO    | ai.services.cache_service:get_exact_llm_response:86 - [CACHE: TIER-0 HIT] Query hash=3428342533 found in 6h LLM response cache (1.35ms)
+2026-10-06 10:56:50 | INFO    | ai.nodes.router_node:guardrail_router_node:43 - [GRAPH: ROUTER-NODE] Tier-0 6h cache HIT for query='What materials and care instructions are'
+2026-10-06 10:56:50 | INFO    | ai.workflow.edges:route_after_guardrail:24 - [EDGE: ROUTE] Fast-path Tier 0 cache hit routed directly to END
+------------------------------ Captured log call ------------------------------
+INFO     ai.nodes.router_node:router_node.py:31 [GRAPH: ROUTER-NODE] Evaluating query: 'What materials and care instructions are for P00025442?...' for user=shopper_2
+INFO     ai.services.cache_service:cache_service.py:86 [CACHE: TIER-0 HIT] Query hash=3428342533 found in 6h LLM response cache (1.35ms)
+INFO     ai.nodes.router_node:router_node.py:43 [GRAPH: ROUTER-NODE] Tier-0 6h cache HIT for query='What materials and care instructions are'
+INFO     ai.workflow.edges:edges.py:24 [EDGE: ROUTE] Fast-path Tier 0 cache hit routed directly to END
+============================== warnings summary ===============================
+..\..\..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\shap\plots\colors\_colors.py:47
+  C:\Users\MSI\AppData\Local\Programs\Python\Python312\Lib\site-packages\shap\plots\colors\_colors.py:47: PendingDeprecationWarning: The set_bad function will be deprecated in a future version. Use cmap.with_extremes(bad=...) or Colormap(bad=...) instead.
+    red_blue.set_bad(gray_rgb.tolist(), 1.0)
+
+..\..\..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\shap\plots\colors\_colors.py:48
+  C:\Users\MSI\AppData\Local\Programs\Python\Python312\Lib\site-packages\shap\plots\colors\_colors.py:48: PendingDeprecationWarning: The set_over function will be deprecated in a future version. Use cmap.with_extremes(over=...) or Colormap(over=...) instead.
+    red_blue.set_over(gray_rgb.tolist(), 1.0)
+
+..\..\..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\shap\plots\colors\_colors.py:49
+  C:\Users\MSI\AppData\Local\Programs\Python\Python312\Lib\site-packages\shap\plots\colors\_colors.py:49: PendingDeprecationWarning: The set_under function will be deprecated in a future version. Use cmap.with_extremes(under=...) or Colormap(under=...) instead.
+    red_blue.set_under(gray_rgb.tolist(), 1.0)  # "under" is incorrectly used instead of "bad" in the scatter plot
+
+tests/test_drift_retrain.py: 28 warnings
+  C:\Users\MSI\AppData\Local\Programs\Python\Python312\Lib\site-packages\scipy\stats\_stats_py.py:7277: RuntimeWarning:
+  
+  divide by zero encountered in divide
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_phase3_langgraph_agent.py::test_search_agent_node_hybrid_execution
+FAILED tests/test_phase3_langgraph_agent.py::test_details_agent_node_retrieval
+2 failed, 78 passed, 31 warnings in 52.34s
+2026/10/06 10:57:09 WARNING mlflow.tracing.export.mlflow_v3: Failed to send trace to MLflow backend: cannot schedule new futures 
+after interpreter shutdown
+2026/10/06 10:57:09 WARNING mlflow.tracing.export.mlflow_v3: Failed to send trace to MLflow backend: cannot schedule new futures 
+after interpreter shutdown
+2026/10/06 10:57:09 WARNING mlflow.tracing.export.mlflow_v3: Failed to send trace to MLflow backend: cannot schedule new futures 
+after interpreter shutdown
+2026/10/06 10:57:09 WARNING mlflow.tracing.export.mlflow_v3: Failed to send trace to MLflow backend: cannot schedule new futures 
+after interpreter shutdown
+2026/10/06 10:57:09 WARNING mlflow.tracing.export.mlflow_v3: Failed to send trace to MLflow backend: cannot schedule new futures 
+after interpreter shutdown
+2026/10/06 10:57:09 INFO mlflow.tracing.export.async_export_queue: Flushing the async trace logging queue before program exit. 
+This may take a while...
+2026/10/06 10:57:09 WARNING mlflow.tracing.export.mlflow_v3: Failed to send trace to MLflow backend: cannot schedule new futures 
+after interpreter shutdown
+2026/10/06 10:57:09 WARNING mlflow.tracing.export.mlflow_v3: Failed to send trace to MLflow backend: cannot schedule new futures 
+after interpreter shutdown

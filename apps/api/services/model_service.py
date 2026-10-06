@@ -9,8 +9,8 @@ import pandas as pd
 from typing import Optional, Dict, Any
 import numpy as np
 
-from apps.api.serving.predictor import ONNXPredictor
-from apps.api.serving.imputer import ONNXMissForestImputer
+from ml.serving.predictor import ONNXPredictor
+from ml.serving.imputer import ONNXMissForestImputer
 from core.config import settings
 from core.logging import get_logger
 

@@ -2,7 +2,7 @@
 Rate Limiter Service wrapping rate limiter core for the service layer.
 """
 from typing import Dict, Any, Tuple, Optional
-from apps.api.core.rate_limiter import rate_limiter, RedisRateLimiter
+from apps.api.rate_limiting.rate_limiter import rate_limiter, RedisRateLimiter
 
 
 class RateLimiterService:

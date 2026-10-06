@@ -53,10 +53,21 @@ class Settings(BaseSettings):
         return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.APP_DB_NAME}"
 
     # MinIO / S3 Storage
+    MINIO_HOST: str = Field(default="localhost")
     MINIO_ROOT_USER: str = Field(default="admin")
     MINIO_ROOT_PASSWORD: str = Field(default="password123")
     MINIO_PORT: int = Field(default=9000)
     MINIO_BUCKET_MLFLOW: str = Field(default="mlflow-artifacts")
+    S3_ENDPOINT_URL: Optional[str] = Field(default=None)
+    MLFLOW_S3_ENDPOINT_URL: Optional[str] = Field(default=None)
+
+    @property
+    def s3_endpoint_url(self) -> str:
+        if self.MLFLOW_S3_ENDPOINT_URL:
+            return self.MLFLOW_S3_ENDPOINT_URL
+        if self.S3_ENDPOINT_URL:
+            return self.S3_ENDPOINT_URL
+        return f"http://{self.MINIO_HOST}:{self.MINIO_PORT}"
 
     # Redis Cache Configuration (6-Hour Persistent TTL = 21,600 Seconds)
     REDIS_HOST: str = Field(default="localhost")

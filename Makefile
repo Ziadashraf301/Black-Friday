@@ -1,4 +1,4 @@
-.PHONY: help up down restart ps logs ingest preprocess segmentation basket train monitor retrain test lint clean
+.PHONY: help up down restart ps logs ingest preprocess segmentation basket train monitor retrain eval eval-ml eval-ai test lint clean
 
 # Default target: display help
 help:
@@ -22,6 +22,9 @@ help:
 	@echo "  make retrain      - Run Champion vs Challenger continuous retraining"
 	@echo "                      Example: make retrain NEW_DATA=path/to/new.csv [MODEL=lgbm]"
 	@echo "                      Example: make retrain DEMO=1 (test with warehouse split)"
+	@echo "  make eval         - Run regression and router evaluation suites"
+	@echo "  make eval-ml      - Run standalone ML regression/imputation evaluation"
+	@echo "  make eval-ai      - Run AI System-1 router and extractor benchmarks"
 	@echo "  make test         - Run pytest suite with coverage"
 	@echo "  make lint         - Run flake8 and black code quality checks"
 	@echo "  make clean        - Remove temporary cache files and __pycache__"
@@ -68,14 +71,23 @@ retrain:
 cron:
 	python -m ml.pipelines.cron_scheduler
 
+# Model & System Evaluation Suites
+eval-ml:
+	python -m evaluation.ml.evaluate
+
+eval-ai:
+	python -m evaluation.ai.benchmark_router
+
+eval: eval-ml eval-ai
+
 
 # Quality Assurance & Code Standards
 test:
 	pytest tests/ -v
 
 lint:
-	flake8 apps/ ml/ core/ tests/ --max-line-length=127
-	black --check apps/ ml/ core/ tests/
+	flake8 apps/ ml/ core/ evaluation/ tests/ --max-line-length=127
+	black --check apps/ ml/ core/ evaluation/ tests/
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +

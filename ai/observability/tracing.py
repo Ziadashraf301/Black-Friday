@@ -11,10 +11,15 @@ import time
 import functools
 import os
 
-import mlflow
-import mlflow.langchain
-from mlflow.entities import SpanType
-
+from core.tracking import (
+    SpanType,
+    setup_tracking_environment,
+    get_tracking_uri,
+    get_or_create_experiment,
+    enable_langchain_autolog,
+    update_current_trace,
+    trace,
+)
 from core.config import settings
 from core.logging import get_logger
 
@@ -31,13 +36,10 @@ class AgentTracer:
         self._experiment_name = experiment_name
         self._initialized = False
 
-        # Set environment hint silence
-        os.environ["MLFLOW_DISABLE_AGENT_HINT"] = "1"
-
         try:
-            tracking_uri = getattr(settings, "MLFLOW_TRACKING_URI", "sqlite:///mlflow.db")
-            mlflow.set_tracking_uri(tracking_uri)
-            mlflow.set_experiment(self._experiment_name)
+            setup_tracking_environment()
+            tracking_uri = get_tracking_uri()
+            get_or_create_experiment(self._experiment_name)
             self._initialized = True
             logger.info(f"[TRACING: MLFLOW] Tracking URI set to '{tracking_uri}', Experiment: '{self._experiment_name}'")
         except Exception as e:
@@ -49,7 +51,7 @@ class AgentTracer:
     def _enable_autolog(self) -> None:
         """Enables zero-code autologging for LangChain and LangGraph."""
         try:
-            mlflow.langchain.autolog(
+            enable_langchain_autolog(
                 log_models=False,
                 log_input_examples=False,
                 log_traces=True,
@@ -63,7 +65,7 @@ class AgentTracer:
     # =========================================================================
 
     @staticmethod
-    @mlflow.trace(name="two_tier_cache_lookup", span_type=SpanType.TOOL)
+    @trace(name="two_tier_cache_lookup", span_type=SpanType.TOOL)
     def trace_cache_lookup(raw_query: str, tier: str, is_hit: bool, latency_ms: float) -> Dict[str, Any]:
         """Records cache lookup outcome in MLflow trace."""
         return {
@@ -74,7 +76,7 @@ class AgentTracer:
         }
 
     @staticmethod
-    @mlflow.trace(name="guardrail_safety_evaluation", span_type=SpanType.CHAIN)
+    @trace(name="guardrail_safety_evaluation", span_type=SpanType.CHAIN)
     def trace_guardrail_eval(
         query: str,
         user_id: str,
@@ -85,7 +87,7 @@ class AgentTracer:
     ) -> Dict[str, Any]:
         """Records safety boundary evaluation and intent routing."""
         try:
-            mlflow.update_current_trace(
+            update_current_trace(
                 metadata={
                     "mlflow.trace.user": user_id,
                     "mlflow.trace.session": session_id,
@@ -107,7 +109,7 @@ class AgentTracer:
         }
 
     @staticmethod
-    @mlflow.trace(name="progressive_search_ladder", span_type=SpanType.RETRIEVER)
+    @trace(name="progressive_search_ladder", span_type=SpanType.RETRIEVER)
     def trace_search_ladder(
         query: str,
         relaxation_level: str,
@@ -123,7 +125,7 @@ class AgentTracer:
         }
 
     @staticmethod
-    @mlflow.trace(name="bundle_dynamic_pricing", span_type=SpanType.TOOL)
+    @trace(name="bundle_dynamic_pricing", span_type=SpanType.TOOL)
     def trace_bundle_pricing(
         target_product_id: str,
         bundle_items: List[Dict[str, Any]],

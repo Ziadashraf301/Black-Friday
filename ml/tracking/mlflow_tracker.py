@@ -1,14 +1,14 @@
 import os
 import shutil
-try:
-    import mlflow
-    from mlflow.tracking import MlflowClient
-    HAS_MLFLOW = True
-except ImportError:
-    HAS_MLFLOW = False
-    class MlflowClient:
-        def __init__(self, *args, **kwargs):
-            pass
+from core.tracking import (
+    mlflow,
+    MlflowClient,
+    HAS_MLFLOW,
+    setup_tracking_environment,
+    get_tracking_uri,
+    get_mlflow_client,
+    get_or_create_experiment,
+)
 
 from typing import Dict, Any, Optional, List
 from core.config import settings
@@ -20,23 +20,21 @@ class MLflowTracker:
     """Enterprise MLflow client managing experiments, metrics, artifacts, Model Registry, and Champion governance."""
 
     def __init__(self, experiment_name: str = settings.MLFLOW_EXPERIMENT_NAME):
-        self.tracking_uri = settings.MLFLOW_TRACKING_URI
+        self.tracking_uri = get_tracking_uri()
         self.experiment_name = experiment_name
         self.client: Optional[MlflowClient] = None
         self._setup_mlflow()
 
     def _setup_mlflow(self):
-        """Initializes MLflow tracking URI, experiment, and MlflowClient."""
+        """Initializes MLflow tracking URI, experiment, and MlflowClient via core.tracking."""
         try:
-            # Set S3/MinIO environment configuration for boto3 artifact store
-            os.environ.setdefault("MLFLOW_S3_ENDPOINT_URL", "http://localhost:9000")
-            os.environ.setdefault("AWS_ACCESS_KEY_ID", settings.MINIO_ROOT_USER)
-            os.environ.setdefault("AWS_SECRET_ACCESS_KEY", settings.MINIO_ROOT_PASSWORD)
-
-            mlflow.set_tracking_uri(self.tracking_uri)
-            mlflow.set_experiment(self.experiment_name)
-            self.client = MlflowClient(tracking_uri=self.tracking_uri)
-            logger.info(f"MLflow client connected to: {self.tracking_uri} (Experiment: '{self.experiment_name}')")
+            setup_tracking_environment()
+            get_or_create_experiment(self.experiment_name)
+            self.client = get_mlflow_client(self.tracking_uri)
+            if self.client:
+                logger.info(f"MLflow client connected to: {self.tracking_uri} (Experiment: '{self.experiment_name}')")
+            else:
+                logger.warning(f"Could not connect to MLflow tracking server at {self.tracking_uri}")
         except Exception as e:
             logger.warning(f"Could not connect to MLflow tracking server at {self.tracking_uri}: {e}")
             self.client = None

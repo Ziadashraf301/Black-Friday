@@ -6,7 +6,7 @@ from typing import Optional, Dict, Any
 from core.db.repository import BlackFridayRepository
 from ml.features.preprocessor import DataPreprocessor
 from ml.models.registry import ModelRegistry
-from ml.models.evaluate import ModelEvaluator
+from evaluation.ml import ModelEvaluator
 from ml.models.onnx_exporter import ONNXExporter
 from ml.tracking.mlflow_tracker import MLflowTracker
 from ml.tracking.model_card import ModelCardGenerator
@@ -445,7 +445,7 @@ if __name__ == "__main__":
             for cat_col in ["product_category_2", "product_category_3"]:
                 if cat_col in df.columns and df[cat_col].isna().any():
                     logger.info("Imputing missing categories in retrain batch using ONNXMissForestImputer...")
-                    from apps.api.serving.imputer import ONNXMissForestImputer
+                    from ml.serving.imputer import ONNXMissForestImputer
                     imputer = ONNXMissForestImputer(imputer_dir)
                     df = imputer.transform(df)
                     break

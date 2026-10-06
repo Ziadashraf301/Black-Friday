@@ -22,12 +22,11 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-# Configure S3 / MinIO credentials for MLflow artifact store
-os.environ.setdefault("AWS_ACCESS_KEY_ID", "admin")
-os.environ.setdefault("AWS_SECRET_ACCESS_KEY", "password123")
-os.environ.setdefault("MLFLOW_S3_ENDPOINT_URL", "http://localhost:9000")
-
-import mlflow
+from core.tracking import (
+    mlflow,
+    setup_tracking_environment,
+    get_or_create_experiment,
+)
 from core.config import settings
 from core.logging import get_logger
 from ai.schemas import IntentType
@@ -48,15 +47,15 @@ class RouterBenchmarkRunner:
         with open(self.dataset_path, "r", encoding="utf-8") as f:
             self.test_cases: List[Dict[str, Any]] = json.load(f)
 
-        self.artifacts_dir = PROJECT_ROOT / "ml" / "eval" / "artifacts"
+        self.artifacts_dir = PROJECT_ROOT / "evaluation" / "ai" / "artifacts"
         self.artifacts_dir.mkdir(parents=True, exist_ok=True)
 
         logger.info(f"[BENCHMARK] Loaded {len(self.test_cases)} golden test cases from {self.dataset_path}")
 
     def run_all(self, experiment_name: str = "black-friday-system1-router-benchmark") -> Dict[str, Any]:
         """Runs full evaluation suite and records results to MLflow."""
-        mlflow.set_tracking_uri(settings.MLFLOW_TRACKING_URI)
-        mlflow.set_experiment(experiment_name)
+        setup_tracking_environment()
+        get_or_create_experiment(experiment_name)
 
         run_name = f"system1_eval_{time.strftime('%Y%m%d_%H%M%S')}"
 

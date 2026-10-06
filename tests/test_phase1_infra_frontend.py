@@ -17,7 +17,7 @@ from fastapi import HTTPException
 
 from core.config import settings
 from core.db.repository import BlackFridayRepository
-from apps.api.core.rate_limiter import RedisRateLimiter
+from apps.api.rate_limiting.rate_limiter import RedisRateLimiter
 from apps.api.services.rate_limiter_service import RateLimiterService
 from ml.pipelines.seed_curated import CuratedCatalogSeeder
 

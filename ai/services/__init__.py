@@ -5,7 +5,7 @@ Single entry point for all AI business and orchestration services:
 - ProductSearchService (hybrid vector & fulltext catalog search)
 - GuardrailService (System-1 safety, routing & extraction orchestrator)
 """
-from ai.services.embedding_service import (
+from core.embeddings import (
     embedding_service,
     EmbeddingService,
     BaseEmbeddingProvider,

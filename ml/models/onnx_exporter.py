@@ -9,8 +9,8 @@ from skl2onnx.common.data_types import StringTensorType, Int64TensorType, FloatT
 import onnxruntime as ort
 
 from core.logging import get_logger
-from apps.api.serving.imputer import ONNXMissForestImputer
-from apps.api.serving.predictor import ONNXPredictor
+from ml.serving.imputer import ONNXMissForestImputer
+from ml.serving.predictor import ONNXPredictor
 
 logger = get_logger(__name__)
 

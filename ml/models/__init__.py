@@ -6,7 +6,6 @@ from ml.models.regression import (
     RandomForestModel,
     LightGBMModel,
 )
-from ml.models.evaluate import ModelEvaluator
 from ml.models.onnx_exporter import ONNXExporter
 
 __all__ = [
@@ -15,7 +14,6 @@ __all__ = [
     "DecisionTreeModel",
     "RandomForestModel",
     "LightGBMModel",
-    "ModelEvaluator",
     "ONNXExporter",
 ]
 

@@ -21,6 +21,7 @@ COPY apps/ /app/apps/
 COPY ml/ /app/ml/
 COPY models/ /app/models/
 COPY ai/ /app/ai/
+COPY evaluation/ /app/evaluation/
 
 EXPOSE 8000
 
