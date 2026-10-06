@@ -42,7 +42,7 @@ class RedisRateLimiter:
         if self._custom_client:
             return self._custom_client
         if cache_manager.is_available:
-            return cache_manager._client
+            return cache_manager.client
         return None
 
     def _check_in_memory(self, user_id: str, now: float) -> Tuple[bool, Optional[str], int]:

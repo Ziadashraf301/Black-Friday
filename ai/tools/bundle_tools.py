@@ -8,7 +8,7 @@ from typing import List, Optional, Dict, Any
 from ai.schemas import BundleItem
 from ai.extractor.catalog_index import CatalogIndex
 from core.db.repository import BlackFridayRepository
-from core.cache.redis_client import RedisCacheManager
+from core.cache.redis_client import RedisCacheManager, cache_manager as default_cache_manager
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -26,7 +26,7 @@ class BundleRecommendationsTool:
         cache_manager: Optional[RedisCacheManager] = None,
     ):
         self._repo = repo or BlackFridayRepository()
-        self._cache = cache_manager or RedisCacheManager()
+        self._cache = cache_manager or default_cache_manager
         CatalogIndex.ensure_loaded()
 
     def get_recommendations(
