@@ -10,7 +10,9 @@ from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
 import reflex as rx
 
-API_BASE_URL = "http://127.0.0.1:8000"
+import os
+
+API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000")
 
 _OCCUPATION_MAP = {
     0: "Student", 1: "Technology", 2: "Healthcare", 3: "Management",
@@ -211,7 +213,7 @@ class ShoppingState(rx.State):
     show_dashboard: bool = False
     dashboard_dimension: str = "gender"
 
-    # --- Bot Assistant Drawer (Phase 1 Layer 1) ---
+    # --- Bot Assistant Drawer (Phase 4 Conversational AI) ---
     is_bot_open: bool = False
     bot_messages: List[Dict[str, str]] = []
     bot_input_text: str = ""
@@ -219,6 +221,11 @@ class ShoppingState(rx.State):
     bot_auth_warning: str = ""
     bot_auth_checked: bool = False
     bot_action_chips: List[str] = ["Top Deals Today", "Sale Products", "Under $50", "Style Advisor"]
+    bot_mode: str = "text"  # "text" or "voice"
+    bot_is_listening: bool = False
+    bot_is_locked_out: bool = False
+    bot_lockout_message: str = ""
+    bot_active_cards: List[Dict[str, Any]] = []
 
     # ── Auth computed vars ──────────────────────────────────────────────
     @rx.var
@@ -1101,6 +1108,114 @@ class ShoppingState(rx.State):
         self.is_bot_open = False
         self.show_auth = True
 
+    def set_bot_mode(self, mode: str):
+        """Switches between 'text' and 'voice' conversation modes."""
+        self.bot_mode = mode
+
+    def toggle_voice_listening(self):
+        """Toggles real-time audio capture in voice mode."""
+        self.bot_is_listening = not self.bot_is_listening
+        if self.bot_is_listening:
+            self.bot_messages.append({"role": "assistant", "content": "🎙️ Listening... Speak naturally to search archives or inquire about styles."})
+        else:
+            self.bot_messages.append({"role": "assistant", "content": "🎙️ Audio stream closed."})
+
+    def _execute_bot_query(self, query: str):
+        """Executes query through backend API endpoint (/bot/stream) over HTTP."""
+        user_id = str(self.user_id) if self.user_id else "guest_user"
+        session_id = f"session_{user_id}"
+
+        try:
+            resp = httpx.post(
+                f"{API_BASE_URL}/bot/stream",
+                json={
+                    "query": query,
+                    "user_id": user_id,
+                    "session_id": session_id,
+                    "mode": self.bot_mode,
+                },
+                timeout=30.0,
+            )
+
+            # Check 403 Security Strike Lockdown from Backend Middleware
+            if resp.status_code == 403:
+                try:
+                    detail = resp.json().get("detail", "Security lockdown active.")
+                except Exception:
+                    detail = "Security lockdown active: Access temporarily restricted."
+                self.bot_is_locked_out = True
+                self.bot_lockout_message = detail
+                self.bot_messages.append({"role": "assistant", "content": detail})
+                return
+
+            if resp.status_code != 200:
+                self.bot_messages.append({
+                    "role": "assistant",
+                    "content": f"Service returned error code {resp.status_code}. Please try again shortly.",
+                })
+                return
+
+            # Parse SSE chunks from HTTP stream response
+            tokens: List[str] = []
+            cards: List[Dict[str, Any]] = []
+
+            for line in resp.text.split("\n"):
+                line = line.strip()
+                if not line.startswith("data:"):
+                    continue
+                data_str = line[5:].strip()
+                if data_str == "[DONE]":
+                    break
+                try:
+                    event = json.loads(data_str)
+                    etype = event.get("type")
+                    if etype == "token":
+                        tokens.append(event.get("content", ""))
+                    elif etype == "ui_card":
+                        payload = event.get("payload", {})
+                        if "cards" in payload:
+                            cards = payload["cards"]
+                        elif "products" in payload.get("data", {}):
+                            cards = [
+                                {
+                                    "type": "PRODUCT_CARD",
+                                    "product_id": p.get("product_id"),
+                                    "name": p.get("name"),
+                                    "price": p.get("discounted_price", p.get("price")),
+                                    "image_url": p.get("image_url", f"/products/{p.get('product_id')}.jpg"),
+                                    "badge": p.get("badge", "Curated Deal"),
+                                }
+                                for p in payload["data"]["products"]
+                            ]
+                except Exception:
+                    continue
+
+            final_text = "".join(tokens).strip() or "Here are the top catalog selections:"
+            self.bot_messages.append({"role": "assistant", "content": final_text})
+            self.bot_active_cards = cards
+
+        except Exception as e:
+            # Offline fallback if API server is not running locally
+            chip_lower = query.lower()
+            if "deal" in chip_lower:
+                reply = "Here are our top recommended deals today: Check out the Artisan Paisley Silk Kimono Shirt ($49.90, 50% off) and the Midnight Ribbed Merino Wool Duster Coat ($119.90)!"
+            elif "sale" in chip_lower:
+                reply = "We currently have archival discounts across Jackets, Silks, and Knitwear! Explore our Sale badges for member-exclusive pricing."
+            elif "under $50" in chip_lower or "50" in chip_lower:
+                reply = "Top archival finds under $50: Vintage Brushed Flannel Camp Shirt ($44.90), Retro Gum-Sole Court Sneakers ($49.00), and Artisan Paisley Silk Kimono ($49.90)."
+            elif "style" in chip_lower or "advisor" in chip_lower:
+                persona = self.user_cluster_persona or "Modern Vintage"
+                reply = f"Based on your {persona} profile, I recommend pairing tailored high-waist trousers with our hand-knitted cable cardigans and leather footwear."
+            else:
+                reply = f"Assistant offline: Unable to reach assistant service ({str(e)})."
+
+            self.bot_messages.append({
+                "role": "assistant",
+                "content": reply,
+            })
+
+
+
     def click_action_chip(self, chip: str):
         """Processes preset action chips (*'Top Deals Today'*, *'Sale Products'*)."""
         if not self.is_authenticated:
@@ -1109,26 +1224,15 @@ class ShoppingState(rx.State):
             return
 
         self.bot_messages.append({"role": "user", "content": chip})
-
-        chip_lower = chip.lower()
-        if "top deals" in chip_lower or "deal" in chip_lower:
-            reply = "Here are our top recommended deals today: Check out the Artisan Paisley Silk Kimono Shirt ($49.90, 50% off) and the Midnight Ribbed Merino Wool Duster Coat ($119.90)!"
-        elif "sale" in chip_lower:
-            reply = "We currently have archival discounts across Jackets, Silks, and Knitwear! Explore our Sale badges for member-exclusive pricing."
-        elif "under $50" in chip_lower or "50" in chip_lower:
-            reply = "Top archival finds under $50: Vintage Brushed Flannel Camp Shirt ($44.90), Retro Gum-Sole Court Sneakers ($49.00), and Artisan Paisley Silk Kimono ($49.90)."
-        elif "style" in chip_lower or "advisor" in chip_lower:
-            persona = self.user_cluster_persona or "Modern Vintage"
-            reply = f"Based on your {persona} profile, I recommend pairing tailored high-waist trousers with our hand-knitted cable cardigans and leather footwear."
-        else:
-            reply = f"Searching our archives for '{chip}'... Let me know if you would like me to calculate personalized member pricing!"
-
-        self.bot_messages.append({"role": "assistant", "content": reply})
+        self._execute_bot_query(chip)
 
     def send_bot_message(self):
+        """Dispatches typed message from input field to shopping DAG."""
         if not self.bot_input_text.strip():
             return
         msg = self.bot_input_text.strip()
         self.bot_input_text = ""
-        self.click_action_chip(msg)
+        self.bot_messages.append({"role": "user", "content": msg})
+        self._execute_bot_query(msg)
+
 

@@ -74,3 +74,34 @@ class BlackFridayAPIUser(HttpUser):
                 "product_id": f"P000{random.randint(10000, 99999)}"
             })
         self.client.post("/shopper/predict-price-batch", json={"items": items})
+
+    # =========================================================================
+    # Phase 4 Conversational AI & Caching Tasks
+    # =========================================================================
+    @task(7)
+    def bot_stream_conversation(self):
+        """Phase 4: Bot SSE Streaming Endpoint (/bot/stream)."""
+        queries = [
+            "Find silk shirts under $80 in size L",
+            "What materials is P00025442 made of and how do I wash it?",
+            "What is your holiday return policy?",
+            "Show me top deals on jackets and winter wear",
+            "Recommend complete stylish bundle with accessories",
+        ]
+        q = random.choice(queries)
+        self.client.post(
+            "/bot/stream",
+            json={"query": q, "user_id": "locust_user", "mode": "text"},
+            headers={"Accept": "text/event-stream"},
+        )
+
+    @task(5)
+    def bot_stream_tier0_cache_hit(self):
+        """Phase 4: Sub-millisecond Tier-0 6h exact cache hit."""
+        fixed_query = "Find silk shirts under $80 in size L"
+        self.client.post(
+            "/bot/stream",
+            json={"query": fixed_query, "user_id": "locust_cached_user", "mode": "text"},
+            headers={"Accept": "text/event-stream"},
+        )
+

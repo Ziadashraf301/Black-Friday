@@ -1,0 +1,461 @@
+[
+  {
+    "id": "EX-01",
+    "query": "Looking for winter coats capped strictly under $60",
+    "challenge_type": "budget_with_dollar_symbol",
+    "expected_entities": {
+      "max_price": 60.0,
+      "min_price": null,
+      "sizes": [],
+      "product_ids": [],
+      "categories": [
+        "Outerwear"
+      ]
+    }
+  },
+  {
+    "id": "EX-02",
+    "query": "Got a budget around 80 bucks for knitwear",
+    "challenge_type": "budget_colloquial_bucks",
+    "expected_entities": {
+      "max_price": 80.0,
+      "min_price": null,
+      "sizes": [],
+      "product_ids": [],
+      "categories": [
+        "Knitwear"
+      ]
+    }
+  },
+  {
+    "id": "EX-03",
+    "query": "Show me silk tops under $50.00",
+    "challenge_type": "budget_decimal_cents",
+    "expected_entities": {
+      "max_price": 50.0,
+      "min_price": null,
+      "sizes": [],
+      "product_ids": [],
+      "categories": [
+        "Tops"
+      ]
+    }
+  },
+  {
+    "id": "EX-04",
+    "query": "Any leather boots priced below 150 dollars?",
+    "challenge_type": "budget_explicit_dollars_word",
+    "expected_entities": {
+      "max_price": 150.0,
+      "min_price": null,
+      "sizes": [],
+      "product_ids": [],
+      "categories": [
+        "Footwear"
+      ]
+    }
+  },
+  {
+    "id": "EX-05",
+    "query": "Can I find party dresses for max $100?",
+    "challenge_type": "budget_max_keyword",
+    "expected_entities": {
+      "max_price": 100.0,
+      "min_price": null,
+      "sizes": [],
+      "product_ids": [],
+      "categories": [
+        "Dresses"
+      ]
+    }
+  },
+  {
+    "id": "EX-06",
+    "query": "Looking for premium luxury outerwear up to $200",
+    "challenge_type": "budget_up_to_keyword",
+    "expected_entities": {
+      "max_price": 200.0,
+      "min_price": null,
+      "sizes": [],
+      "product_ids": [],
+      "categories": [
+        "Outerwear"
+      ]
+    }
+  },
+  {
+    "id": "EX-07",
+    "query": "Need a bomber jacket in size XS please",
+    "challenge_type": "size_extra_small",
+    "expected_entities": {
+      "max_price": null,
+      "min_price": null,
+      "sizes": [
+        "XS"
+      ],
+      "product_ids": [],
+      "categories": [
+        "Outerwear"
+      ]
+    }
+  },
+  {
+    "id": "EX-08",
+    "query": "Looking for cardigans in size Small",
+    "challenge_type": "size_word_small",
+    "expected_entities": {
+      "max_price": null,
+      "min_price": null,
+      "sizes": [
+        "S"
+      ],
+      "product_ids": [],
+      "categories": [
+        "Knitwear"
+      ]
+    }
+  },
+  {
+    "id": "EX-09",
+    "query": "Looking for a silk tunic in Medium",
+    "challenge_type": "size_word_medium",
+    "expected_entities": {
+      "max_price": null,
+      "min_price": null,
+      "sizes": [
+        "M"
+      ],
+      "product_ids": [],
+      "categories": [
+        "Tops"
+      ]
+    }
+  },
+  {
+    "id": "EX-10",
+    "query": "Find pleated pinafore dresses in size Large",
+    "challenge_type": "size_word_large",
+    "expected_entities": {
+      "max_price": null,
+      "min_price": null,
+      "sizes": [
+        "L"
+      ],
+      "product_ids": [],
+      "categories": [
+        "Dresses"
+      ]
+    }
+  },
+  {
+    "id": "EX-11",
+    "query": "Do you have denim jeans in waist size 32?",
+    "challenge_type": "size_waist_numerical",
+    "expected_entities": {
+      "max_price": null,
+      "min_price": null,
+      "sizes": [
+        "32"
+      ],
+      "product_ids": [],
+      "categories": [
+        "Bottoms"
+      ]
+    }
+  },
+  {
+    "id": "EX-12",
+    "query": "Rugged Chelsea boots in shoe size 10",
+    "challenge_type": "size_shoe_numerical",
+    "expected_entities": {
+      "max_price": null,
+      "min_price": null,
+      "sizes": [
+        "10"
+      ],
+      "product_ids": [],
+      "categories": [
+        "Footwear"
+      ]
+    }
+  },
+  {
+    "id": "EX-13",
+    "query": "Check stock for item P00025442 in size M",
+    "challenge_type": "product_id_with_size",
+    "expected_entities": {
+      "max_price": null,
+      "min_price": null,
+      "sizes": [
+        "M"
+      ],
+      "product_ids": [
+        "P00025442"
+      ],
+      "categories": [
+        "Tops"
+      ]
+    }
+  },
+  {
+    "id": "EX-14",
+    "query": "Is product P00110742 eligible for Black Friday discounts?",
+    "challenge_type": "product_id_single",
+    "expected_entities": {
+      "max_price": null,
+      "min_price": null,
+      "sizes": [],
+      "product_ids": [
+        "P00110742"
+      ],
+      "categories": [
+        "Outerwear"
+      ]
+    }
+  },
+  {
+    "id": "EX-15",
+    "query": "Show me details and reviews for P00145042",
+    "challenge_type": "product_id_standalone",
+    "expected_entities": {
+      "max_price": null,
+      "min_price": null,
+      "sizes": [],
+      "product_ids": [
+        "P00145042"
+      ],
+      "categories": [
+        "Outerwear"
+      ]
+    }
+  },
+  {
+    "id": "EX-16",
+    "query": "Can I exchange P00057642 for another size?",
+    "challenge_type": "product_id_support_context",
+    "expected_entities": {
+      "max_price": null,
+      "min_price": null,
+      "sizes": [],
+      "product_ids": [
+        "P00057642"
+      ],
+      "categories": [
+        "Dresses"
+      ]
+    }
+  },
+  {
+    "id": "EX-17",
+    "query": "Does item #P00031042 run true to size?",
+    "challenge_type": "product_id_with_hash_prefix",
+    "expected_entities": {
+      "max_price": null,
+      "min_price": null,
+      "sizes": [],
+      "product_ids": [
+        "P00031042"
+      ],
+      "categories": [
+        "Footwear"
+      ]
+    }
+  },
+  {
+    "id": "EX-18",
+    "query": "Compare P00110742 and P00145042 for winter warmth",
+    "challenge_type": "multiple_product_ids",
+    "expected_entities": {
+      "max_price": null,
+      "min_price": null,
+      "sizes": [],
+      "product_ids": [
+        "P00110742",
+        "P00145042"
+      ],
+      "categories": [
+        "Outerwear"
+      ]
+    }
+  },
+  {
+    "id": "EX-19",
+    "query": "Need a heavy wool peacoat under $100 in size L",
+    "challenge_type": "combo_budget_size_category",
+    "expected_entities": {
+      "max_price": 100.0,
+      "min_price": null,
+      "sizes": [
+        "L"
+      ],
+      "product_ids": [],
+      "categories": [
+        "Outerwear"
+      ]
+    }
+  },
+  {
+    "id": "EX-20",
+    "query": "Looking for distressed brown leather bomber P00110742 under 200 in size XXL",
+    "challenge_type": "combo_id_budget_size_category",
+    "expected_entities": {
+      "max_price": 200.0,
+      "min_price": null,
+      "sizes": [
+        "XXL"
+      ],
+      "product_ids": [
+        "P00110742"
+      ],
+      "categories": [
+        "Outerwear"
+      ]
+    }
+  },
+  {
+    "id": "EX-21",
+    "query": "Show me silk kimono shirts P00025442 in size XL under $50",
+    "challenge_type": "combo_id_budget_size_tops",
+    "expected_entities": {
+      "max_price": 50.0,
+      "min_price": null,
+      "sizes": [
+        "XL"
+      ],
+      "product_ids": [
+        "P00025442"
+      ],
+      "categories": [
+        "Tops"
+      ]
+    }
+  },
+  {
+    "id": "EX-22",
+    "query": "Heritage pinafore dress P00057642 in size S for under 80",
+    "challenge_type": "combo_id_size_budget_dresses",
+    "expected_entities": {
+      "max_price": 80.0,
+      "min_price": null,
+      "sizes": [
+        "S"
+      ],
+      "product_ids": [
+        "P00057642"
+      ],
+      "categories": [
+        "Dresses"
+      ]
+    }
+  },
+  {
+    "id": "EX-23",
+    "query": "Chelsea leather boots in size 10 under $150",
+    "challenge_type": "combo_footwear_size_budget",
+    "expected_entities": {
+      "max_price": 150.0,
+      "min_price": null,
+      "sizes": [
+        "10"
+      ],
+      "product_ids": [],
+      "categories": [
+        "Footwear"
+      ]
+    }
+  },
+  {
+    "id": "EX-24",
+    "query": "Cable knit cardigan sweaters under $80 in size M",
+    "challenge_type": "combo_knitwear_budget_size",
+    "expected_entities": {
+      "max_price": 80.0,
+      "min_price": null,
+      "sizes": [
+        "M"
+      ],
+      "product_ids": [],
+      "categories": [
+        "Knitwear"
+      ]
+    }
+  },
+  {
+    "id": "EX-25",
+    "query": "Something warm to wear outside in freezing rain",
+    "challenge_type": "semantic_category_outerwear",
+    "expected_entities": {
+      "max_price": null,
+      "min_price": null,
+      "sizes": [],
+      "product_ids": [],
+      "categories": [
+        "Outerwear"
+      ]
+    }
+  },
+  {
+    "id": "EX-26",
+    "query": "Cozy soft layers for relaxing at the cabin by the fire",
+    "challenge_type": "semantic_category_knitwear",
+    "expected_entities": {
+      "max_price": null,
+      "min_price": null,
+      "sizes": [],
+      "product_ids": [],
+      "categories": [
+        "Knitwear"
+      ]
+    }
+  },
+  {
+    "id": "EX-27",
+    "query": "Formal elegant evening attire for a gala dinner",
+    "challenge_type": "semantic_category_dresses",
+    "expected_entities": {
+      "max_price": null,
+      "min_price": null,
+      "sizes": [],
+      "product_ids": [],
+      "categories": [
+        "Dresses"
+      ]
+    }
+  },
+  {
+    "id": "EX-28",
+    "query": "Can someone help me with my account settings?",
+    "challenge_type": "null_entities_account_inquiry",
+    "expected_entities": {
+      "max_price": null,
+      "min_price": null,
+      "sizes": [],
+      "product_ids": [],
+      "categories": []
+    }
+  },
+  {
+    "id": "EX-29",
+    "query": "Why was my delivery delayed past Friday?",
+    "challenge_type": "null_entities_shipping_complaint",
+    "expected_entities": {
+      "max_price": null,
+      "min_price": null,
+      "sizes": [],
+      "product_ids": [],
+      "categories": []
+    }
+  },
+  {
+    "id": "EX-30",
+    "query": "Tell me a joke about Black Friday shopping crowds",
+    "challenge_type": "null_entities_chitchat",
+    "expected_entities": {
+      "max_price": null,
+      "min_price": null,
+      "sizes": [],
+      "product_ids": [],
+      "categories": []
+    }
+  }
+]

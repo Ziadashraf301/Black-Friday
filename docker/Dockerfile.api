@@ -20,7 +20,7 @@ COPY core/ /app/core/
 COPY apps/ /app/apps/
 COPY ml/ /app/ml/
 COPY models/ /app/models/
-COPY config/ /app/config/
+COPY ai/ /app/ai/
 
 EXPOSE 8000
 

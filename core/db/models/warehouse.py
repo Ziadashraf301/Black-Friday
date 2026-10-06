@@ -112,4 +112,16 @@ class CuratedProduct(Base):
     search_vector = Column(TSVECTOR, nullable=True)
 
 
+class UserCart(Base):
+    """Cold-tier durable cart snapshots (Phase 4 - Task P4-06)."""
+    __tablename__ = "user_carts"
+
+    user_id = Column(String(64), primary_key=True)
+    session_id = Column(String(64), nullable=False)
+    cart_data = Column(JSON, nullable=False)
+    item_count = Column(Integer, default=0)
+    total_amount = Column(Float, default=0.0)
+    updated_at = Column(String(64), nullable=True)
+
+
 

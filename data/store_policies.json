@@ -1,0 +1,74 @@
+{
+  "policies": {
+    "returns": {
+      "topic": "returns",
+      "title": "Extended Holiday Return Policy",
+      "summary": "All items purchased during our Black Friday & Cyber Week promotional period are eligible for free returns or exchanges until January 31, 2027.",
+      "conditions": [
+        "Items must be unwashed, unworn, and undamaged with original brand tags attached.",
+        "Footwear must include the original undamaged shoebox placed inside an outer shipping carton.",
+        "Return shipping labels are 100% complimentary via our self-service returns portal.",
+        "Refunds are credited back to the original payment method within 3 to 5 business days of inspection."
+      ],
+      "keywords": ["return", "returns", "refund", "exchange", "send back", "money back", "warranty"]
+    },
+    "shipping": {
+      "topic": "shipping",
+      "title": "Black Friday Shipping Timelines & Delivery",
+      "summary": "Standard express delivery is 2-4 business days. Complimentary free express shipping is automatically applied to all orders over $75.",
+      "conditions": [
+        "Orders placed before 2:00 PM EST ship the same business day from our fulfillment centers.",
+        "Primary domestic carrier partners include FedEx Priority and UPS Ground.",
+        "Holiday delivery guarantee: Place orders by December 18 for guaranteed arrival before Christmas.",
+        "Real-time SMS and email tracking links are dispatched immediately upon carrier scan."
+      ],
+      "keywords": ["shipping", "ship", "deliver", "delivery", "carrier", "fedex", "ups", "arrive", "transit", "when will it arrive"]
+    },
+    "price_match": {
+      "topic": "price_match",
+      "title": "Black Friday Price Match Guarantee",
+      "summary": "If any item purchased between November 1 and December 5 drops in price on Cyber Monday or before December 25, we will refund the difference directly to your original payment method.",
+      "conditions": [
+        "Applies to identical in-stock items (same style, color, and size).",
+        "Price adjustments can be requested online in one click via your order history or live chat concierge.",
+        "No store credit vouchers required; refunds are credited directly to your bank card.",
+        "Excludes limited doorbuster flash sales with inventory caps under 10 units."
+      ],
+      "keywords": ["price match", "price drop", "price adjustment", "refund difference", "cheaper", "lower price", "guarantee"]
+    },
+    "discounts": {
+      "topic": "discounts",
+      "title": "Promotional Badges & Tiered Holiday Savings",
+      "summary": "Save up to 60% off clearance bestsellers, plus an extra 10% instant discount automatically applied at checkout for orders over $150.",
+      "conditions": [
+        "Discounts stack automatically with item-level clearance prices.",
+        "Threshold discounts ($150+) are computed based on the pre-tax, discounted subtotal.",
+        "Single-use VIP holiday coupons cannot be combined with clearance flash deals unless marked 'Stackable'.",
+        "Promo discounts apply immediately at checkout without manual code entry."
+      ],
+      "keywords": ["discount", "discounts", "coupon", "coupons", "promo", "promotion", "promo code", "voucher", "sale", "save", "deal", "clearance"]
+    },
+    "sizing_fit": {
+      "topic": "sizing_fit",
+      "title": "Apparel Sizing & Exchange Assistance",
+      "summary": "We provide true-to-fit sizing specifications across all apparel categories from XS to XXL, with complimentary one-swap size exchanges.",
+      "conditions": [
+        "If a purchased item does not fit comfortably, size swaps are free of charge with expedited cross-shipping.",
+        "Refer to the product detail modal for garment measurements (chest, waist, inseam).",
+        "Oversized silhouette items are marked with 'Relaxed Fit' badges in the catalog."
+      ],
+      "keywords": ["size", "sizing", "fit", "measurements", "small", "medium", "large", "xl", "swap size"]
+    },
+    "payment_security": {
+      "topic": "payment_security",
+      "title": "Payment Options & Holiday Security",
+      "summary": "We accept all major credit cards, Apple Pay, Google Pay, and interest-free 4-installment payment plans with end-to-end 256-bit encryption.",
+      "conditions": [
+        "Accepted cards: Visa, Mastercard, American Express, Discover.",
+        "Split payment providers: Klarna and Afterpay available at checkout.",
+        "PCI-DSS Level 1 certified security with automated fraud prevention."
+      ],
+      "keywords": ["payment", "pay", "credit card", "security", "apple pay", "google pay", "klarna", "installments"]
+    }
+  }
+}

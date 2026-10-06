@@ -10,6 +10,7 @@ from core.db.models.warehouse import (
     CustomerSegment,
     ProductNetworkMetric,
     CuratedProduct,
+    UserCart,
 )
 
 __all__ = [
@@ -21,5 +22,6 @@ __all__ = [
     "CustomerSegment",
     "ProductNetworkMetric",
     "CuratedProduct",
+    "UserCart",
 ]
 

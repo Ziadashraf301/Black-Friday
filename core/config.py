@@ -65,6 +65,12 @@ class Settings(BaseSettings):
     REDIS_DB: int = Field(default=0)
     REDIS_DEFAULT_TTL: int = Field(default=21600)  # 6 hours in seconds
 
+    @property
+    def redis_url(self) -> str:
+        if self.REDIS_PASSWORD:
+            return f"redis://:{self.REDIS_PASSWORD}@{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+
 
     # MLflow Tracking
     MLFLOW_TRACKING_URI: str = Field(default="http://localhost:5000")
@@ -162,5 +168,7 @@ class Settings(BaseSettings):
     JWT_EXPIRY_HOURS: int = Field(default=24)
 
     GEMINI_API_KEY: str
+    TYPESAFE_API_KEY: Optional[str] = Field(default=None)
+    LLM_MODEL: str = Field(default="gemini-2.0-flash")
 
 settings = Settings()

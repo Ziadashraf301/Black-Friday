@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 from core.config import settings
 from core.db.repository import BlackFridayRepository
-from core.ai.embedding_service import embedding_service, EmbeddingService
+from ai.services.embedding_service import embedding_service, EmbeddingService
 from core.logging import get_logger
 
 logger = get_logger(__name__)

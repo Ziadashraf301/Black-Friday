@@ -51,10 +51,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Security Ban & Strike Lockout Gateway Middleware (Phase 4 - Task P4-07)
+from apps.api.middleware.security_ban_middleware import SecurityBanMiddleware
+app.add_middleware(SecurityBanMiddleware)
+
 # Mount thin route controllers
+from apps.api.routes import bot as bot_router
 app.include_router(analytics.router)
 app.include_router(auth_router.router)
 app.include_router(shopper_router.router)
+app.include_router(bot_router.router)
 
 
 @app.get("/health", tags=["Health & Diagnostics"])
