@@ -28,7 +28,6 @@ reflex.lock
 /apps/reflex_app/assets
 implementation_plan.md
 Phase1_Implementation_Plan.xlsx
-*.md
 *.xlsx
 Phase2_Implementation_Plan.xlsx
 .antigravityignore

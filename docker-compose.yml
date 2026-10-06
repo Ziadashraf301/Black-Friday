@@ -156,6 +156,7 @@ services:
       - ./ml:/app/ml
       - ./models:/app/models
       - ./evaluation:/app/evaluation
+      - ./data:/app/data
     networks:
       - blackfriday-net 
 

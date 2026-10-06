@@ -86,10 +86,9 @@ test:
 	pytest tests/ -v
 
 lint:
-	flake8 apps/ ml/ core/ evaluation/ tests/ --max-line-length=127
-	black --check apps/ ml/ core/ evaluation/ tests/
+	flake8 ai/ apps/ core/ evaluation/ ml/ tests/ --max-line-length=127
+	black --check ai/ apps/ core/ evaluation/ ml/ tests/
+	isort --check ai/ apps/ core/ evaluation/ ml/ tests/
 
 clean:
-	find . -type d -name "__pycache__" -exec rm -rf {} +
-	find . -type f -name "*.pyc" -delete
-	rm -rf .pytest_cache .coverage
+	python -c "import pathlib, shutil; [shutil.rmtree(p, ignore_errors=True) for p in pathlib.Path('.').rglob('__pycache__')]; [p.unlink() for p in pathlib.Path('.').rglob('*.pyc')]; [p.unlink() for p in pathlib.Path('.').rglob('*.pyo')]; shutil.rmtree('.pytest_cache', ignore_errors=True); shutil.rmtree('htmlcov', ignore_errors=True); pathlib.Path('.coverage').unlink(missing_ok=True)"
