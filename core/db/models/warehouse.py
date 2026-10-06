@@ -32,7 +32,7 @@ class BlackFridayCleaned(Base):
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     user_id = Column(Integer, nullable=False)
-    product_id = Column(String(32), nullable=False)
+    product_id = Column(String(32), nullable=False, index=True)
     gender = Column(String(1), nullable=False)
     age = Column(String(16), nullable=False)
     occupation = Column(Integer, nullable=False)

@@ -5,7 +5,7 @@ import io
 import csv
 import json
 import pandas as pd
-from typing import Dict, Any, List, Optional
+from typing import List, Optional
 from sqlalchemy import text
 from core.db.session import get_db_engine
 from core.logging import get_logger
@@ -23,7 +23,9 @@ class BaseRepository:
         "product_network_metrics",
         "app_users",
         "user_purchases",
-        "curated_products"
+        "curated_products",
+        "user_carts",
+        "semantic_query_cache",
     }
 
     def __init__(self, engine=None):
@@ -31,11 +33,11 @@ class BaseRepository:
 
     def create_app_tables(self):
         """Creates all registered SQLAlchemy ORM database tables if they do not exist."""
+        with self.engine.begin() as conn:
+            if conn.dialect.name == "postgresql":
+                conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
         from core.db.models import Base
         Base.metadata.create_all(bind=self.engine)
-
-
-
 
     def truncate_table(self, table_name: str, restart_identity: bool = False):
         """Safely truncates an authorized warehouse table."""
@@ -66,12 +68,6 @@ class BaseRepository:
                         lambda x: json.dumps(x) if isinstance(x, (list, dict)) else (x if isinstance(x, str) else json.dumps([]))
                     )
 
-        # Convert float columns whose non-null values are whole numbers to nullable Int64
-        for col in data.select_dtypes(include=["float", "float64"]).columns:
-            non_null = data[col].dropna()
-            if len(non_null) > 0 and (non_null % 1 == 0).all():
-                data[col] = data[col].astype("Int64")
-
         logger.info(f"Writing {len(data):,} records to '{table_name}' (mode='{if_exists}')...")
 
         try:
@@ -94,10 +90,12 @@ class BaseRepository:
             logger.info(f"High-speed COPY streaming to '{table_name}' completed successfully.")
         except Exception as copy_err:
             logger.warning(f"Fast COPY failed ({copy_err}), falling back to standard to_sql batching...")
+            if if_exists == "replace":
+                self.truncate_table(table_name, restart_identity=True)
             data.to_sql(
                 name=table_name,
                 con=self.engine,
-                if_exists=if_exists,
+                if_exists="append",
                 index=False,
                 chunksize=chunksize,
                 method="multi"

@@ -12,7 +12,7 @@ logger = get_logger(__name__)
 class UserRepository(BaseRepository):
     """Repository managing app_users and user_purchases tables."""
 
-    def create_app_tables(self):
+    def ensure_user_tables(self):
         """Create app_users and user_purchases tables if they do not exist."""
         ddl = """
             CREATE TABLE IF NOT EXISTS app_users (

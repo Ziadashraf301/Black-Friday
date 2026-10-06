@@ -23,7 +23,7 @@ class AuthService:
     def register_user(cls, user_data: Dict[str, Any], repo: BlackFridayRepository) -> Dict[str, Any]:
         """Registers a new shopper and generates their session token."""
         try:
-            repo.create_app_tables()
+            repo.ensure_user_tables()
         except Exception:
             pass
 
@@ -75,7 +75,7 @@ class AuthService:
     def authenticate_user(cls, email: str, password: str, repo: BlackFridayRepository) -> Dict[str, Any]:
         """Validates credentials and returns JWT token."""
         try:
-            repo.create_app_tables()
+            repo.ensure_user_tables()
         except Exception:
             pass
 

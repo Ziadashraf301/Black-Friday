@@ -3,8 +3,6 @@
 -- Target Database: fridayblack
 -- ==============================================================================
 
-\connect fridayblack;
-
 CREATE EXTENSION IF NOT EXISTS vector;
 
 -- 1. Raw Staging Table (Exact 1:1 match with Train.csv, accepts nulls)
@@ -128,5 +126,65 @@ CREATE TABLE IF NOT EXISTS curated_products (
 
 CREATE INDEX IF NOT EXISTS idx_curated_embedding_hnsw ON curated_products USING hnsw (embedding vector_cosine_ops);
 CREATE INDEX IF NOT EXISTS idx_curated_search_vector ON curated_products USING gin (search_vector);
+
+-- 6. Application Users Table
+CREATE TABLE IF NOT EXISTS app_users (
+    user_id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    gender VARCHAR(1),
+    age VARCHAR(10),
+    city_category VARCHAR(1),
+    marital_status INTEGER,
+    occupation INTEGER,
+    stay_in_current_city_years VARCHAR(5),
+    cluster_id INTEGER,
+    cluster_persona TEXT,
+    recommended_action TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_email ON app_users (email);
+
+-- 7. User Purchases Table
+CREATE TABLE IF NOT EXISTS user_purchases (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES app_users(user_id) ON DELETE CASCADE,
+    product_id TEXT NOT NULL,
+    product_category_1 INTEGER,
+    product_category_2 INTEGER,
+    product_category_3 INTEGER,
+    predicted_usd FLOAT,
+    model_used TEXT,
+    purchased_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_purchases_user_id ON user_purchases (user_id);
+
+-- 8. Cold-Tier User Carts Table
+CREATE TABLE IF NOT EXISTS user_carts (
+    user_id VARCHAR(64) PRIMARY KEY,
+    session_id VARCHAR(64) NOT NULL,
+    cart_data JSONB NOT NULL,
+    item_count INTEGER DEFAULT 0,
+    total_amount NUMERIC(10, 2) DEFAULT 0.00,
+    updated_at VARCHAR(64)
+);
+
+-- 9. Semantic Query Cache Table with pgvector HNSW index
+CREATE TABLE IF NOT EXISTS semantic_query_cache (
+    id BIGSERIAL PRIMARY KEY,
+    query_text TEXT NOT NULL,
+    embedding vector(768) NOT NULL,
+    response_text TEXT NOT NULL,
+    ui_payload JSONB NOT NULL,
+    intent VARCHAR(64) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_semantic_cache_hnsw 
+ON semantic_query_cache USING hnsw (embedding vector_cosine_ops);
+
 
 

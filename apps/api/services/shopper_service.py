@@ -347,7 +347,7 @@ class ShopperService:
     ) -> Dict[str, Any]:
         """Executes price calculation and stores purchase record in database. Uncached transaction path."""
         try:
-            repo.create_app_tables()
+            repo.ensure_user_tables()
         except Exception:
             pass
 

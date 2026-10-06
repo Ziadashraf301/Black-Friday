@@ -18,9 +18,11 @@ engine = create_engine(
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+
 def get_db_engine():
     """Returns the central database engine."""
     return engine
+
 
 @contextmanager
 def get_db_session() -> Generator[Session, None, None]:
@@ -35,8 +37,3 @@ def get_db_session() -> Generator[Session, None, None]:
         raise
     finally:
         session.close()
-
-def get_db():
-    """FastAPI dependency yielding a database session."""
-    with get_db_session() as session:
-        yield session

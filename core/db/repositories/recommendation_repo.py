@@ -51,10 +51,11 @@ class RecommendationRepository(BaseRepository):
             result = conn.execute(query, {"product_id": product_id}).mappings().first()
             return dict(result) if result else None
 
-    def get_product_categories(self, product_id: str) -> Optional[Dict[str, Any]]:
+    def get_product_categories(self, product_id: str, session: Optional[Any] = None) -> Optional[Dict[str, Any]]:
         """
         Returns the most-common product_category_1, _2, _3 for a product_id.
         Used for ONNX inference when shopper hasn't supplied category values.
+        Utilizes index on product_id in black_friday_cleaned.
         """
         query = text("""
             SELECT
@@ -64,6 +65,10 @@ class RecommendationRepository(BaseRepository):
             FROM black_friday_cleaned
             WHERE product_id = :pid
         """)
+        if session is not None:
+            result = session.execute(query, {"pid": product_id}).mappings().first()
+            return dict(result) if result else None
+
         with self.engine.connect() as conn:
             result = conn.execute(query, {"pid": product_id}).mappings().first()
             return dict(result) if result else None
