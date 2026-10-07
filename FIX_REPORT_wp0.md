@@ -124,6 +124,8 @@ Refer to [RESTRUCTURE_MAP.md](file:///C:/Users/MSI/OneDrive/Desktop/work/prtofol
 - `docker/Dockerfile.api`: Added `COPY evaluation/ /app/evaluation/`.
 - `docker-compose.yml`: Added `./evaluation:/app/evaluation` volume.
 - `Makefile`: Added `eval`, `eval-ml`, `eval-ai` targets and updated `lint`.
+- `phase1_completion_and_phase2_readiness.md`: Updated stale paths to `apps/api/rate_limiting/` and `evaluation/ai/`.
+- `phase2_completion_and_phase3_readiness.md`: Updated stale paths to `evaluation/ai/benchmark_router.py` and `evaluation/ai/artifacts/`.
 
 ---
 

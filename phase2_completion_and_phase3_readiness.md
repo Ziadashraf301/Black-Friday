@@ -95,7 +95,7 @@ Phase 2 established the ground truth evaluation suite, the Tier-0 instant regex 
 
 ## 2. MLflow Experiment & Benchmark Results
 
-* **Benchmark Harness**: `ml/eval/benchmark_router.py`
+* **Benchmark Harness**: `evaluation/ai/benchmark_router.py`
 * **MLflow Tracking URI**: `http://localhost:5000`
 * **Experiment Name**: `black-friday-system1-router-benchmark`
 
@@ -118,12 +118,12 @@ Phase 2 established the ground truth evaluation suite, the Tier-0 instant regex 
 | **HybridEntityExtractor (Combined)**| **96.2%** (0.9619) | < 1 ms (with fallback) | Production ensemble merging exact lexical precision with semantic grounding |
 
 ### Generated & Logged Artifacts:
-1. `ml/eval/artifacts/confusion_matrix.png`: Heatmap of the 8 canonical intents.
-2. `ml/eval/artifacts/latency_distribution.png`: Boxplot and histogram of execution latencies.
-3. `ml/eval/artifacts/calibration_curve.png`: Reliability curve demonstrating RLCD calibration.
-4. `ml/eval/artifacts/extractor_comparison.png`: Accuracy comparison of Regex, Jev, and Hybrid extractors.
-5. `ml/eval/artifacts/benchmark_results.csv`: Case-by-case evaluation ledger.
-6. `ml/eval/artifacts/benchmark_report.md`: Markdown summary.
+1. `evaluation/ai/artifacts/confusion_matrix.png`: Heatmap of the 8 canonical intents.
+2. `evaluation/ai/artifacts/latency_distribution.png`: Boxplot and histogram of execution latencies.
+3. `evaluation/ai/artifacts/calibration_curve.png`: Reliability curve demonstrating RLCD calibration.
+4. `evaluation/ai/artifacts/extractor_comparison.png`: Accuracy comparison of Regex, Jev, and Hybrid extractors.
+5. `evaluation/ai/artifacts/benchmark_results.csv`: Case-by-case evaluation ledger.
+6. `evaluation/ai/artifacts/benchmark_report.md`: Markdown summary.
 
 ---
 

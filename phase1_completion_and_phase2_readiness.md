@@ -44,7 +44,7 @@
 * **Redis Sliding-Window Rate Limiter**:
   * Enforces **5 requests/minute** and **20 requests/day** per authenticated `user_id`.
   * Returns HTTP 429 when quota exceeded.
-  * Handled via `apps/api/core/rate_limiter.py` and `apps/api/services/rate_limiter_service.py`.
+  * Handled via `apps/api/rate_limiting/rate_limiter.py` and `apps/api/services/rate_limiter_service.py`.
 
 ### F. Frontend Reflex Application
 * **Bot Drawer Component (`apps/reflex_app/reflex_app/components/bot_drawer.py`)**:
@@ -70,7 +70,7 @@
 4. **P2-04**: System-1 Router Core Architecture Strategy Pattern (`core/ai/router/intent_router.py`).
 5. **P2-05**: Fast Intent Classifier & Domain Steering (`core/ai/router/intent_classifier.py`).
 6. **P2-06**: Guardrail Service Layer & Router Orchestrator (`apps/api/services/guardrail_service.py`).
-7. **P2-07**: Sub-10ms Latency SLA Optimization & Benchmark Harness (`ml/eval/benchmark_router.py`).
+7. **P2-07**: Sub-10ms Latency SLA Optimization & Benchmark Harness (`evaluation/ai/benchmark_router.py`).
 8. **P2-08**: Phase 2 Automated Pytest Suite (`tests/test_phase2_jev_router.py`).
 
 ---
