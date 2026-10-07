@@ -4,6 +4,7 @@ Regression test for Fix 2.1:
 - Elimination of destructive float -> Int64 heuristic
 - VALID_TABLES contains user_carts and semantic_query_cache
 """
+import io
 import uuid
 from unittest.mock import patch
 import pandas as pd
@@ -19,19 +20,31 @@ def test_valid_tables_includes_user_carts_and_semantic_cache():
 
 
 def test_dataframe_with_whole_number_floats_preserves_dtype():
-    """Verify float columns with whole numbers are NOT mutated to Int64."""
+    """Verify float columns with whole numbers are NOT mutated to Int64 by insert_dataframe."""
     df = pd.DataFrame({
         "product_id": ["P001", "P002"],
         "predicted_usd": [100.0, 250.0],
         "category_float": [1.0, 2.0]
     })
     repo = BaseRepository()
-    # We inspect the dataframe preprocessing inside insert_dataframe
-    data = df.copy()
-    # In old code: float columns were coerced to Int64
-    # In new code: float dtypes remain floats
-    assert pd.api.types.is_float_dtype(data["predicted_usd"])
-    assert pd.api.types.is_float_dtype(data["category_float"])
+    captured_data = []
+
+    # Mock engine.begin() and cursor to intercept copy_expert
+    with patch.object(repo.engine, "begin") as mock_begin:
+        mock_conn = mock_begin.return_value.__enter__.return_value
+        mock_dbapi = mock_conn.connection.dbapi_connection
+        def fake_copy_expert(sql, file):
+            captured_data.append(file.getvalue())
+        mock_dbapi.cursor.return_value.__enter__.return_value.copy_expert.side_effect = fake_copy_expert
+
+        repo.insert_dataframe("curated_products", df)
+
+    # In old code: float columns were coerced to Int64, outputting "100" instead of "100.0"
+    # In new code: float dtypes remain floats, outputting floating representation
+    assert pd.api.types.is_float_dtype(df["predicted_usd"])
+    assert pd.api.types.is_float_dtype(df["category_float"])
+    assert len(captured_data) == 1
+    assert "100.0\t1.0" in captured_data[0]
 
 
 def test_copy_fallback_preserves_table_and_indexes():

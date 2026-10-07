@@ -51,6 +51,7 @@
   - Added `index=True` to `product_id` column in `BlackFridayCleaned` (`core/db/models/warehouse.py`).
 - **Verification**:
   - Verified generated SQLAlchemy index `ix_black_friday_cleaned_product_id` on model metadata and database DDL.
+  - Dedicated test: `tests/test_fix_3_2_warehouse_index.py` (PASSED).
 
 ### Fix 4.1: SQL Parameterization & Removal of Inline DDL
 - **Status**: DONE
@@ -73,7 +74,8 @@
   - Utilizes `ix_black_friday_cleaned_product_id` index.
 - **Verification**:
   - Ran `EXPLAIN` against populated table:
-    `Bitmap Heap Scan on black_friday_cleaned ... Bitmap Index Scan on idx_cleaned_product_id (cost=0.00..27.69 rows=1530)` instead of sequential scan.
+    `Bitmap Heap Scan on black_friday_cleaned ... Bitmap Index Scan on idx_cleaned_product_id (cost=0.00..27.69 rows=2035)` instead of sequential scan.
+  - Dedicated tests: `tests/test_fix_9_1_recommendation_repo.py` (PASSED).
 
 ### Fix 9.2: Analytics Summary Redis Caching
 - **Status**: DONE
@@ -94,6 +96,7 @@
   - Removed dead `get_db()` function from `core/db/session.py`.
 - **Verification**:
   - Grepped repository: 0 occurrences outside git diff. All database sessions utilize `get_db_session()` context manager.
+  - Dedicated tests: `tests/test_fix_9_3_session.py` (PASSED).
 
 ### Fix 8.1: Repository Composition Refactor
 - **Status**: DONE
@@ -122,11 +125,14 @@
 - `docker/postgres/init_schema.sql`
 
 ## Test Files Added
-- `tests/test_fix_3_1_mro_and_tables.py`
 - `tests/test_fix_2_1_base_repo.py`
+- `tests/test_fix_3_1_mro_and_tables.py`
+- `tests/test_fix_3_2_warehouse_index.py`
 - `tests/test_fix_4_1_param_and_ddl.py`
-- `tests/test_fix_9_2_analytics_cache.py`
 - `tests/test_fix_8_1_composition.py`
+- `tests/test_fix_9_1_recommendation_repo.py`
+- `tests/test_fix_9_2_analytics_cache.py`
+- `tests/test_fix_9_3_session.py`
 
 ---
 
