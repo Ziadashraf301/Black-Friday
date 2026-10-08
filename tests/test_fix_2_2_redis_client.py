@@ -21,6 +21,7 @@ def test_fix_2_2_public_client_property():
     assert cache_manager.client.ping() is True
 
 
+@pytest.mark.benchmark
 def test_fix_2_2_unreachable_redis_cooldown():
     """
     With an unreachable Redis, is_available enters a 15-second cooldown after a failure

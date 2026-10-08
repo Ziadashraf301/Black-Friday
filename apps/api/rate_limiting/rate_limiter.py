@@ -91,6 +91,8 @@ class RedisRateLimiter:
             return cache_manager.client
         return None
 
+    MAX_IN_MEMORY_KEYS: int = 10000
+
     def _clean_expired_in_memory(self, now: float) -> None:
         """Internal helper running under self._lock to prune expired in-memory entries."""
         empty_keys = []
@@ -103,6 +105,17 @@ class RedisRateLimiter:
                 self._in_memory_windows[key] = valid
         for key in empty_keys:
             self._in_memory_windows.pop(key, None)
+
+        # Enforce hard upper bound if still above MAX_IN_MEMORY_KEYS
+        if len(self._in_memory_windows) > self.MAX_IN_MEMORY_KEYS:
+            excess = len(self._in_memory_windows) - self.MAX_IN_MEMORY_KEYS
+            # Evict keys with the oldest timestamps
+            sorted_keys = sorted(
+                self._in_memory_windows.keys(),
+                key=lambda k: self._in_memory_windows[k][-1] if self._in_memory_windows[k] else 0.0
+            )
+            for k in sorted_keys[:excess]:
+                self._in_memory_windows.pop(k, None)
 
     def _check_in_memory(self, user_id: str, now: float) -> Tuple[bool, Optional[str], int, Dict[str, str]]:
         """Thread-safe bounded in-memory sliding window fallback when Redis is offline."""

@@ -37,6 +37,8 @@ class BlackFridayRepository(BaseRepository):
         )
 
     def __getattr__(self, name: str) -> Any:
+        if name.startswith("_") or "_sub_repos" not in self.__dict__:
+            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
         for sub_repo in self._sub_repos:
             if hasattr(sub_repo, name):
                 return getattr(sub_repo, name)

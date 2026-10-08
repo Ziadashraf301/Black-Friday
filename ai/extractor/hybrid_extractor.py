@@ -22,8 +22,8 @@ class HybridEntityExtractor(BaseEntityExtractor):
         self._jev_extractor = JevEntityExtractor(api_key=api_key, prompt_version=prompt_version)
 
     def extract(self, query: str, jev_entities: Optional[ExtractedEntities] = None) -> ExtractedEntities:
-        reg_res = self._regex_extractor.extract(query)
         jev_res = jev_entities if jev_entities is not None else self._jev_extractor.extract(query)
+        reg_res = self._regex_extractor.extract(query, category_hints=jev_res.categories)
 
         # Merge categories: Jev provides semantic understanding; Regex provides keyword & catalog backup
         merged_cats = list(dict.fromkeys(jev_res.categories + reg_res.categories))

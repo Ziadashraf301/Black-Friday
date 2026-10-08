@@ -95,14 +95,15 @@ class BaseRepository:
             logger.info(f"High-speed COPY streaming to '{table_name}' completed successfully.")
         except Exception as copy_err:
             logger.warning(f"Fast COPY failed ({copy_err}), falling back to standard to_sql batching...")
-            if if_exists == "replace":
-                self.truncate_table(table_name, restart_identity=True)
-            data.to_sql(
-                name=table_name,
-                con=self.engine,
-                if_exists="append",
-                index=False,
-                chunksize=chunksize,
-                method="multi"
-            )
+            with self.engine.begin() as conn:
+                if if_exists == "replace":
+                    conn.execute(text(f"TRUNCATE TABLE {table_name} RESTART IDENTITY;"))
+                data.to_sql(
+                    name=table_name,
+                    con=conn,
+                    if_exists="append",
+                    index=False,
+                    chunksize=chunksize,
+                    method="multi"
+                )
             logger.info(f"Batch write to '{table_name}' complete.")

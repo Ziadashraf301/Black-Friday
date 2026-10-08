@@ -33,7 +33,7 @@ def test_special_characters_in_db_and_redis_passwords():
         REDIS_PASSWORD=special_password,
         REDIS_HOST="localhost",
         REDIS_PORT=6379,
-        REDIS_DB=0,
+        REDIS_DB=15,
     )
 
     # 1. Sync Postgres URL

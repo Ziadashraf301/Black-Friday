@@ -59,6 +59,7 @@ def test_multi_intent_fan_out_and_aggregation():
 # =============================================================================
 # 2. Two-Tier Caching: Tier-0 Redis (<1ms) & Tier-1 pgvector Semantic Cache (P4-02)
 # =============================================================================
+@pytest.mark.benchmark
 def test_tier0_and_tier1_caching(repo):
     """Validates Tier-0 exact hit and Tier-1 pgvector vector semantic cache lookup."""
     query = "Exclusive vintage velvet evening jacket"

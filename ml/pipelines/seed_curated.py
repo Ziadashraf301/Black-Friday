@@ -45,9 +45,10 @@ class CuratedCatalogSeeder:
         try:
             from core.cache import cache_manager
             cache_manager.delete_pattern("analytics:*")
-            logger.info("Invalidated analytics cache entries.")
+            cache_manager.delete_pattern("shopper:*")
+            logger.info("Invalidated analytics and shopper catalog cache entries.")
         except Exception as e:
-            logger.warning(f"Analytics cache invalidation warning: {e}")
+            logger.warning(f"Cache invalidation warning: {e}")
 
         # 2. Incremental vector embedding skip logic
         if force_reembed:

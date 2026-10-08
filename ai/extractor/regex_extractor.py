@@ -58,11 +58,11 @@ class RegexEntityExtractor(BaseEntityExtractor):
     def __init__(self):
         CatalogIndex.ensure_loaded()
 
-    def extract(self, query: str) -> ExtractedEntities:
+    def extract(self, query: str, category_hints: Optional[List[str]] = None) -> ExtractedEntities:
         max_price: Optional[float] = None
         extracted_sizes: List[str] = []
         product_ids: List[str] = []
-        matched_categories: List[str] = []
+        matched_categories: List[str] = list(category_hints) if category_hints else []
         matched_materials: List[str] = []
         matched_styles: List[str] = []
         raw_tokens: List[str] = []

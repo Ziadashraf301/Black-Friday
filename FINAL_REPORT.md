@@ -62,7 +62,7 @@
 | **6.5** | Evaluation| Drop purchase from holdout test set in imputation eval | **DEFERRED** | WP11 | Slated for WP11 ML retraining |
 | **6.6** | Tracking | Centralized S3/MinIO endpoint resolution in `core/tracking` | **DONE** | WP6 | `core/tracking/client.py` verified |
 | **6.7** | Frontend | Assistant drawer UX, markdown rendering, Beta voice badge | **DONE** | WP9 | `test_fix_wp9_frontend_components.py` PASSED |
-| **7.1** | API | Assistant streaming route event format & timeout | **DONE** | WP7 | `test_fix_7_1_bot_stream.py` PASSED |
+| **7.1** | API | Assistant streaming route event format & timeout | **DONE** | WP7, WP8 | `test_fix_wp8b_bot_streaming.py`, `test_fix_7_1_bot_stream.py` PASSED |
 | **7.2** | Database | Curated products query performance & catalog indexing | **DONE** | WP7 | `test_fix_7_2_shopper_performance.py` PASSED |
 | **7.3** | AI | Policy knowledge base loading & offline fallback | **DONE** | WP7 | `test_fix_wp7_policy_kb.py` PASSED |
 | **7.4** | AI | Jev API router response benchmarking & latency logging | **DONE** | WP7 | `test_fix_wp7_jev_router_benchmark.py` PASSED |

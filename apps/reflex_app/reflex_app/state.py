@@ -1288,11 +1288,13 @@ class ShoppingState(rx.State):
                     # Check 403 Security Strike Lockdown from Backend Middleware
                     if resp.status_code == 403:
                         detail = "Security lockdown active: Access temporarily restricted."
-                        if hasattr(resp, "json"):
-                            try:
+                        try:
+                            if hasattr(resp, "aread"):
+                                await resp.aread()
+                            if hasattr(resp, "json"):
                                 detail = resp.json().get("detail", detail)
-                            except Exception:
-                                pass
+                        except Exception:
+                            pass
                         self.bot_is_locked_out = True
                         self.bot_lockout_message = detail
                         if self.bot_messages and self.bot_messages[-1].get("role") == "assistant":

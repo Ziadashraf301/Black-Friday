@@ -43,6 +43,13 @@ def tokenize_for_stream(text: str) -> List[str]:
 # =============================================================================
 def extract_grounding_citations(ui_payload: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Builds website catalog citations and URLs for retrieved products."""
+    if not ui_payload:
+        return []
+
+    # If citations are already pre-computed or aggregated in the payload, use them
+    if ui_payload.get("citations"):
+        return ui_payload["citations"]
+
     citations: List[Dict[str, Any]] = []
     ui_type = ui_payload.get("type", "")
     ui_data = ui_payload.get("data", {})
@@ -79,6 +86,18 @@ def extract_grounding_citations(ui_payload: Dict[str, Any]) -> List[Dict[str, An
                     "url": f"/shopper/browse/{pid}",
                     "price": b.get("price", 0.0),
                     "badge": f"{b.get('savings_pct', 15.0):.0f}% Off Bundle",
+                })
+    elif ui_type == "multi_card" or "cards" in ui_payload:
+        cards = ui_payload.get("cards", [])
+        for c in cards:
+            pid = c.get("product_id")
+            if pid:
+                citations.append({
+                    "product_id": pid,
+                    "title": c.get("name", f"Product {pid}"),
+                    "url": f"/shopper/browse/{pid}",
+                    "price": c.get("price", c.get("discounted_price", 0.0)),
+                    "badge": c.get("badge", "Featured"),
                 })
     return citations
 
@@ -214,19 +233,34 @@ async def bot_live_websocket(websocket: WebSocket):
       - Synchronized product cards sent down the socket alongside voice
       - Interruption handling (barge-in)
     """
-    await websocket.accept()
     client_ip = websocket.client.host if websocket.client else "unknown"
-    logger.info(f"[WS: LIVE] Accepted live voice connection from {client_ip}")
 
-    # Check ban lockout
-    if strike_tracker.is_banned(client_ip):
-        await websocket.send_json({
-            "type": "error",
-            "error_code": "SECURITY_STRIKE_LOCKOUT",
-            "message": "Access revoked due to repeated security policy violations. Lockout expires in 24 hours.",
-        })
+    # Extract user identity from Authorization header or query parameter if available
+    auth_user_id = None
+    auth_header = websocket.headers.get("authorization")
+    token = None
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ", 1)[1].strip()
+    elif "token" in websocket.query_params:
+        token = websocket.query_params.get("token")
+
+    if token:
+        try:
+            from core.security import decode_access_token
+            payload = decode_access_token(token)
+            if payload.get("sub"):
+                auth_user_id = str(payload.get("sub"))
+        except Exception as e:
+            logger.debug(f"[WS: LIVE] Handshake token decode warning: {e}")
+
+    # Check ban lockout by IP or user_id before accept
+    if strike_tracker.is_banned(client_ip) or (auth_user_id and strike_tracker.is_banned(auth_user_id)):
         await websocket.close(code=1008)
+        logger.warning(f"[WS: LIVE] Handshake rejected for banned identifier (ip={client_ip}, user={auth_user_id})")
         return
+
+    await websocket.accept()
+    logger.info(f"[WS: LIVE] Accepted live voice connection from {client_ip} (user={auth_user_id})")
 
     try:
         api_key = getattr(settings, "GEMINI_API_KEY", None)

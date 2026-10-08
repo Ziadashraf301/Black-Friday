@@ -227,11 +227,16 @@ def test_frontend_bot_auth_check():
     assert len(auth_state.bot_messages) > 0
 
     # 3. Action chips test (*"Top Deals Today"*, *"Sale Products"*)
-    auth_state.click_action_chip("Top Deals Today")
+    import asyncio
+    async def consume_chip(chip_name: str):
+        async for _ in auth_state.click_action_chip(chip_name):
+            pass
+
+    asyncio.run(consume_chip("Top Deals Today"))
     last_assistant_msg = [m for m in auth_state.bot_messages if m["role"] == "assistant"][-1]
     assert "deal" in last_assistant_msg["content"].lower()
 
-    auth_state.click_action_chip("Sale Products")
+    asyncio.run(consume_chip("Sale Products"))
     last_assistant_msg = [m for m in auth_state.bot_messages if m["role"] == "assistant"][-1]
     assert "sale" in last_assistant_msg["content"].lower()
 
