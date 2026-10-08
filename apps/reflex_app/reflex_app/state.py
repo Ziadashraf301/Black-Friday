@@ -5,6 +5,7 @@ Handles auth, catalog, filters, quick view, ONNX pricing, cart, history, and das
 """
 import json
 import httpx
+import asyncio
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
@@ -228,6 +229,7 @@ class ShoppingState(rx.State):
     bot_is_locked_out: bool = False
     bot_lockout_message: str = ""
     bot_active_cards: List[Dict[str, Any]] = []
+    bot_citations: List[Dict[str, Any]] = []
 
     # ── Auth computed vars ──────────────────────────────────────────────
     @rx.var
@@ -1153,79 +1155,142 @@ class ShoppingState(rx.State):
         else:
             self.bot_messages.append({"role": "assistant", "content": "🎙️ Audio stream closed."})
 
-    def _execute_bot_query(self, query: str):
-        """Executes query through backend API endpoint (/bot/stream) over HTTP."""
+    async def _execute_bot_query(self, query: str):
+        """Executes query through backend API endpoint (/bot/stream) over async HTTP SSE stream."""
         user_id = str(self.user_id) if self.user_id else "guest_user"
         session_id = f"session_{user_id}"
 
+        self.bot_loading = True
+        self.bot_active_cards = []
+        self.bot_citations = []
+        # Ensure assistant message slot exists
+        if not self.bot_messages or self.bot_messages[-1].get("role") != "assistant":
+            self.bot_messages.append({"role": "assistant", "content": ""})
+        else:
+            self.bot_messages[-1]["content"] = ""
+        yield
+
+        tokens: List[str] = []
         try:
-            resp = httpx.post(
-                f"{API_BASE_URL}/bot/stream",
-                json={
-                    "query": query,
-                    "user_id": user_id,
-                    "session_id": session_id,
-                    "mode": self.bot_mode,
-                },
-                timeout=30.0,
-            )
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                async with client.stream(
+                    "POST",
+                    f"{API_BASE_URL}/bot/stream",
+                    json={
+                        "query": query,
+                        "user_id": user_id,
+                        "session_id": session_id,
+                        "mode": self.bot_mode,
+                    },
+                ) as resp:
+                    # Check 403 Security Strike Lockdown from Backend Middleware
+                    if resp.status_code == 403:
+                        detail = "Security lockdown active: Access temporarily restricted."
+                        if hasattr(resp, "json"):
+                            try:
+                                detail = resp.json().get("detail", detail)
+                            except Exception:
+                                pass
+                        self.bot_is_locked_out = True
+                        self.bot_lockout_message = detail
+                        if self.bot_messages and self.bot_messages[-1].get("role") == "assistant":
+                            self.bot_messages[-1]["content"] = detail
+                        else:
+                            self.bot_messages.append({"role": "assistant", "content": detail})
+                        yield
+                        return
 
-            # Check 403 Security Strike Lockdown from Backend Middleware
-            if resp.status_code == 403:
-                try:
-                    detail = resp.json().get("detail", "Security lockdown active.")
-                except Exception:
-                    detail = "Security lockdown active: Access temporarily restricted."
-                self.bot_is_locked_out = True
-                self.bot_lockout_message = detail
-                self.bot_messages.append({"role": "assistant", "content": detail})
-                return
+                    if resp.status_code != 200:
+                        msg = f"Service returned error code {resp.status_code}. Please try again shortly."
+                        if self.bot_messages and self.bot_messages[-1].get("role") == "assistant":
+                            self.bot_messages[-1]["content"] = msg
+                        else:
+                            self.bot_messages.append({"role": "assistant", "content": msg})
+                        yield
+                        return
 
-            if resp.status_code != 200:
-                self.bot_messages.append({
-                    "role": "assistant",
-                    "content": f"Service returned error code {resp.status_code}. Please try again shortly.",
-                })
-                return
+                    # Parse SSE chunks from HTTP stream response asynchronously
+                    async for line in resp.aiter_lines():
+                        line = line.strip()
+                        if not line.startswith("data:"):
+                            continue
+                        data_str = line[5:].strip()
+                        if data_str == "[DONE]":
+                            break
+                        try:
+                            event = json.loads(data_str)
+                            etype = event.get("type")
+                            if etype == "token":
+                                tok = event.get("content", "")
+                                tokens.append(tok)
+                                if self.bot_messages and self.bot_messages[-1].get("role") == "assistant":
+                                    self.bot_messages[-1]["content"] = "".join(tokens)
+                                yield
+                            elif etype == "ui_card":
+                                payload = event.get("payload", {})
+                                if "cards" in payload:
+                                    self.bot_active_cards = payload["cards"]
+                                elif "products" in payload.get("data", {}):
+                                    self.bot_active_cards = [
+                                        {
+                                            "type": "PRODUCT_CARD",
+                                            "product_id": p.get("product_id"),
+                                            "name": p.get("name"),
+                                            "price": p.get("discounted_price", p.get("price")),
+                                            "image_url": p.get("image_url", f"/products/{p.get('product_id')}.jpg"),
+                                            "badge": p.get("badge", "Curated Deal"),
+                                        }
+                                        for p in payload["data"]["products"]
+                                    ]
+                                elif "bundles" in payload.get("data", {}):
+                                    self.bot_active_cards = [
+                                        {
+                                            "type": "BUNDLE_CARD",
+                                            "product_id": b.get("product_id"),
+                                            "name": b.get("name"),
+                                            "price": b.get("price"),
+                                            "badge": f"{b.get('savings_pct', 15.0):.0f}% Off Bundle",
+                                        }
+                                        for b in payload["data"]["bundles"]
+                                    ]
+                                yield
+                            elif etype == "grounding":
+                                citations = event.get("citations", [])
+                                if citations:
+                                    self.bot_citations = citations
+                                    formatted_cites = []
+                                    for c in citations:
+                                        if isinstance(c, dict):
+                                            title = c.get("title") or c.get("name") or c.get("product_id", "")
+                                            url = c.get("url", "")
+                                            price = c.get("price")
+                                            label = title
+                                            if price:
+                                                label += f" (${float(price):.2f})"
+                                            if url:
+                                                formatted_cites.append(f"[{label}]({url})")
+                                            elif label:
+                                                formatted_cites.append(label)
+                                            else:
+                                                formatted_cites.append(str(c))
+                                        else:
+                                            formatted_cites.append(str(c))
+                                    cite_str = "\n\nSources & Catalog Grounding:\n" + "\n".join(f"- {fc}" for fc in formatted_cites)
+                                    if self.bot_messages and self.bot_messages[-1].get("role") == "assistant":
+                                        self.bot_messages[-1]["content"] = "".join(tokens) + cite_str
+                                    else:
+                                        self.bot_messages.append({"role": "assistant", "content": cite_str})
+                                    yield
+                        except Exception:
+                            continue
 
-            # Parse SSE chunks from HTTP stream response
-            tokens: List[str] = []
-            cards: List[Dict[str, Any]] = []
-
-            for line in resp.text.split("\n"):
-                line = line.strip()
-                if not line.startswith("data:"):
-                    continue
-                data_str = line[5:].strip()
-                if data_str == "[DONE]":
-                    break
-                try:
-                    event = json.loads(data_str)
-                    etype = event.get("type")
-                    if etype == "token":
-                        tokens.append(event.get("content", ""))
-                    elif etype == "ui_card":
-                        payload = event.get("payload", {})
-                        if "cards" in payload:
-                            cards = payload["cards"]
-                        elif "products" in payload.get("data", {}):
-                            cards = [
-                                {
-                                    "type": "PRODUCT_CARD",
-                                    "product_id": p.get("product_id"),
-                                    "name": p.get("name"),
-                                    "price": p.get("discounted_price", p.get("price")),
-                                    "image_url": p.get("image_url", f"/products/{p.get('product_id')}.jpg"),
-                                    "badge": p.get("badge", "Curated Deal"),
-                                }
-                                for p in payload["data"]["products"]
-                            ]
-                except Exception:
-                    continue
-
-            final_text = "".join(tokens).strip() or "Here are the top catalog selections:"
-            self.bot_messages.append({"role": "assistant", "content": final_text})
-            self.bot_active_cards = cards
+                    # If no tokens received, provide fallback
+                    if not tokens and (not self.bot_messages or not self.bot_messages[-1].get("content")):
+                        if self.bot_messages and self.bot_messages[-1].get("role") == "assistant":
+                            self.bot_messages[-1]["content"] = "Here are the top catalog selections:"
+                        else:
+                            self.bot_messages.append({"role": "assistant", "content": "Here are the top catalog selections:"})
+                        yield
 
         except Exception as e:
             # Offline fallback if API server is not running locally
@@ -1242,14 +1307,16 @@ class ShoppingState(rx.State):
             else:
                 reply = f"Assistant offline: Unable to reach assistant service ({str(e)})."
 
-            self.bot_messages.append({
-                "role": "assistant",
-                "content": reply,
-            })
+            if self.bot_messages and self.bot_messages[-1].get("role") == "assistant":
+                self.bot_messages[-1]["content"] = reply
+            else:
+                self.bot_messages.append({"role": "assistant", "content": reply})
+            yield
+        finally:
+            self.bot_loading = False
+            yield
 
-
-
-    def click_action_chip(self, chip: str):
+    async def click_action_chip(self, chip: str):
         """Processes preset action chips (*'Top Deals Today'*, *'Sale Products'*)."""
         if not self.is_authenticated:
             self.bot_auth_warning = "Please sign in to use personalized shopping actions."
@@ -1257,15 +1324,20 @@ class ShoppingState(rx.State):
             return
 
         self.bot_messages.append({"role": "user", "content": chip})
-        self._execute_bot_query(chip)
+        yield
+        async for _ in self._execute_bot_query(chip):
+            yield
 
-    def send_bot_message(self):
+    async def send_bot_message(self):
         """Dispatches typed message from input field to shopping DAG."""
         if not self.bot_input_text.strip():
             return
         msg = self.bot_input_text.strip()
         self.bot_input_text = ""
         self.bot_messages.append({"role": "user", "content": msg})
-        self._execute_bot_query(msg)
+        yield
+        async for _ in self._execute_bot_query(msg):
+            yield
+
 
 
