@@ -47,14 +47,14 @@ class Settings(BaseSettings):
 
     @property
     def database_url(self) -> str:
-        user = urllib.parse.quote_plus(self.POSTGRES_USER)
-        pwd = urllib.parse.quote_plus(self.POSTGRES_PASSWORD)
+        user = urllib.parse.quote(self.POSTGRES_USER, safe="")
+        pwd = urllib.parse.quote(self.POSTGRES_PASSWORD, safe="")
         return f"postgresql+psycopg2://{user}:{pwd}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.APP_DB_NAME}"
 
     @property
     def async_database_url(self) -> str:
-        user = urllib.parse.quote_plus(self.POSTGRES_USER)
-        pwd = urllib.parse.quote_plus(self.POSTGRES_PASSWORD)
+        user = urllib.parse.quote(self.POSTGRES_USER, safe="")
+        pwd = urllib.parse.quote(self.POSTGRES_PASSWORD, safe="")
         return f"postgresql+asyncpg://{user}:{pwd}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.APP_DB_NAME}"
 
     # MinIO / S3 Storage
@@ -84,7 +84,7 @@ class Settings(BaseSettings):
     @property
     def redis_url(self) -> str:
         if self.REDIS_PASSWORD:
-            pwd = urllib.parse.quote_plus(self.REDIS_PASSWORD)
+            pwd = urllib.parse.quote(self.REDIS_PASSWORD, safe="")
             return f"redis://:{pwd}@{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
         return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
 

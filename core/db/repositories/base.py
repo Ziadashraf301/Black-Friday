@@ -61,6 +61,11 @@ class BaseRepository:
             raise ValueError(f"Unauthorized table insertion target: '{table_name}'")
 
         data = df.copy()
+        # Ensure integer columns that might be float with NaNs (e.g. product_category_2/3) format as whole integers or \N
+        for col in ["product_category_2", "product_category_3", "occupation", "marital_status"]:
+            if col in data.columns and pd.api.types.is_float_dtype(data[col]):
+                data[col] = data[col].astype("Int64")
+
         if json_cols:
             for col in json_cols:
                 if col in data.columns:

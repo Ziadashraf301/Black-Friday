@@ -226,6 +226,27 @@ The platform features an interactive, reactive web UI built entirely in Python u
 
 ---
 
+## Architectural Layering Rules & Guidelines
+
+To maintain decoupling and production maintainability, the codebase enforces strict layering verified via AST analysis (`pytest tests/test_architecture.py`):
+
+```
+core/        config, logging, security, exceptions, cache/, db/, tracking/ (MLflow SSOT), embeddings/
+ml/          features, models, market_basket, segmentation, pipelines, serving/ (ONNX runtimes)
+ai/          shopping assistant: classifier, extractor, guardrails, nodes, router, services, tools, workflow
+evaluation/  standalone evaluation: evaluation/ml/ (models & imputer), evaluation/ai/ (router benchmarks)
+apps/        apps/api (FastAPI), apps/reflex_app (Reflex UI)
+```
+
+### Dependency Rules:
+1. **`core/`** imports **nothing** from `ml/`, `ai/`, `apps/`, or `evaluation/`.
+2. **`ml/`** and **`ai/`** import **`core/` only** (never `apps/`, and never each other's domain pipelines).
+3. **`apps/`** may import `core/`, `ai/`, and `ml/`, but **never** `evaluation/`.
+4. **`evaluation/`** is standalone and may import `core/`, `ml/`, and `ai/`, but **nothing imports `evaluation/`**.
+5. **`mlflow`** is configured and imported **strictly within `core/tracking/`**; ML and AI components interact with MLflow through `core.tracking` abstractions.
+
+---
+
 ## Developer Guide: How to Run the Applications & Load Tests
 
 ### 1. Running Manually via PowerShell / Terminal

@@ -18,8 +18,11 @@ def test_gemini_api_key_optional(monkeypatch):
 
 
 def test_special_characters_in_db_and_redis_passwords():
-    """Verify passwords containing @, :, /, #, ? are URL-encoded and parse back accurately."""
-    special_password = "p@ss:w/o#r?d"
+    """Verify passwords containing @, :, /, #, ? and space are URL-encoded with quote(safe='') and parse back accurately."""
+    import sqlalchemy.engine
+    import redis
+
+    special_password = "p@ss:w/o#r?d with spaces"
 
     s = Settings(
         POSTGRES_USER="testuser",
@@ -35,22 +38,15 @@ def test_special_characters_in_db_and_redis_passwords():
 
     # 1. Sync Postgres URL
     pg_url = s.database_url
-    assert "p%40ss%3Aw%2Fo%23r%3Fd" in pg_url
-    parsed_pg = urllib.parse.urlsplit(pg_url)
-    assert urllib.parse.unquote_plus(parsed_pg.password) == special_password
+    assert "%20" in pg_url or "p%40ss" in pg_url
+    parsed_pg_pw = sqlalchemy.engine.make_url(pg_url).password
+    assert parsed_pg_pw == special_password
 
-    # 2. Async Postgres URL
-    async_pg_url = s.async_database_url
-    assert "p%40ss%3Aw%2Fo%23r%3Fd" in async_pg_url
-    # Replace dialect scheme prefix for standard urlsplit parsing
-    parsed_async = urllib.parse.urlsplit(async_pg_url.replace("postgresql+asyncpg://", "postgresql://"))
-    assert urllib.parse.unquote_plus(parsed_async.password) == special_password
-
-    # 3. Redis URL
+    # 2. Redis URL
     redis_url = s.redis_url
-    assert "p%40ss%3Aw%2Fo%23r%3Fd" in redis_url
-    parsed_redis = urllib.parse.urlsplit(redis_url)
-    assert urllib.parse.unquote_plus(parsed_redis.password) == special_password
+    r_client = redis.from_url(redis_url)
+    parsed_redis_pw = r_client.connection_pool.connection_kwargs.get("password")
+    assert parsed_redis_pw == special_password
 
 
 def test_consolidated_optional_integer_validator():

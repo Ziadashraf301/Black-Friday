@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   # ============================================================================
   # POSTGRESQL 16 (Unified DB for Analytical Warehouse & MLflow Metadata)

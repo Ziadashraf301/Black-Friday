@@ -46,9 +46,7 @@ This document records all module moves, extractions, and rewirings performed to 
    - Used by training pipelines (`preprocess`, `train`, `retrain`) within the `ml/` domain so they no longer import `evaluation.ml`.
    - Allows removing all three allow-list exceptions in `tests/test_architecture.py`.
 
-## Compatibility Shims Maintained (TODO-remove)
+## Compatibility Shims (Retired in WP10)
 
-- `ai/services/embedding_service.py`: Re-exports from `core.embeddings`. Marked `TODO-remove`.
-- `apps/api/serving/predictor.py`: Re-exports `ONNXPredictor` from `ml.serving.predictor`. Marked `TODO-remove`.
-- `apps/api/serving/imputer.py`: Re-exports `ONNXMissForestImputer` from `ml.serving.imputer`. Marked `TODO-remove`.
-- `ai/observability/mlflow_tracer.py`: Re-exports `AgentTracer` from `ai.observability.tracing`. Marked `TODO-remove`.
+- All compatibility shims (`ai/services/embedding_service.py`, `apps/api/serving/predictor.py`, `apps/api/serving/imputer.py`, `ai/observability/mlflow_tracer.py`) have been proven unused via static analysis and permanently removed.
+- `ALLOW_LISTED_VIOLATIONS` in `tests/test_architecture.py` is empty (`set()`).
