@@ -13,6 +13,7 @@ import reflex as rx
 import os
 
 API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000")
+INR_TO_USD_RATE: float = 80.0
 
 _OCCUPATION_MAP = {
     0: "Student", 1: "Technology", 2: "Healthcare", 3: "Management",
@@ -199,6 +200,7 @@ class ShoppingState(rx.State):
     # --- Cart ---
     cart_items: List[CartItem] = []
     is_cart_open: bool = False
+    checkout_error: str = ""
 
     # --- Purchase history ---
     purchase_history: List[PurchaseEntry] = []
@@ -366,53 +368,36 @@ class ShoppingState(rx.State):
     def active_product_sizes(self) -> List[str]:
         return self.active_product.get("sizes", ["S", "M", "L", "XL"]) if self.active_product else ["S", "M", "L", "XL"]
 
-    @rx.var
-    def active_apriori_bundles_list(self) -> List[RecProduct]:
-        bundles = self.active_product.get("apriori_bundles", []) if self.active_product else []
+    def _extract_recs(self, key: str, default_name: str, default_price: float, badge: str) -> List[RecProduct]:
+        raw = self.active_product.get(key, []) if self.active_product else []
         active_id = str(self.active_product.get("product_id", ""))
         seen = {active_id}
         res = []
-        for b in bundles:
-            pid = str(b.get("product_id", ""))
+        for item in raw:
+            pid = str(item.get("product_id", ""))
             if not pid or pid in seen:
                 continue
             seen.add(pid)
-            p = float(b.get("price", 69.0))
+            p = float(item.get("price", default_price))
             res.append(RecProduct(
                 product_id=pid,
-                name=str(b.get("name", "Curated Bundle")),
-                image_url=str(b.get("image_url", f"/products/{pid}.jpg")),
+                name=str(item.get("name", default_name)),
+                image_url=str(item.get("image_url", f"/products/{pid}.jpg")),
                 price=p,
                 price_display=f"${p:.2f}",
-                badge_label="Bundle Rule",
+                badge_label=badge,
             ))
             if len(res) >= 3:
                 break
         return res
 
     @rx.var
+    def active_apriori_bundles_list(self) -> List[RecProduct]:
+        return self._extract_recs("apriori_bundles", "Curated Bundle", 69.0, "Bundle Rule")
+
+    @rx.var
     def active_item2vec_similars_list(self) -> List[RecProduct]:
-        similars = self.active_product.get("item2vec_similars", []) if self.active_product else []
-        active_id = str(self.active_product.get("product_id", ""))
-        seen = {active_id}
-        res = []
-        for s in similars:
-            pid = str(s.get("product_id", ""))
-            if not pid or pid in seen:
-                continue
-            seen.add(pid)
-            p = float(s.get("price", 59.0))
-            res.append(RecProduct(
-                product_id=pid,
-                name=str(s.get("name", "Similar Piece")),
-                image_url=str(s.get("image_url", f"/products/{pid}.jpg")),
-                price=p,
-                price_display=f"${p:.2f}",
-                badge_label="Similar Style",
-            ))
-            if len(res) >= 3:
-                break
-        return res
+        return self._extract_recs("item2vec_similars", "Similar Piece", 59.0, "Similar Style")
 
     # ── Dashboard computed vars ─────────────────────────────────────────
     @rx.var
@@ -422,9 +407,9 @@ class ShoppingState(rx.State):
 
     @rx.var
     def dashboard_revenue_display(self) -> str:
-        # Convert INR to USD by dividing by 80.0
+        # Convert INR to USD by dividing by INR_TO_USD_RATE
         rev_inr = float(self.dashboard_summary.get("total_revenue", 0.0))
-        rev_usd = rev_inr / 80.0
+        rev_usd = rev_inr / INR_TO_USD_RATE
         if rev_usd >= 1_000_000:
             return f"${rev_usd / 1_000_000:.1f}M"
         if rev_usd >= 1_000:
@@ -443,9 +428,9 @@ class ShoppingState(rx.State):
 
     @rx.var
     def dashboard_aov_display(self) -> str:
-        # Convert INR to USD by dividing by 80.0
+        # Convert INR to USD by dividing by INR_TO_USD_RATE
         aov_inr = float(self.dashboard_summary.get("avg_order_value", 0.0))
-        aov_usd = aov_inr / 80.0
+        aov_usd = aov_inr / INR_TO_USD_RATE
         return f"${aov_usd:.2f}"
 
     @rx.var
@@ -827,9 +812,13 @@ class ShoppingState(rx.State):
         # Determine personalized price if logged in
         pers_price = 0.0
         has_pers = False
-        if self.is_authenticated and self.active_product.get("product_id") == product_id and self.estimated_price_usd > 0:
-            pers_price = self.estimated_price_usd
-            has_pers = True
+        if self.is_authenticated:
+            if product_id in self.cached_price_estimates and self.cached_price_estimates[product_id] > 0:
+                pers_price = self.cached_price_estimates[product_id]
+                has_pers = True
+            elif self.active_product.get("product_id") == product_id and self.estimated_price_usd > 0:
+                pers_price = self.estimated_price_usd
+                has_pers = True
 
         # Check existing item
         new_items = []
@@ -843,15 +832,15 @@ class ShoppingState(rx.State):
                     name=item.name,
                     image_url=item.image_url,
                     price=item.price,
-                    personalized_price=item.personalized_price if item.has_personalized else pers_price,
-                    has_personalized=item.has_personalized or has_pers,
+                    personalized_price=pers_price if has_pers else (item.personalized_price if item.has_personalized else 0.0),
+                    has_personalized=has_pers or item.has_personalized,
                     size=item.size,
                     quantity=item.quantity + 1,
                     product_category_1=item.product_category_1,
                     product_category_2=item.product_category_2,
                     product_category_3=item.product_category_3,
                     price_display=f"${item.price:.2f}",
-                    personalized_display=f"${(item.personalized_price or pers_price):.2f}",
+                    personalized_display=f"${(pers_price if has_pers else (item.personalized_price if item.has_personalized else item.price)):.2f}",
                 ))
             else:
                 new_items.append(item)
@@ -946,37 +935,81 @@ class ShoppingState(rx.State):
 
     def toggle_cart(self):
         self.is_cart_open = not self.is_cart_open
+        if self.is_cart_open:
+            self.checkout_error = ""
 
     def checkout(self):
         """Record checkout purchases at personalized price, update history, and clear bag."""
         if not self.cart_items:
             self.is_cart_open = False
+            self.checkout_error = ""
             return
         if not self.auth_token:
             # Prompt user to log in so they receive member price and order history
             self.open_auth("login")
             return
 
+        self.checkout_error = ""
+        success = False
         try:
-            with httpx.Client(timeout=8.0) as client:
-                for item in self.cart_items:
-                    client.post(
-                        f"{API_BASE_URL}/shopper/purchase",
-                        json={
+            with httpx.Client(timeout=10.0) as client:
+                headers = {"Authorization": f"Bearer {self.auth_token}"}
+                batch_payload = {
+                    "items": [
+                        {
                             "product_id": item.product_id,
                             "product_category_1": item.product_category_1,
                             "product_category_2": item.product_category_2,
                             "product_category_3": item.product_category_3,
-                        },
-                        headers={"Authorization": f"Bearer {self.auth_token}"}
-                    )
-        except Exception:
-            pass
+                            "quantity": item.quantity,
+                        }
+                        for item in self.cart_items
+                    ]
+                }
+                resp = client.post(
+                    f"{API_BASE_URL}/shopper/purchase/batch",
+                    json=batch_payload,
+                    headers=headers,
+                )
+                if resp.status_code in (200, 201):
+                    success = True
+                elif resp.status_code in (404, 405):
+                    # Fall back to per-item calls only if batch endpoint is unavailable
+                    failed_items = []
+                    for item in self.cart_items:
+                        for _ in range(item.quantity):
+                            item_resp = client.post(
+                                f"{API_BASE_URL}/shopper/purchase",
+                                json={
+                                    "product_id": item.product_id,
+                                    "product_category_1": item.product_category_1,
+                                    "product_category_2": item.product_category_2,
+                                    "product_category_3": item.product_category_3,
+                                },
+                                headers=headers,
+                            )
+                            if item_resp.status_code not in (200, 201):
+                                failed_items.append(item.name or item.product_id)
+                                break
+                    if not failed_items:
+                        success = True
+                    else:
+                        self.checkout_error = f"Failed to checkout items: {', '.join(failed_items)}"
+                else:
+                    try:
+                        err_detail = resp.json().get("detail", "Checkout failed.")
+                    except Exception:
+                        err_detail = f"Checkout failed with status {resp.status_code}."
+                    self.checkout_error = str(err_detail)
+        except Exception as e:
+            self.checkout_error = f"Checkout network error: {str(e)}"
 
-        self.cart_items = []
-        self.is_cart_open = False
-        # Refresh history after checkout
-        self.load_purchase_history()
+        if success:
+            self.cart_items = []
+            self.is_cart_open = False
+            self.checkout_error = ""
+            # Refresh history after checkout
+            self.load_purchase_history()
 
     # ── Purchase history ────────────────────────────────────────────────
     def load_purchase_history(self):
@@ -1033,7 +1066,7 @@ class ShoppingState(rx.State):
                         rows = []
                         for r in raw:
                             cnt = int(r.get("order_count", 0))
-                            avg_p_usd = float(r.get("avg_purchase", 0.0)) / 80.0
+                            avg_p_usd = float(r.get("avg_purchase", 0.0)) / INR_TO_USD_RATE
                             pct = round(cnt / total * 100, 1)
                             group_name = _format_demographic_group(dim, r.get("category", "-"))
                             rows.append(DemographicRow(
