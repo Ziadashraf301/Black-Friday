@@ -138,3 +138,14 @@ class UserRepository(BaseRepository):
         """)
         with self.engine.connect() as conn:
             return [dict(r) for r in conn.execute(query, {"user_id": user_id}).mappings().all()]
+
+    def update_user_password(self, user_id: int, new_password_hash: str) -> None:
+        """Update a user's password hash in app_users."""
+        query = text("""
+            UPDATE app_users
+            SET password_hash = :password_hash
+            WHERE user_id = :user_id
+        """)
+        with self.engine.begin() as conn:
+            conn.execute(query, {"user_id": user_id, "password_hash": new_password_hash})
+

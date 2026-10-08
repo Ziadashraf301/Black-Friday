@@ -169,6 +169,11 @@ class Settings(BaseSettings):
     API_HOST: str = "0.0.0.0"
     API_BASE_URL: str = Field(default="http://localhost:8000")
     REFLEX_PORT: int = 3000
+    CORS_ORIGINS: Optional[str] = Field(default=None)
+
+    # Rate Limiting
+    RATE_LIMIT_MINUTE: int = Field(default=60)
+    RATE_LIMIT_DAY: int = Field(default=1000)
 
     # JWT Authentication
     SECRET_KEY: str = Field(default="blackfriday-super-secret-key-change-in-production-2024")

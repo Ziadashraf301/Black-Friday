@@ -6,6 +6,7 @@ Provides dual-mode interaction:
   2. WebSocket /bot/live-ws: Full-duplex continuous live Gemini Multimodal Voice-to-Voice streaming
      with live audio exchange, synchronized product card pushes, and interruption handling.
 """
+import re
 from typing import Optional, Dict, Any, List, AsyncGenerator
 import json
 import asyncio
@@ -19,12 +20,22 @@ from ai.workflow.graph import shopping_graph
 from ai.workflow.state import AgentState
 from ai.services.cache_service import cache_service
 from ai.guardrails.strike_tracker import strike_tracker
+from apps.api.rate_limiting.rate_limiter import rate_limit_client_dependency
 from core.config import settings
 from core.logging import get_logger
 
 logger = get_logger(__name__)
 
 router = APIRouter(prefix="/bot", tags=["Conversational AI Assistant"])
+
+TOKEN_STREAM_REGEX = re.compile(r"\S+\s*|\s+")
+
+
+def tokenize_for_stream(text: str) -> List[str]:
+    """Splits text into stream tokens preserving all spaces, indentation, and newlines."""
+    if not text:
+        return []
+    return TOKEN_STREAM_REGEX.findall(text)
 
 
 # =============================================================================
@@ -91,10 +102,8 @@ async def sse_response_generator(
         citations = extract_grounding_citations(ui_payload)
 
         # Stream cached tokens in fast pulses
-        words = response_text.split(" ")
-        for w in words:
-            yield f"data: {json.dumps({'type': 'token', 'content': w + ' '})}\n\n"
-            await asyncio.sleep(0.01)
+        for token in tokenize_for_stream(response_text):
+            yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
 
         if ui_payload:
             yield f"data: {json.dumps({'type': 'ui_card', 'payload': ui_payload})}\n\n"
@@ -124,10 +133,8 @@ async def sse_response_generator(
     citations = extract_grounding_citations(ui_payload)
 
     # Stream generated tokens
-    words = final_text.split(" ")
-    for w in words:
-        yield f"data: {json.dumps({'type': 'token', 'content': w + ' '})}\n\n"
-        await asyncio.sleep(0.02)
+    for token in tokenize_for_stream(final_text):
+        yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
 
     # Yield Synchronized UI Card
     if ui_payload:
@@ -148,7 +155,11 @@ class BotStreamRequest(BaseModel):
     mode: str = "text"
 
 
-@router.get("/stream", summary="Text-to-Text SSE Stream with Product Cards (GET)")
+@router.get(
+    "/stream",
+    summary="Text-to-Text SSE Stream with Product Cards (GET)",
+    dependencies=[Depends(rate_limit_client_dependency)],
+)
 async def bot_stream_get_endpoint(
     query: str = Query(..., description="User search or conversational inquiry"),
     user_id: str = Query("guest_user", description="Shopper identifier"),
@@ -169,7 +180,11 @@ async def bot_stream_get_endpoint(
     )
 
 
-@router.post("/stream", summary="Text-to-Text SSE Stream with Product Cards (POST)")
+@router.post(
+    "/stream",
+    summary="Text-to-Text SSE Stream with Product Cards (POST)",
+    dependencies=[Depends(rate_limit_client_dependency)],
+)
 async def bot_stream_post_endpoint(payload: BotStreamRequest):
     """
     Server-Sent Events endpoint streaming token-by-token responses,
@@ -247,6 +262,15 @@ async def bot_live_websocket(websocket: WebSocket):
             query_text = data.get("query") or data.get("text") or ""
             user_id = data.get("user_id", "guest_voice_shopper")
             session_id = data.get("session_id", "live_session")
+
+            if user_id and strike_tracker.is_banned(str(user_id)):
+                await websocket.send_json({
+                    "type": "error",
+                    "error_code": "SECURITY_STRIKE_LOCKOUT",
+                    "message": "Access revoked due to repeated security policy violations. Lockout expires in 24 hours.",
+                })
+                await websocket.close(code=1008)
+                return
 
             if not query_text and frame_type == "audio":
                 # In offline/test environments, decode audio packet or mock voice response

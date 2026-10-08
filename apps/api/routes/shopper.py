@@ -12,7 +12,8 @@ from apps.api.schemas import (
     ShopperPurchaseResponse, PurchaseHistoryResponse
 )
 from apps.api.dependencies import get_repository
-from apps.api.auth import get_current_user
+from apps.api.auth import get_current_user, get_optional_user
+from apps.api.rate_limiting.rate_limiter import rate_limit_dependency
 from apps.api.services.shopper_service import shopper_service
 from core.db.repository import BlackFridayRepository
 
@@ -48,7 +49,7 @@ def browse_product(
 @router.post("/predict-price-batch", response_model=ShopperBatchPredictResponse)
 def predict_price_batch(
     request: ShopperBatchPredictRequest,
-    current_user: Optional[Dict[str, Any]] = Depends(get_current_user),
+    current_user: Optional[Dict[str, Any]] = Depends(get_optional_user),
     repo: BlackFridayRepository = Depends(get_repository),
 ):
     """Calculates personalized batch quotes for high-concurrency cart processing."""
@@ -73,7 +74,7 @@ def predict_price_batch(
 @router.post("/predict-price", response_model=ShopperPredictResponse)
 def predict_price_for_shopper(
     request: ShopperPredictRequest,
-    current_user: Dict[str, Any] = Depends(get_current_user),
+    current_user: Dict[str, Any] = Depends(rate_limit_dependency),
     repo: BlackFridayRepository = Depends(get_repository),
 ):
     """Calculates personalized purchase price quote for shopper."""

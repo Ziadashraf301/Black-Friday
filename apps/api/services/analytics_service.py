@@ -1,12 +1,13 @@
 """
 Analytics service — executive KPIs and demographic breakdowns with persistent Redis 6-hour caching.
+Decoupled from web framework exceptions using domain exceptions.
 """
 from typing import Dict, Any, List
-from fastapi import HTTPException
 
 from core.db.repository import BlackFridayRepository
 from core.cache import cache_manager
 from core.config import settings
+from core.exceptions import DataUnavailableError, ValidationError
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -27,9 +28,8 @@ class AnalyticsService:
 
         summary = repo.get_eda_summary()
         if not summary or summary.get("total_orders", 0) == 0:
-            raise HTTPException(
-                status_code=404,
-                detail="Analytics data is not populated. Please ensure database is seeded."
+            raise DataUnavailableError(
+                "Analytics data is not populated. Please ensure database is seeded."
             )
         result = {
             "total_orders": summary["total_orders"],
@@ -45,7 +45,7 @@ class AnalyticsService:
     def get_demographics(dimension: str, repo: BlackFridayRepository) -> List[Dict[str, Any]]:
         """Returns demographic distribution with 6-hour Redis caching."""
         if dimension not in SUPPORTED_DIMENSIONS:
-            raise HTTPException(status_code=400, detail=f"Unsupported dimension: {dimension}")
+            raise ValidationError(f"Unsupported dimension: {dimension}")
 
         cache_key = f"analytics:demographics:{dimension}"
         cached = cache_manager.get_json(cache_key)
