@@ -143,7 +143,7 @@ class ShoppingState(rx.State):
     """Core reactive state for the entire store."""
 
     # --- Auth state ---
-    auth_token: str = ""
+    auth_token: str = rx.LocalStorage("", name="bf_access_token")
     user_name: str = ""
     user_id: int = 0
     user_email: str = ""
@@ -553,6 +553,8 @@ class ShoppingState(rx.State):
                 )
                 if resp.status_code == 200:
                     me = resp.json()
+                    self.user_id = int(me.get("user_id", me.get("id", 0)))
+                    self.user_name = str(me.get("name", ""))
                     self.user_gender = str(me.get("gender", ""))
                     self.user_age = str(me.get("age", ""))
                     self.user_city = str(me.get("city_category", ""))
@@ -561,6 +563,8 @@ class ShoppingState(rx.State):
                     raw_persona = str(me.get("cluster_persona", "Preferred Member"))
                     self.user_cluster_persona = _format_cluster_persona(raw_persona, self.user_cluster_id)
                     self.user_email = str(me.get("email", ""))
+                elif resp.status_code in (401, 403):
+                    self.do_logout()
         except Exception:
             pass
 
@@ -569,7 +573,13 @@ class ShoppingState(rx.State):
         self.user_name = ""
         self.user_id = 0
         self.user_email = ""
+        self.user_gender = ""
+        self.user_age = ""
+        self.user_city = ""
+        self.user_occupation = 0
+        self.user_cluster_id = 0
         self.user_cluster_persona = ""
+        self.cached_price_estimates = {}
         # Revert personalized prices back to catalog prices in cart
         updated_cart = []
         for i in self.cart_items:
@@ -603,15 +613,21 @@ class ShoppingState(rx.State):
                 resp = client.get(f"{API_BASE_URL}/shopper/curated-catalog")
                 if resp.status_code == 200:
                     self._set_catalog(resp.json())
-                    self.is_loading = False
-                    return
         except Exception:
             pass
-        catalog_path = Path(__file__).resolve().parents[3] / "data" / "curated_products.json"
-        if catalog_path.exists():
-            with open(catalog_path, "r", encoding="utf-8") as f:
-                self._set_catalog(json.load(f))
+        if not self.products:
+            catalog_path = Path(__file__).resolve().parents[3] / "data" / "curated_products.json"
+            if catalog_path.exists():
+                with open(catalog_path, "r", encoding="utf-8") as f:
+                    self._set_catalog(json.load(f))
         self.is_loading = False
+
+        # If auth_token was restored from LocalStorage on page load/refresh, populate user session
+        if self.auth_token and not self.user_id:
+            self._fetch_me()
+            self.fetch_batch_ai_price_estimates()
+            if self.cart_items:
+                self._reprice_cart()
 
     def _set_catalog(self, data: List[Dict[str, Any]]):
         self.products = data
