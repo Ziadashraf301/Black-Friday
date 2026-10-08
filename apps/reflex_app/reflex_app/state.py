@@ -97,6 +97,20 @@ def _format_demographic_group(dim: str, raw_cat: Any) -> str:
     return cat_str
 
 
+def extract_filter_options(products: List[Dict[str, Any]], field: str) -> List[str]:
+    """Pure function extracting sorted unique non-empty filter options from products, with 'All' first."""
+    if not products:
+        return ["All"]
+    values = set()
+    for p in products:
+        val = p.get(field)
+        if val is not None:
+            s_val = str(val).strip()
+            if s_val and s_val != "All":
+                values.add(s_val)
+    return ["All"] + sorted(list(values))
+
+
 class CartItem(BaseModel):
     key: str = ""
     product_id: str = ""
@@ -251,6 +265,68 @@ class ShoppingState(rx.State):
     @rx.var
     def user_gender_label(self) -> str:
         return "Female" if self.user_gender == "F" else "Male"
+
+    # ── Hero product computed vars ──────────────────────────────────────
+    @rx.var
+    def hero_id(self) -> str:
+        return str(self.hero_product.get("product_id", "P00025442"))
+
+    @rx.var
+    def hero_name(self) -> str:
+        return str(self.hero_product.get("name", "Artisan Paisley Silk Kimono"))
+
+    @rx.var
+    def hero_tagline(self) -> str:
+        return str(self.hero_product.get("tagline", "Heritage 1970s emerald botanical archive robe"))
+
+    @rx.var
+    def hero_image_url(self) -> str:
+        return str(self.hero_product.get("image_url", f"/products/{self.hero_id}.jpg"))
+
+    @rx.var
+    def hero_badge_label(self) -> str:
+        return str(self.hero_product.get("badge", "Sale"))
+
+    @rx.var
+    def hero_original_price_display(self) -> str:
+        try:
+            p = float(self.hero_product.get("original_price", 99.90))
+        except (ValueError, TypeError):
+            p = 99.90
+        return f"${p:.2f}"
+
+    @rx.var
+    def hero_discounted_price_display(self) -> str:
+        try:
+            p = float(self.hero_product.get("discounted_price", 49.90))
+        except (ValueError, TypeError):
+            p = 49.90
+        return f"${p:.2f}"
+
+    def open_hero_detail(self):
+        if self.hero_product:
+            self.open_product_detail(str(self.hero_product.get("product_id", "P00025442")))
+
+    # ── Dynamic Filter Options ──────────────────────────────────────────
+    @rx.var
+    def available_categories(self) -> List[str]:
+        return extract_filter_options(self.products, "category_name")
+
+    @rx.var
+    def available_genders(self) -> List[str]:
+        return extract_filter_options(self.products, "gender")
+
+    @rx.var
+    def available_brands(self) -> List[str]:
+        return extract_filter_options(self.products, "brand")
+
+    @rx.var
+    def available_styles(self) -> List[str]:
+        return extract_filter_options(self.products, "style")
+
+    @rx.var
+    def available_seasons(self) -> List[str]:
+        return extract_filter_options(self.products, "season")
 
     # ── Catalog computed vars ───────────────────────────────────────────
     @rx.var
@@ -420,7 +496,7 @@ class ShoppingState(rx.State):
 
     @rx.var
     def dashboard_users_display(self) -> str:
-        users = int(self.dashboard_summary.get("total_users", 0))
+        users = int(self.dashboard_summary.get("total_users") or self.dashboard_summary.get("user_count", 0))
         return f"{users:,}" if users else "0"
 
     @rx.var
@@ -469,6 +545,16 @@ class ShoppingState(rx.State):
     def set_signup_gender(self, v: str): self.signup_gender = v
     def set_signup_age(self, v: str): self.signup_age = v
     def set_signup_city(self, v: str): self.signup_city = v
+
+    def set_signup_occupation(self, v: str):
+        try:
+            self.signup_occupation = int(v)
+        except (ValueError, TypeError):
+            self.signup_occupation = 1
+
+    @rx.var
+    def signup_occupation_str(self) -> str:
+        return str(self.signup_occupation)
 
     def do_login(self):
         if not self.login_email or not self.login_password:

@@ -46,7 +46,7 @@ def hero_card() -> rx.Component:
                 # Floating Circular Orange 'Sale' Badge
                 rx.box(
                     rx.text(
-                        "Sale",
+                        ShoppingState.hero_badge_label,
                         font_family="Georgia, 'Playfair Display', serif",
                         font_size="0.95rem",
                         font_weight="800",
@@ -69,8 +69,8 @@ def hero_card() -> rx.Component:
                 # Inner Product Image Frame
                 rx.box(
                     rx.image(
-                        src="/products/P00025442.jpg",
-                        alt="Vintage Paisley Silk Kimono Shirt",
+                        src=ShoppingState.hero_image_url,
+                        alt=ShoppingState.hero_name,
                         width="100%",
                         height="260px",
                         object_fit="cover",
@@ -82,7 +82,7 @@ def hero_card() -> rx.Component:
                     background="#ffffff",
                     box_shadow="0 8px 20px rgba(0,0,0,0.25)",
                     cursor="pointer",
-                    on_click=ShoppingState.open_product_detail("P00025442"),
+                    on_click=ShoppingState.open_hero_detail,
                 ),
                 position="relative",
                 width="100%",
@@ -90,7 +90,7 @@ def hero_card() -> rx.Component:
             # Product Title & Vintage Tagline
             rx.vstack(
                 rx.text(
-                    "Artisan Paisley Silk Kimono",
+                    ShoppingState.hero_name,
                     font_family="Georgia, 'Playfair Display', serif",
                     font_size="1.25rem",
                     font_weight="700",
@@ -98,7 +98,7 @@ def hero_card() -> rx.Component:
                     line_height="1.2",
                 ),
                 rx.text(
-                    "Heritage 1970s emerald botanical archive robe",
+                    ShoppingState.hero_tagline,
                     font_size="0.82rem",
                     color="#a7c2b2",
                     line_height="1.3",
@@ -111,14 +111,14 @@ def hero_card() -> rx.Component:
             # Strikethrough & Bold Sale Price Display
             rx.hstack(
                 rx.text(
-                    "$99.90",
+                    ShoppingState.hero_original_price_display,
                     font_size="1.05rem",
                     color="#789384",
                     text_decoration="line-through",
                     font_weight="500",
                 ),
                 rx.text(
-                    "$49.90",
+                    ShoppingState.hero_discounted_price_display,
                     font_size="1.6rem",
                     font_weight="800",
                     color="#f59b38",

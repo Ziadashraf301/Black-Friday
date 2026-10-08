@@ -53,12 +53,21 @@ def message_bubble(msg: dict) -> rx.Component:
                 ),
             ),
             rx.box(
-                rx.text(
-                    msg["content"],
-                    font_size="0.82rem",
-                    color=rx.cond(is_user, "#ffffff", "#07281e"),
-                    line_height="1.45",
-                    white_space="pre-wrap",
+                rx.cond(
+                    is_user,
+                    rx.text(
+                        msg["content"],
+                        font_size="0.82rem",
+                        color="#ffffff",
+                        line_height="1.45",
+                        white_space="pre-wrap",
+                    ),
+                    rx.markdown(
+                        msg["content"],
+                        font_size="0.82rem",
+                        color="#07281e",
+                        line_height="1.45",
+                    ),
                 ),
                 background=rx.cond(is_user, "#07281e", "#f5eee1"),
                 padding="0.65rem 0.95rem",
@@ -156,6 +165,14 @@ def bot_card_item(card: dict) -> rx.Component:
         border_radius="8px",
         border="1px solid #eedec7",
         width="100%",
+        cursor="pointer",
+        on_click=ShoppingState.open_product_detail(card["product_id"]),
+        _hover={
+            "background": "#f4ebd9",
+            "border_color": "#07281e",
+            "transform": "translateX(2px)",
+        },
+        transition="all 0.15s ease",
     )
 
 
@@ -222,19 +239,17 @@ def bot_drawer() -> rx.Component:
                                 padding="0.3rem 0.7rem",
                                 cursor="pointer",
                             ),
-                            rx.button(
+                            rx.badge(
                                 rx.hstack(
-                                    rx.icon(tag="mic", size=14),
-                                    rx.text("Live Voice Mode", font_size="0.75rem", font_weight="600"),
+                                    rx.icon(tag="mic-off", size=13),
+                                    rx.text("Voice Mode (Beta Soon)", font_size="0.72rem", font_weight="600"),
                                     spacing="1",
+                                    align_items="center",
                                 ),
-                                on_click=ShoppingState.set_bot_mode("voice"),
-                                background=rx.cond(ShoppingState.bot_mode == "voice", "#f59b38", "#f5eee1"),
-                                color=rx.cond(ShoppingState.bot_mode == "voice", "#07281e", "#07281e"),
-                                border="none",
+                                color_scheme="gray",
+                                variant="surface",
+                                padding="0.3rem 0.6rem",
                                 border_radius="6px",
-                                padding="0.3rem 0.7rem",
-                                cursor="pointer",
                             ),
                             spacing="2",
                             width="100%",

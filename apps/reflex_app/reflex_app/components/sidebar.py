@@ -3,8 +3,23 @@ Sidebar 'Shop By' accordion filter.
 Uses 100% data-driven values matching curated_products.json fields:
 Category, Gender, Brand, Style, and Season.
 """
+from typing import List, Dict, Any
 import reflex as rx
 from reflex_app.state import ShoppingState
+
+
+def extract_filter_options(products: List[Dict[str, Any]], field: str) -> List[str]:
+    """Pure function extracting sorted unique non-empty filter options from products, with 'All' first."""
+    if not products:
+        return ["All"]
+    values = set()
+    for p in products:
+        val = p.get(field)
+        if val is not None:
+            s_val = str(val).strip()
+            if s_val and s_val != "All":
+                values.add(s_val)
+    return ["All"] + sorted(list(values))
 
 
 def accordion_header(title: str, section_key: str) -> rx.Component:
@@ -92,16 +107,7 @@ def sidebar() -> rx.Component:
                 rx.cond(
                     ShoppingState.open_accordion == "category",
                     rx.hstack(
-                        category_chip("All"),
-                        category_chip("Silks & Kimonos"),
-                        category_chip("Jackets & Outerwear"),
-                        category_chip("Footwear & Boots"),
-                        category_chip("Dresses & Skirts"),
-                        category_chip("Knitwear & Sweaters"),
-                        category_chip("Coats & Trenches"),
-                        category_chip("Leather & Outerwear"),
-                        category_chip("Pants & Trousers"),
-                        category_chip("Tops & Tunics"),
+                        rx.foreach(ShoppingState.available_categories, category_chip),
                         flex_wrap="wrap", spacing="2", padding_bottom="0.5rem",
                     ),
                 ),
@@ -112,10 +118,7 @@ def sidebar() -> rx.Component:
                 rx.cond(
                     ShoppingState.open_accordion == "gender",
                     rx.hstack(
-                        gender_chip("All"),
-                        gender_chip("Women"),
-                        gender_chip("Men"),
-                        gender_chip("Unisex"),
+                        rx.foreach(ShoppingState.available_genders, gender_chip),
                         flex_wrap="wrap", spacing="2", padding_bottom="0.5rem",
                     ),
                 ),
@@ -126,17 +129,7 @@ def sidebar() -> rx.Component:
                 rx.cond(
                     ShoppingState.open_accordion == "brand",
                     rx.hstack(
-                        brand_chip("All"),
-                        brand_chip("Heritage Guild"),
-                        brand_chip("Varsity Club"),
-                        brand_chip("Cobbler Craft"),
-                        brand_chip("Galway Knits"),
-                        brand_chip("Aero Classics"),
-                        brand_chip("Surplus Co."),
-                        brand_chip("Sienna & Co."),
-                        brand_chip("Nautical Archive"),
-                        brand_chip("Byzantine Bloom"),
-                        brand_chip("Atelier 1968"),
+                        rx.foreach(ShoppingState.available_brands, brand_chip),
                         flex_wrap="wrap", spacing="2", padding_bottom="0.5rem",
                     ),
                 ),
@@ -147,17 +140,7 @@ def sidebar() -> rx.Component:
                 rx.cond(
                     ShoppingState.open_accordion == "style",
                     rx.hstack(
-                        style_chip("All"),
-                        style_chip("Boho Chic"),
-                        style_chip("Bohemian Luxe"),
-                        style_chip("Retro Sport"),
-                        style_chip("Preppy Vintage"),
-                        style_chip("Cozy Classic"),
-                        style_chip("Rugged Aviator"),
-                        style_chip("Utilitarian"),
-                        style_chip("Modern Minimalist"),
-                        style_chip("Maritime Classic"),
-                        style_chip("Heritage Workwear"),
+                        rx.foreach(ShoppingState.available_styles, style_chip),
                         flex_wrap="wrap", spacing="2", padding_bottom="0.5rem",
                     ),
                 ),
@@ -168,14 +151,7 @@ def sidebar() -> rx.Component:
                 rx.cond(
                     ShoppingState.open_accordion == "season",
                     rx.hstack(
-                        season_chip("All"),
-                        season_chip("All-Season"),
-                        season_chip("Autumn"),
-                        season_chip("Winter"),
-                        season_chip("Spring / Fall"),
-                        season_chip("Winter / Fall"),
-                        season_chip("Festive / Evening"),
-                        season_chip("All-Weather"),
+                        rx.foreach(ShoppingState.available_seasons, season_chip),
                         flex_wrap="wrap", spacing="2", padding_bottom="0.5rem",
                     ),
                 ),
