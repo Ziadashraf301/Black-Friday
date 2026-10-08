@@ -1,26 +1,17 @@
 from contextlib import asynccontextmanager
 from typing import List
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import JSONResponse
-from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from apps.api.routes import analytics
 from apps.api.routes import auth as auth_router
 from apps.api.routes import shopper as shopper_router
 from apps.api.routes import bot as bot_router
+from apps.api.handlers import register_exception_handlers
 from apps.api.middleware.security_ban_middleware import SecurityBanMiddleware
 from apps.api.services.model_service import model_service
 from core.config import settings
-from core.exceptions import (
-    AppException,
-    NotFoundError,
-    DataUnavailableError,
-    ValidationError,
-    UnauthorizedError,
-    ForbiddenError,
-)
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -82,79 +73,8 @@ app.add_middleware(
 app.add_middleware(SecurityBanMiddleware)
 
 
-# =============================================================================
-# Structured Exception Handlers (Fix 5.1 & Fix 10.1)
-# =============================================================================
-@app.exception_handler(ValueError)
-async def value_error_handler(request: Request, exc: ValueError):
-    return JSONResponse(
-        status_code=400,
-        content={"detail": str(exc), "error_type": "ValueError"},
-    )
-
-
-@app.exception_handler(NotFoundError)
-async def not_found_handler(request: Request, exc: NotFoundError):
-    return JSONResponse(
-        status_code=404,
-        content={"detail": exc.message, "error_type": exc.code},
-    )
-
-
-@app.exception_handler(DataUnavailableError)
-async def data_unavailable_handler(request: Request, exc: DataUnavailableError):
-    return JSONResponse(
-        status_code=404,
-        content={"detail": exc.message, "error_type": exc.code},
-    )
-
-
-@app.exception_handler(ValidationError)
-async def validation_error_handler(request: Request, exc: ValidationError):
-    return JSONResponse(
-        status_code=400,
-        content={"detail": exc.message, "error_type": exc.code},
-    )
-
-
-@app.exception_handler(UnauthorizedError)
-async def unauthorized_handler(request: Request, exc: UnauthorizedError):
-    return JSONResponse(
-        status_code=401,
-        content={"detail": exc.message, "error_type": exc.code},
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-
-
-@app.exception_handler(ForbiddenError)
-async def forbidden_handler(request: Request, exc: ForbiddenError):
-    return JSONResponse(
-        status_code=403,
-        content={"detail": exc.message, "error_type": exc.code},
-    )
-
-
-@app.exception_handler(AppException)
-async def app_exception_handler(request: Request, exc: AppException):
-    return JSONResponse(
-        status_code=400,
-        content={"detail": exc.message, "error_type": exc.code},
-    )
-
-
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    if isinstance(exc, StarletteHTTPException):
-        return JSONResponse(
-            status_code=exc.status_code,
-            content={"detail": exc.detail, "error_type": "HTTPException"},
-            headers=getattr(exc, "headers", None),
-        )
-    logger.error(f"Unhandled server error on {request.url.path}: {exc}", exc_info=True)
-    return JSONResponse(
-        status_code=500,
-        content={"detail": "An internal server error occurred.", "error_type": "InternalServerError"},
-    )
+# Register Structured Exception Handlers (Fix 5.1 & Fix 10.1)
+register_exception_handlers(app)
 
 
 # Mount route controllers

@@ -48,6 +48,21 @@ class ForbiddenError(AppException):
         super().__init__(message, code=code)
 
 
+class ConflictError(AppException):
+    """Raised when an operation conflicts with existing state (e.g. email already exists)."""
+
+    def __init__(self, message: str = "Resource conflict.", code: str = "CONFLICT"):
+        super().__init__(message, code=code)
+
+
+class RateLimitExceededError(AppException):
+    """Raised when an operation or user exceeds the rate limit threshold."""
+
+    def __init__(self, message: str = "Rate limit exceeded.", code: str = "RATE_LIMIT_EXCEEDED", headers: dict = None):
+        super().__init__(message, code=code)
+        self.headers = headers or {}
+
+
 __all__ = [
     "AppException",
     "NotFoundError",
@@ -55,4 +70,6 @@ __all__ = [
     "ValidationError",
     "UnauthorizedError",
     "ForbiddenError",
+    "ConflictError",
+    "RateLimitExceededError",
 ]

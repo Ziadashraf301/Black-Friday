@@ -2,8 +2,8 @@
 Authentication service — user registration, credential validation, and JWT sessions.
 """
 from typing import Dict, Any
-from fastapi import HTTPException, status
 
+from core.exceptions import ConflictError, UnauthorizedError
 from core.security import (
     hash_password,
     verify_password,
@@ -31,9 +31,9 @@ class AuthService:
         """Registers a new shopper and generates their session token."""
         existing = repo.get_user_by_email(user_data["email"])
         if existing:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"An account with email '{user_data['email']}' already exists.",
+            raise ConflictError(
+                message=f"An account with email '{user_data['email']}' already exists.",
+                code="EMAIL_CONFLICT",
             )
 
         pw_hash = cls.hash_password(user_data["password"])
@@ -78,18 +78,16 @@ class AuthService:
         """Validates credentials and returns JWT token."""
         user = repo.get_user_by_email(email)
         if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect email or password.",
-                headers={"WWW-Authenticate": "Bearer"},
+            raise UnauthorizedError(
+                message="Incorrect email or password.",
+                code="INVALID_CREDENTIALS",
             )
 
         valid, needs_upgrade = cls.verify_password_with_upgrade(password, user["password_hash"])
         if not valid:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect email or password.",
-                headers={"WWW-Authenticate": "Bearer"},
+            raise UnauthorizedError(
+                message="Incorrect email or password.",
+                code="INVALID_CREDENTIALS",
             )
 
         if needs_upgrade:

@@ -10,9 +10,10 @@ import time
 import uuid
 import threading
 from typing import Dict, Any, Optional, Tuple, List
-from fastapi import HTTPException, status, Request, Depends
+from fastapi import Request, Depends
 import redis
 
+from core.exceptions import RateLimitExceededError
 from core.cache import cache_manager
 from core.config import settings
 from core.logging import get_logger
@@ -217,9 +218,9 @@ class RedisRateLimiter:
         """Raises HTTP 429 Too Many Requests if rate limits are breached."""
         allowed, msg, retry_after, headers = self.check_rate_limit(user_id)
         if not allowed:
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=msg,
+            raise RateLimitExceededError(
+                message=msg or "Rate limit exceeded",
+                code="RATE_LIMIT_EXCEEDED",
                 headers=headers,
             )
 

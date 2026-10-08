@@ -6,7 +6,8 @@ import re
 import pandas as pd
 import numpy as np
 from typing import Dict, Any, List, Optional
-from fastapi import HTTPException, status
+
+from core.exceptions import AppException, NotFoundError, ValidationError
 
 from core.db.repository import BlackFridayRepository
 from apps.api.services.model_service import model_service
@@ -94,9 +95,9 @@ class ShopperService:
                 cache_manager.set_json(cache_key, res, ttl=settings.REDIS_DEFAULT_TTL)
                 return res
 
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Product '{product_id}' not found in catalog."
+            raise NotFoundError(
+                message=f"Product '{product_id}' not found in catalog.",
+                code="PRODUCT_NOT_FOUND",
             )
 
         bundles = parse_recommendation_ids(product.get("top_bundle_recommendations"))
@@ -306,14 +307,14 @@ class ShopperService:
                 marital_status=marital_status,
             )
         except ValueError as val_err:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Price Prediction Failed: {val_err}"
+            raise ValidationError(
+                message=f"Price Prediction Failed: {val_err}",
+                code="PRICE_PREDICTION_FAILED",
             )
         except RuntimeError as run_err:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Inference Service Failure: {run_err}"
+            raise AppException(
+                message=f"Inference Service Failure: {run_err}",
+                code="INFERENCE_FAILURE",
             )
 
         curated = ShopperService.get_curated_catalog(repo=repo)
@@ -400,12 +401,12 @@ class ShopperService:
         # 1. Validate items and quantities
         for it in items:
             if not it.get("product_id"):
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing product_id")
+                raise ValidationError(message="Missing product_id", code="MISSING_PRODUCT_ID")
             qty = it.get("quantity", 1)
             if not isinstance(qty, int) or qty < 1:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Invalid quantity {qty} for product '{it.get('product_id')}'"
+                raise ValidationError(
+                    message=f"Invalid quantity {qty} for product '{it.get('product_id')}'",
+                    code="INVALID_QUANTITY",
                 )
 
         # 2. Get price estimates for each cart item
@@ -424,9 +425,9 @@ class ShopperService:
             pid = it["product_id"]
             quote = quote_map.get(pid)
             if not quote:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Unable to price product '{pid}'"
+                raise ValidationError(
+                    message=f"Unable to price product '{pid}'",
+                    code="PRICING_UNAVAILABLE",
                 )
             qty = int(it.get("quantity", 1))
             cat1 = it.get("product_category_1")

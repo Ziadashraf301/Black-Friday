@@ -2,9 +2,10 @@
 FastAPI authentication dependency and security exports.
 """
 from typing import Dict, Any, Optional
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
+from core.exceptions import UnauthorizedError
 from core.security import hash_password, verify_password, create_access_token, decode_access_token
 from apps.api.services.auth_service import auth_service
 
@@ -39,10 +40,9 @@ def get_current_user(
         payload = decode_access_token(credentials.credentials)
         return _build_user_dict(payload)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid or expired token: {e}",
-            headers={"WWW-Authenticate": "Bearer"},
+        raise UnauthorizedError(
+            message=f"Invalid or expired token: {e}",
+            code="INVALID_TOKEN",
         )
 
 
