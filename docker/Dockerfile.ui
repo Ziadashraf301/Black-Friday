@@ -8,14 +8,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-COPY requirements.txt ./
+COPY requirements-ui.txt ./
 
 ENV PYTHONPATH="/app"
 
-RUN uv pip install --system --no-cache -r requirements.txt
+RUN uv pip install --system --no-cache -r requirements-ui.txt
 
 COPY core/ /app/core/
 COPY apps/ /app/apps/
+COPY data/ /app/data/
 
 WORKDIR /app/apps/reflex_app
 

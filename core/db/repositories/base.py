@@ -5,7 +5,7 @@ import io
 import csv
 import json
 import pandas as pd
-from typing import Dict, Any, List, Optional
+from typing import List, Optional
 from sqlalchemy import text
 from core.db.session import get_db_engine
 from core.logging import get_logger
@@ -23,7 +23,9 @@ class BaseRepository:
         "product_network_metrics",
         "app_users",
         "user_purchases",
-        "curated_products"
+        "curated_products",
+        "user_carts",
+        "semantic_query_cache",
     }
 
     def __init__(self, engine=None):
@@ -31,11 +33,11 @@ class BaseRepository:
 
     def create_app_tables(self):
         """Creates all registered SQLAlchemy ORM database tables if they do not exist."""
+        with self.engine.begin() as conn:
+            if conn.dialect.name == "postgresql":
+                conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
         from core.db.models import Base
         Base.metadata.create_all(bind=self.engine)
-
-
-
 
     def truncate_table(self, table_name: str, restart_identity: bool = False):
         """Safely truncates an authorized warehouse table."""
@@ -59,18 +61,17 @@ class BaseRepository:
             raise ValueError(f"Unauthorized table insertion target: '{table_name}'")
 
         data = df.copy()
+        # Ensure integer columns that might be float with NaNs (e.g. product_category_2/3) format as whole integers or \N
+        for col in ["product_category_2", "product_category_3", "occupation", "marital_status"]:
+            if col in data.columns and pd.api.types.is_float_dtype(data[col]):
+                data[col] = data[col].astype("Int64")
+
         if json_cols:
             for col in json_cols:
                 if col in data.columns:
                     data[col] = data[col].apply(
                         lambda x: json.dumps(x) if isinstance(x, (list, dict)) else (x if isinstance(x, str) else json.dumps([]))
                     )
-
-        # Convert float columns whose non-null values are whole numbers to nullable Int64
-        for col in data.select_dtypes(include=["float", "float64"]).columns:
-            non_null = data[col].dropna()
-            if len(non_null) > 0 and (non_null % 1 == 0).all():
-                data[col] = data[col].astype("Int64")
 
         logger.info(f"Writing {len(data):,} records to '{table_name}' (mode='{if_exists}')...")
 
@@ -94,12 +95,15 @@ class BaseRepository:
             logger.info(f"High-speed COPY streaming to '{table_name}' completed successfully.")
         except Exception as copy_err:
             logger.warning(f"Fast COPY failed ({copy_err}), falling back to standard to_sql batching...")
-            data.to_sql(
-                name=table_name,
-                con=self.engine,
-                if_exists=if_exists,
-                index=False,
-                chunksize=chunksize,
-                method="multi"
-            )
+            with self.engine.begin() as conn:
+                if if_exists == "replace":
+                    conn.execute(text(f"TRUNCATE TABLE {table_name} RESTART IDENTITY;"))
+                data.to_sql(
+                    name=table_name,
+                    con=conn,
+                    if_exists="append",
+                    index=False,
+                    chunksize=chunksize,
+                    method="multi"
+                )
             logger.info(f"Batch write to '{table_name}' complete.")

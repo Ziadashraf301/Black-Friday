@@ -19,11 +19,24 @@ class PolicyKnowledgeBase:
         self.file_path = policy_file_path or (settings.BASE_DIR / "data" / "store_policies.json")
         self._policies: Dict[str, Dict[str, Any]] = {}
         self._keyword_index: Dict[str, List[str]] = {}  # keyword -> list of topics
+        self._last_mtime: Optional[float] = None
         self._load()
+
+    def _check_reload(self) -> None:
+        """Reloads store policies if the file exists and mtime has changed."""
+        if self.file_path.exists():
+            try:
+                curr_mtime = self.file_path.stat().st_mtime
+                if self._last_mtime is None or curr_mtime > self._last_mtime:
+                    logger.info(f"[POLICY-KB] Detected change on {self.file_path} (mtime {curr_mtime} > {self._last_mtime}). Reloading policies.")
+                    self._load()
+            except Exception as e:
+                logger.warning(f"[POLICY-KB] Error checking mtime for {self.file_path}: {e}")
 
     def _load(self) -> None:
         if self.file_path.exists():
             try:
+                self._last_mtime = self.file_path.stat().st_mtime
                 with open(self.file_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
                     self._policies = data.get("policies", {})
@@ -88,6 +101,7 @@ class PolicyKnowledgeBase:
         """
         Retrieves policy document by exact topic name, partial alias, or keyword match.
         """
+        self._check_reload()
         key = topic.lower().strip()
 
         # 1. Exact match
@@ -114,6 +128,7 @@ class PolicyKnowledgeBase:
 
     def search_policies(self, query: str) -> List[Dict[str, Any]]:
         """Searches across policy titles, summaries, and conditions."""
+        self._check_reload()
         q_lower = query.lower()
         matched: List[Dict[str, Any]] = []
 
@@ -133,6 +148,7 @@ class PolicyKnowledgeBase:
 
     @property
     def all_policies(self) -> Dict[str, Dict[str, Any]]:
+        self._check_reload()
         return dict(self._policies)
 
 

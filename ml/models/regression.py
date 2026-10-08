@@ -34,8 +34,19 @@ ALL_FEATURES: List[str] = [
     "product_id"
 ]
 
-NUMERIC_FEATS: List[str] = ["occupation", "marital_status", "product_category_1", "product_category_2", "product_category_3"]
-CATEGORICAL_FEATS: List[str] = ["gender", "age", "city_category", "stay_in_current_city_years"]
+NUMERIC_FEATS: List[str] = ["marital_status", "product_category_1", "product_category_2", "product_category_3"]
+CATEGORICAL_FEATS: List[str] = ["gender", "age", "occupation", "city_category", "stay_in_current_city_years"]
+
+
+def create_tree_preprocessor() -> ColumnTransformer:
+    """Factory function creating the shared ColumnTransformer for tree-based regression models."""
+    return ColumnTransformer(
+        transformers=[
+            ("num", "passthrough", NUMERIC_FEATS),
+            ("cat", OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1), CATEGORICAL_FEATS + ["product_id"])
+        ],
+        remainder="drop"
+    )
 
 
 class LinearRegressionModel(AbstractBaseModel):
@@ -82,13 +93,7 @@ class DecisionTreeModel(AbstractBaseModel):
         self.max_depth = max_depth if max_depth is not None else 18
         self.min_samples_leaf = min_samples_leaf
         self.random_state = random_state
-        self.preprocessor = ColumnTransformer(
-            transformers=[
-                ("num", "passthrough", NUMERIC_FEATS),
-                ("cat", OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1), CATEGORICAL_FEATS + ["product_id"])
-            ],
-            remainder="drop"
-        )
+        self.preprocessor = create_tree_preprocessor()
         self.pipeline = Pipeline([
             ("preprocessor", self.preprocessor),
             ("regressor", DecisionTreeRegressor(
@@ -155,13 +160,7 @@ class RandomForestModel(AbstractBaseModel):
         self.min_samples_leaf = min_samples_leaf
         self.n_jobs = n_jobs
         self.random_state = random_state
-        self.preprocessor = ColumnTransformer(
-            transformers=[
-                ("num", "passthrough", NUMERIC_FEATS),
-                ("cat", OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1), CATEGORICAL_FEATS + ["product_id"])
-            ],
-            remainder="drop"
-        )
+        self.preprocessor = create_tree_preprocessor()
         self.pipeline = Pipeline([
             ("preprocessor", self.preprocessor),
             ("regressor", RandomForestRegressor(
@@ -221,13 +220,7 @@ class LightGBMModel(AbstractBaseModel):
         self.n_jobs = n_jobs
         self.random_state = random_state
 
-        self.preprocessor = ColumnTransformer(
-            transformers=[
-                ("num", "passthrough", NUMERIC_FEATS),
-                ("cat", OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1), CATEGORICAL_FEATS + ["product_id"])
-            ],
-            remainder="drop"
-        )
+        self.preprocessor = create_tree_preprocessor()
 
         if HAS_LIGHTGBM:
             self.pipeline = Pipeline([

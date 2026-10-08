@@ -5,6 +5,7 @@ Handles auth, catalog, filters, quick view, ONNX pricing, cart, history, and das
 """
 import json
 import httpx
+import asyncio
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
@@ -13,6 +14,7 @@ import reflex as rx
 import os
 
 API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000")
+INR_TO_USD_RATE: float = 80.0
 
 _OCCUPATION_MAP = {
     0: "Student", 1: "Technology", 2: "Healthcare", 3: "Management",
@@ -95,6 +97,20 @@ def _format_demographic_group(dim: str, raw_cat: Any) -> str:
     return cat_str
 
 
+def extract_filter_options(products: List[Dict[str, Any]], field: str) -> List[str]:
+    """Pure function extracting sorted unique non-empty filter options from products, with 'All' first."""
+    if not products:
+        return ["All"]
+    values = set()
+    for p in products:
+        val = p.get(field)
+        if val is not None:
+            s_val = str(val).strip()
+            if s_val and s_val != "All":
+                values.add(s_val)
+    return ["All"] + sorted(list(values))
+
+
 class CartItem(BaseModel):
     key: str = ""
     product_id: str = ""
@@ -141,7 +157,7 @@ class ShoppingState(rx.State):
     """Core reactive state for the entire store."""
 
     # --- Auth state ---
-    auth_token: str = ""
+    auth_token: str = rx.LocalStorage("", name="bf_access_token")
     user_name: str = ""
     user_id: int = 0
     user_email: str = ""
@@ -199,6 +215,7 @@ class ShoppingState(rx.State):
     # --- Cart ---
     cart_items: List[CartItem] = []
     is_cart_open: bool = False
+    checkout_error: str = ""
 
     # --- Purchase history ---
     purchase_history: List[PurchaseEntry] = []
@@ -226,6 +243,7 @@ class ShoppingState(rx.State):
     bot_is_locked_out: bool = False
     bot_lockout_message: str = ""
     bot_active_cards: List[Dict[str, Any]] = []
+    bot_citations: List[Dict[str, Any]] = []
 
     # ── Auth computed vars ──────────────────────────────────────────────
     @rx.var
@@ -247,6 +265,68 @@ class ShoppingState(rx.State):
     @rx.var
     def user_gender_label(self) -> str:
         return "Female" if self.user_gender == "F" else "Male"
+
+    # ── Hero product computed vars ──────────────────────────────────────
+    @rx.var
+    def hero_id(self) -> str:
+        return str(self.hero_product.get("product_id", "P00025442"))
+
+    @rx.var
+    def hero_name(self) -> str:
+        return str(self.hero_product.get("name", "Artisan Paisley Silk Kimono"))
+
+    @rx.var
+    def hero_tagline(self) -> str:
+        return str(self.hero_product.get("tagline", "Heritage 1970s emerald botanical archive robe"))
+
+    @rx.var
+    def hero_image_url(self) -> str:
+        return str(self.hero_product.get("image_url", f"/products/{self.hero_id}.jpg"))
+
+    @rx.var
+    def hero_badge_label(self) -> str:
+        return str(self.hero_product.get("badge", "Sale"))
+
+    @rx.var
+    def hero_original_price_display(self) -> str:
+        try:
+            p = float(self.hero_product.get("original_price", 99.90))
+        except (ValueError, TypeError):
+            p = 99.90
+        return f"${p:.2f}"
+
+    @rx.var
+    def hero_discounted_price_display(self) -> str:
+        try:
+            p = float(self.hero_product.get("discounted_price", 49.90))
+        except (ValueError, TypeError):
+            p = 49.90
+        return f"${p:.2f}"
+
+    def open_hero_detail(self):
+        if self.hero_product:
+            self.open_product_detail(str(self.hero_product.get("product_id", "P00025442")))
+
+    # ── Dynamic Filter Options ──────────────────────────────────────────
+    @rx.var
+    def available_categories(self) -> List[str]:
+        return extract_filter_options(self.products, "category_name")
+
+    @rx.var
+    def available_genders(self) -> List[str]:
+        return extract_filter_options(self.products, "gender")
+
+    @rx.var
+    def available_brands(self) -> List[str]:
+        return extract_filter_options(self.products, "brand")
+
+    @rx.var
+    def available_styles(self) -> List[str]:
+        return extract_filter_options(self.products, "style")
+
+    @rx.var
+    def available_seasons(self) -> List[str]:
+        return extract_filter_options(self.products, "season")
 
     # ── Catalog computed vars ───────────────────────────────────────────
     @rx.var
@@ -366,53 +446,36 @@ class ShoppingState(rx.State):
     def active_product_sizes(self) -> List[str]:
         return self.active_product.get("sizes", ["S", "M", "L", "XL"]) if self.active_product else ["S", "M", "L", "XL"]
 
-    @rx.var
-    def active_apriori_bundles_list(self) -> List[RecProduct]:
-        bundles = self.active_product.get("apriori_bundles", []) if self.active_product else []
+    def _extract_recs(self, key: str, default_name: str, default_price: float, badge: str) -> List[RecProduct]:
+        raw = self.active_product.get(key, []) if self.active_product else []
         active_id = str(self.active_product.get("product_id", ""))
         seen = {active_id}
         res = []
-        for b in bundles:
-            pid = str(b.get("product_id", ""))
+        for item in raw:
+            pid = str(item.get("product_id", ""))
             if not pid or pid in seen:
                 continue
             seen.add(pid)
-            p = float(b.get("price", 69.0))
+            p = float(item.get("price", default_price))
             res.append(RecProduct(
                 product_id=pid,
-                name=str(b.get("name", "Curated Bundle")),
-                image_url=str(b.get("image_url", f"/products/{pid}.jpg")),
+                name=str(item.get("name", default_name)),
+                image_url=str(item.get("image_url", f"/products/{pid}.jpg")),
                 price=p,
                 price_display=f"${p:.2f}",
-                badge_label="Bundle Rule",
+                badge_label=badge,
             ))
             if len(res) >= 3:
                 break
         return res
 
     @rx.var
+    def active_apriori_bundles_list(self) -> List[RecProduct]:
+        return self._extract_recs("apriori_bundles", "Curated Bundle", 69.0, "Bundle Rule")
+
+    @rx.var
     def active_item2vec_similars_list(self) -> List[RecProduct]:
-        similars = self.active_product.get("item2vec_similars", []) if self.active_product else []
-        active_id = str(self.active_product.get("product_id", ""))
-        seen = {active_id}
-        res = []
-        for s in similars:
-            pid = str(s.get("product_id", ""))
-            if not pid or pid in seen:
-                continue
-            seen.add(pid)
-            p = float(s.get("price", 59.0))
-            res.append(RecProduct(
-                product_id=pid,
-                name=str(s.get("name", "Similar Piece")),
-                image_url=str(s.get("image_url", f"/products/{pid}.jpg")),
-                price=p,
-                price_display=f"${p:.2f}",
-                badge_label="Similar Style",
-            ))
-            if len(res) >= 3:
-                break
-        return res
+        return self._extract_recs("item2vec_similars", "Similar Piece", 59.0, "Similar Style")
 
     # ── Dashboard computed vars ─────────────────────────────────────────
     @rx.var
@@ -422,9 +485,9 @@ class ShoppingState(rx.State):
 
     @rx.var
     def dashboard_revenue_display(self) -> str:
-        # Convert INR to USD by dividing by 80.0
+        # Convert INR to USD by dividing by INR_TO_USD_RATE
         rev_inr = float(self.dashboard_summary.get("total_revenue", 0.0))
-        rev_usd = rev_inr / 80.0
+        rev_usd = rev_inr / INR_TO_USD_RATE
         if rev_usd >= 1_000_000:
             return f"${rev_usd / 1_000_000:.1f}M"
         if rev_usd >= 1_000:
@@ -433,7 +496,7 @@ class ShoppingState(rx.State):
 
     @rx.var
     def dashboard_users_display(self) -> str:
-        users = int(self.dashboard_summary.get("total_users", 0))
+        users = int(self.dashboard_summary.get("total_users") or self.dashboard_summary.get("user_count", 0))
         return f"{users:,}" if users else "0"
 
     @rx.var
@@ -443,9 +506,9 @@ class ShoppingState(rx.State):
 
     @rx.var
     def dashboard_aov_display(self) -> str:
-        # Convert INR to USD by dividing by 80.0
+        # Convert INR to USD by dividing by INR_TO_USD_RATE
         aov_inr = float(self.dashboard_summary.get("avg_order_value", 0.0))
-        aov_usd = aov_inr / 80.0
+        aov_usd = aov_inr / INR_TO_USD_RATE
         return f"${aov_usd:.2f}"
 
     @rx.var
@@ -482,6 +545,16 @@ class ShoppingState(rx.State):
     def set_signup_gender(self, v: str): self.signup_gender = v
     def set_signup_age(self, v: str): self.signup_age = v
     def set_signup_city(self, v: str): self.signup_city = v
+
+    def set_signup_occupation(self, v: str):
+        try:
+            self.signup_occupation = int(v)
+        except (ValueError, TypeError):
+            self.signup_occupation = 1
+
+    @rx.var
+    def signup_occupation_str(self) -> str:
+        return str(self.signup_occupation)
 
     def do_login(self):
         if not self.login_email or not self.login_password:
@@ -566,6 +639,8 @@ class ShoppingState(rx.State):
                 )
                 if resp.status_code == 200:
                     me = resp.json()
+                    self.user_id = int(me.get("user_id", me.get("id", 0)))
+                    self.user_name = str(me.get("name", ""))
                     self.user_gender = str(me.get("gender", ""))
                     self.user_age = str(me.get("age", ""))
                     self.user_city = str(me.get("city_category", ""))
@@ -574,6 +649,8 @@ class ShoppingState(rx.State):
                     raw_persona = str(me.get("cluster_persona", "Preferred Member"))
                     self.user_cluster_persona = _format_cluster_persona(raw_persona, self.user_cluster_id)
                     self.user_email = str(me.get("email", ""))
+                elif resp.status_code in (401, 403):
+                    self.do_logout()
         except Exception:
             pass
 
@@ -582,7 +659,13 @@ class ShoppingState(rx.State):
         self.user_name = ""
         self.user_id = 0
         self.user_email = ""
+        self.user_gender = ""
+        self.user_age = ""
+        self.user_city = ""
+        self.user_occupation = 0
+        self.user_cluster_id = 0
         self.user_cluster_persona = ""
+        self.cached_price_estimates = {}
         # Revert personalized prices back to catalog prices in cart
         updated_cart = []
         for i in self.cart_items:
@@ -616,15 +699,21 @@ class ShoppingState(rx.State):
                 resp = client.get(f"{API_BASE_URL}/shopper/curated-catalog")
                 if resp.status_code == 200:
                     self._set_catalog(resp.json())
-                    self.is_loading = False
-                    return
         except Exception:
             pass
-        catalog_path = Path(__file__).resolve().parents[3] / "data" / "curated_products.json"
-        if catalog_path.exists():
-            with open(catalog_path, "r", encoding="utf-8") as f:
-                self._set_catalog(json.load(f))
+        if not self.products:
+            catalog_path = Path(__file__).resolve().parents[3] / "data" / "curated_products.json"
+            if catalog_path.exists():
+                with open(catalog_path, "r", encoding="utf-8") as f:
+                    self._set_catalog(json.load(f))
         self.is_loading = False
+
+        # If auth_token was restored from LocalStorage on page load/refresh, populate user session
+        if self.auth_token and not self.user_id:
+            self._fetch_me()
+            self.fetch_batch_ai_price_estimates()
+            if self.cart_items:
+                self._reprice_cart()
 
     def _set_catalog(self, data: List[Dict[str, Any]]):
         self.products = data
@@ -827,9 +916,13 @@ class ShoppingState(rx.State):
         # Determine personalized price if logged in
         pers_price = 0.0
         has_pers = False
-        if self.is_authenticated and self.active_product.get("product_id") == product_id and self.estimated_price_usd > 0:
-            pers_price = self.estimated_price_usd
-            has_pers = True
+        if self.is_authenticated:
+            if product_id in self.cached_price_estimates and self.cached_price_estimates[product_id] > 0:
+                pers_price = self.cached_price_estimates[product_id]
+                has_pers = True
+            elif self.active_product.get("product_id") == product_id and self.estimated_price_usd > 0:
+                pers_price = self.estimated_price_usd
+                has_pers = True
 
         # Check existing item
         new_items = []
@@ -843,15 +936,15 @@ class ShoppingState(rx.State):
                     name=item.name,
                     image_url=item.image_url,
                     price=item.price,
-                    personalized_price=item.personalized_price if item.has_personalized else pers_price,
-                    has_personalized=item.has_personalized or has_pers,
+                    personalized_price=pers_price if has_pers else (item.personalized_price if item.has_personalized else 0.0),
+                    has_personalized=has_pers or item.has_personalized,
                     size=item.size,
                     quantity=item.quantity + 1,
                     product_category_1=item.product_category_1,
                     product_category_2=item.product_category_2,
                     product_category_3=item.product_category_3,
                     price_display=f"${item.price:.2f}",
-                    personalized_display=f"${(item.personalized_price or pers_price):.2f}",
+                    personalized_display=f"${(pers_price if has_pers else (item.personalized_price if item.has_personalized else item.price)):.2f}",
                 ))
             else:
                 new_items.append(item)
@@ -946,37 +1039,81 @@ class ShoppingState(rx.State):
 
     def toggle_cart(self):
         self.is_cart_open = not self.is_cart_open
+        if self.is_cart_open:
+            self.checkout_error = ""
 
     def checkout(self):
         """Record checkout purchases at personalized price, update history, and clear bag."""
         if not self.cart_items:
             self.is_cart_open = False
+            self.checkout_error = ""
             return
         if not self.auth_token:
             # Prompt user to log in so they receive member price and order history
             self.open_auth("login")
             return
 
+        self.checkout_error = ""
+        success = False
         try:
-            with httpx.Client(timeout=8.0) as client:
-                for item in self.cart_items:
-                    client.post(
-                        f"{API_BASE_URL}/shopper/purchase",
-                        json={
+            with httpx.Client(timeout=10.0) as client:
+                headers = {"Authorization": f"Bearer {self.auth_token}"}
+                batch_payload = {
+                    "items": [
+                        {
                             "product_id": item.product_id,
                             "product_category_1": item.product_category_1,
                             "product_category_2": item.product_category_2,
                             "product_category_3": item.product_category_3,
-                        },
-                        headers={"Authorization": f"Bearer {self.auth_token}"}
-                    )
-        except Exception:
-            pass
+                            "quantity": item.quantity,
+                        }
+                        for item in self.cart_items
+                    ]
+                }
+                resp = client.post(
+                    f"{API_BASE_URL}/shopper/purchase/batch",
+                    json=batch_payload,
+                    headers=headers,
+                )
+                if resp.status_code in (200, 201):
+                    success = True
+                elif resp.status_code in (404, 405):
+                    # Fall back to per-item calls only if batch endpoint is unavailable
+                    failed_items = []
+                    for item in self.cart_items:
+                        for _ in range(item.quantity):
+                            item_resp = client.post(
+                                f"{API_BASE_URL}/shopper/purchase",
+                                json={
+                                    "product_id": item.product_id,
+                                    "product_category_1": item.product_category_1,
+                                    "product_category_2": item.product_category_2,
+                                    "product_category_3": item.product_category_3,
+                                },
+                                headers=headers,
+                            )
+                            if item_resp.status_code not in (200, 201):
+                                failed_items.append(item.name or item.product_id)
+                                break
+                    if not failed_items:
+                        success = True
+                    else:
+                        self.checkout_error = f"Failed to checkout items: {', '.join(failed_items)}"
+                else:
+                    try:
+                        err_detail = resp.json().get("detail", "Checkout failed.")
+                    except Exception:
+                        err_detail = f"Checkout failed with status {resp.status_code}."
+                    self.checkout_error = str(err_detail)
+        except Exception as e:
+            self.checkout_error = f"Checkout network error: {str(e)}"
 
-        self.cart_items = []
-        self.is_cart_open = False
-        # Refresh history after checkout
-        self.load_purchase_history()
+        if success:
+            self.cart_items = []
+            self.is_cart_open = False
+            self.checkout_error = ""
+            # Refresh history after checkout
+            self.load_purchase_history()
 
     # ── Purchase history ────────────────────────────────────────────────
     def load_purchase_history(self):
@@ -1033,7 +1170,7 @@ class ShoppingState(rx.State):
                         rows = []
                         for r in raw:
                             cnt = int(r.get("order_count", 0))
-                            avg_p_usd = float(r.get("avg_purchase", 0.0)) / 80.0
+                            avg_p_usd = float(r.get("avg_purchase", 0.0)) / INR_TO_USD_RATE
                             pct = round(cnt / total * 100, 1)
                             group_name = _format_demographic_group(dim, r.get("category", "-"))
                             rows.append(DemographicRow(
@@ -1120,79 +1257,144 @@ class ShoppingState(rx.State):
         else:
             self.bot_messages.append({"role": "assistant", "content": "🎙️ Audio stream closed."})
 
-    def _execute_bot_query(self, query: str):
-        """Executes query through backend API endpoint (/bot/stream) over HTTP."""
+    async def _execute_bot_query(self, query: str):
+        """Executes query through backend API endpoint (/bot/stream) over async HTTP SSE stream."""
         user_id = str(self.user_id) if self.user_id else "guest_user"
         session_id = f"session_{user_id}"
 
+        self.bot_loading = True
+        self.bot_active_cards = []
+        self.bot_citations = []
+        # Ensure assistant message slot exists
+        if not self.bot_messages or self.bot_messages[-1].get("role") != "assistant":
+            self.bot_messages.append({"role": "assistant", "content": ""})
+        else:
+            self.bot_messages[-1]["content"] = ""
+        yield
+
+        tokens: List[str] = []
         try:
-            resp = httpx.post(
-                f"{API_BASE_URL}/bot/stream",
-                json={
-                    "query": query,
-                    "user_id": user_id,
-                    "session_id": session_id,
-                    "mode": self.bot_mode,
-                },
-                timeout=30.0,
-            )
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                async with client.stream(
+                    "POST",
+                    f"{API_BASE_URL}/bot/stream",
+                    json={
+                        "query": query,
+                        "user_id": user_id,
+                        "session_id": session_id,
+                        "mode": self.bot_mode,
+                    },
+                ) as resp:
+                    # Check 403 Security Strike Lockdown from Backend Middleware
+                    if resp.status_code == 403:
+                        detail = "Security lockdown active: Access temporarily restricted."
+                        try:
+                            if hasattr(resp, "aread"):
+                                await resp.aread()
+                            if hasattr(resp, "json"):
+                                detail = resp.json().get("detail", detail)
+                        except Exception:
+                            pass
+                        self.bot_is_locked_out = True
+                        self.bot_lockout_message = detail
+                        if self.bot_messages and self.bot_messages[-1].get("role") == "assistant":
+                            self.bot_messages[-1]["content"] = detail
+                        else:
+                            self.bot_messages.append({"role": "assistant", "content": detail})
+                        yield
+                        return
 
-            # Check 403 Security Strike Lockdown from Backend Middleware
-            if resp.status_code == 403:
-                try:
-                    detail = resp.json().get("detail", "Security lockdown active.")
-                except Exception:
-                    detail = "Security lockdown active: Access temporarily restricted."
-                self.bot_is_locked_out = True
-                self.bot_lockout_message = detail
-                self.bot_messages.append({"role": "assistant", "content": detail})
-                return
+                    if resp.status_code != 200:
+                        msg = f"Service returned error code {resp.status_code}. Please try again shortly."
+                        if self.bot_messages and self.bot_messages[-1].get("role") == "assistant":
+                            self.bot_messages[-1]["content"] = msg
+                        else:
+                            self.bot_messages.append({"role": "assistant", "content": msg})
+                        yield
+                        return
 
-            if resp.status_code != 200:
-                self.bot_messages.append({
-                    "role": "assistant",
-                    "content": f"Service returned error code {resp.status_code}. Please try again shortly.",
-                })
-                return
+                    # Parse SSE chunks from HTTP stream response asynchronously
+                    async for line in resp.aiter_lines():
+                        line = line.strip()
+                        if not line.startswith("data:"):
+                            continue
+                        data_str = line[5:].strip()
+                        if data_str == "[DONE]":
+                            break
+                        try:
+                            event = json.loads(data_str)
+                            etype = event.get("type")
+                            if etype == "token":
+                                tok = event.get("content", "")
+                                tokens.append(tok)
+                                if self.bot_messages and self.bot_messages[-1].get("role") == "assistant":
+                                    self.bot_messages[-1]["content"] = "".join(tokens)
+                                yield
+                            elif etype == "ui_card":
+                                payload = event.get("payload", {})
+                                if "cards" in payload:
+                                    self.bot_active_cards = payload["cards"]
+                                elif "products" in payload.get("data", {}):
+                                    self.bot_active_cards = [
+                                        {
+                                            "type": "PRODUCT_CARD",
+                                            "product_id": p.get("product_id"),
+                                            "name": p.get("name"),
+                                            "price": p.get("discounted_price", p.get("price")),
+                                            "image_url": p.get("image_url", f"/products/{p.get('product_id')}.jpg"),
+                                            "badge": p.get("badge", "Curated Deal"),
+                                        }
+                                        for p in payload["data"]["products"]
+                                    ]
+                                elif "bundles" in payload.get("data", {}):
+                                    self.bot_active_cards = [
+                                        {
+                                            "type": "BUNDLE_CARD",
+                                            "product_id": b.get("product_id"),
+                                            "name": b.get("name"),
+                                            "price": b.get("price"),
+                                            "badge": f"{b.get('savings_pct', 15.0):.0f}% Off Bundle",
+                                        }
+                                        for b in payload["data"]["bundles"]
+                                    ]
+                                yield
+                            elif etype == "grounding":
+                                citations = event.get("citations", [])
+                                if citations:
+                                    self.bot_citations = citations
+                                    formatted_cites = []
+                                    for c in citations:
+                                        if isinstance(c, dict):
+                                            title = c.get("title") or c.get("name") or c.get("product_id", "")
+                                            url = c.get("url", "")
+                                            price = c.get("price")
+                                            label = title
+                                            if price:
+                                                label += f" (${float(price):.2f})"
+                                            if url:
+                                                formatted_cites.append(f"[{label}]({url})")
+                                            elif label:
+                                                formatted_cites.append(label)
+                                            else:
+                                                formatted_cites.append(str(c))
+                                        else:
+                                            formatted_cites.append(str(c))
+                                    cite_str = "\n\nSources & Catalog Grounding:\n" + "\n".join(f"- {fc}" for fc in formatted_cites)
+                                    if self.bot_messages and self.bot_messages[-1].get("role") == "assistant":
+                                        self.bot_messages[-1]["content"] = "".join(tokens) + cite_str
+                                    else:
+                                        self.bot_messages.append({"role": "assistant", "content": cite_str})
+                                    yield
+                        except Exception:
+                            continue
 
-            # Parse SSE chunks from HTTP stream response
-            tokens: List[str] = []
-            cards: List[Dict[str, Any]] = []
-
-            for line in resp.text.split("\n"):
-                line = line.strip()
-                if not line.startswith("data:"):
-                    continue
-                data_str = line[5:].strip()
-                if data_str == "[DONE]":
-                    break
-                try:
-                    event = json.loads(data_str)
-                    etype = event.get("type")
-                    if etype == "token":
-                        tokens.append(event.get("content", ""))
-                    elif etype == "ui_card":
-                        payload = event.get("payload", {})
-                        if "cards" in payload:
-                            cards = payload["cards"]
-                        elif "products" in payload.get("data", {}):
-                            cards = [
-                                {
-                                    "type": "PRODUCT_CARD",
-                                    "product_id": p.get("product_id"),
-                                    "name": p.get("name"),
-                                    "price": p.get("discounted_price", p.get("price")),
-                                    "image_url": p.get("image_url", f"/products/{p.get('product_id')}.jpg"),
-                                    "badge": p.get("badge", "Curated Deal"),
-                                }
-                                for p in payload["data"]["products"]
-                            ]
-                except Exception:
-                    continue
-
-            final_text = "".join(tokens).strip() or "Here are the top catalog selections:"
-            self.bot_messages.append({"role": "assistant", "content": final_text})
-            self.bot_active_cards = cards
+                    # If no tokens received, provide fallback
+                    if not tokens and (not self.bot_messages or not self.bot_messages[-1].get("content")):
+                        if self.bot_messages and self.bot_messages[-1].get("role") == "assistant":
+                            self.bot_messages[-1]["content"] = "Here are the top catalog selections:"
+                        else:
+                            self.bot_messages.append({"role": "assistant", "content": "Here are the top catalog selections:"})
+                        yield
 
         except Exception as e:
             # Offline fallback if API server is not running locally
@@ -1209,14 +1411,16 @@ class ShoppingState(rx.State):
             else:
                 reply = f"Assistant offline: Unable to reach assistant service ({str(e)})."
 
-            self.bot_messages.append({
-                "role": "assistant",
-                "content": reply,
-            })
+            if self.bot_messages and self.bot_messages[-1].get("role") == "assistant":
+                self.bot_messages[-1]["content"] = reply
+            else:
+                self.bot_messages.append({"role": "assistant", "content": reply})
+            yield
+        finally:
+            self.bot_loading = False
+            yield
 
-
-
-    def click_action_chip(self, chip: str):
+    async def click_action_chip(self, chip: str):
         """Processes preset action chips (*'Top Deals Today'*, *'Sale Products'*)."""
         if not self.is_authenticated:
             self.bot_auth_warning = "Please sign in to use personalized shopping actions."
@@ -1224,15 +1428,20 @@ class ShoppingState(rx.State):
             return
 
         self.bot_messages.append({"role": "user", "content": chip})
-        self._execute_bot_query(chip)
+        yield
+        async for _ in self._execute_bot_query(chip):
+            yield
 
-    def send_bot_message(self):
+    async def send_bot_message(self):
         """Dispatches typed message from input field to shopping DAG."""
         if not self.bot_input_text.strip():
             return
         msg = self.bot_input_text.strip()
         self.bot_input_text = ""
         self.bot_messages.append({"role": "user", "content": msg})
-        self._execute_bot_query(msg)
+        yield
+        async for _ in self._execute_bot_query(msg):
+            yield
+
 
 

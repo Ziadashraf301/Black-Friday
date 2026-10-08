@@ -31,8 +31,7 @@ class MissForestImputer:
         "product_category_1",
         "product_category_2",
         "product_category_3",
-        "product_id",
-        "purchase"
+        "product_id"
     ]
     STRING_COLS: List[str] = ["gender", "age", "city_category", "stay_in_current_city_years", "product_id"]
 
@@ -75,8 +74,8 @@ class MissForestImputer:
 
     def _prepare_numeric_matrix(self, df: pd.DataFrame, is_fit: bool = True) -> pd.DataFrame:
         """Converts raw dataframe into a full numerical matrix by encoding string columns."""
-        present_cols = [c for c in self.FEATURE_COLS if c in df.columns]
         if is_fit:
+            present_cols = [c for c in self.FEATURE_COLS if c in df.columns]
             self.cols = present_cols
             string_cols = [c for c in self.STRING_COLS if c in present_cols]
             self.encoder = OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1)
@@ -86,7 +85,13 @@ class MissForestImputer:
                     cats = self.encoder.categories_[idx]
                     self.category_mappings[col] = {str(cat): i for i, cat in enumerate(cats)}
 
-        matrix = df[self.cols].copy()
+        matrix = pd.DataFrame(index=df.index)
+        for col in self.cols:
+            if col in df.columns:
+                matrix[col] = df[col]
+            else:
+                matrix[col] = np.nan
+
         string_cols = [c for c in self.STRING_COLS if c in self.cols]
         if string_cols and self.encoder is not None:
             encoded = self.encoder.transform(matrix[string_cols].astype(str))
@@ -96,9 +101,9 @@ class MissForestImputer:
         return matrix.astype(np.float32)
 
     def fit_transform(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Fits imputer on all feature columns (demographics + product + target) and returns imputed dataframe."""
+        """Fits imputer on all feature columns (demographics + product, excluding purchase target) and returns imputed dataframe."""
         logger.info(
-            f"Initializing MissForest IterativeImputer on all variables (trees={self.n_estimators}, max_iter={self.max_iter}, "
+            f"Initializing MissForest IterativeImputer on non-target variables (trees={self.n_estimators}, max_iter={self.max_iter}, "
             f"max_depth={self.max_depth}, min_samples_leaf={self.min_samples_leaf}, "
             f"sample_size={self.sample_size or 'full'}, bootstrap=True, oob_score=True)..."
         )
@@ -141,10 +146,10 @@ class MissForestImputer:
 
         imputed_df = pd.DataFrame(imputed_array, columns=self.cols, index=df.index)
 
-        # Round categories to nearest valid integer category
+        # Round and clip categories to valid range [1, 20]
         result_df = df.copy()
-        result_df["product_category_2"] = np.round(imputed_df["product_category_2"]).astype(int)
-        result_df["product_category_3"] = np.round(imputed_df["product_category_3"]).astype(int)
+        result_df["product_category_2"] = np.clip(np.round(imputed_df["product_category_2"]), 1, 20).astype(int)
+        result_df["product_category_3"] = np.clip(np.round(imputed_df["product_category_3"]), 1, 20).astype(int)
 
         duration = time.time() - start_time
         missing_after = {col: int(result_df[col].isna().sum()) for col in missing_cols if col in result_df.columns}
@@ -178,7 +183,7 @@ class MissForestImputer:
         return result_df
 
     def transform(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Applies fitted imputer to new observations."""
+        """Applies fitted imputer to new observations, working even if optional or target columns are absent."""
         if self.imputer is None:
             raise RuntimeError("Imputer has not been fitted yet.")
         numeric_df = self._prepare_numeric_matrix(df, is_fit=False)
@@ -186,7 +191,7 @@ class MissForestImputer:
         imputed_df = pd.DataFrame(imputed_array, columns=self.cols, index=df.index)
 
         result_df = df.copy()
-        result_df["product_category_2"] = np.round(imputed_df["product_category_2"]).astype(int)
-        result_df["product_category_3"] = np.round(imputed_df["product_category_3"]).astype(int)
+        result_df["product_category_2"] = np.clip(np.round(imputed_df["product_category_2"]), 1, 20).astype(int)
+        result_df["product_category_3"] = np.clip(np.round(imputed_df["product_category_3"]), 1, 20).astype(int)
         return result_df
 

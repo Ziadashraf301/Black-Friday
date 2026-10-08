@@ -1,12 +1,13 @@
 """
 Analytics service — executive KPIs and demographic breakdowns with persistent Redis 6-hour caching.
+Decoupled from web framework exceptions using domain exceptions.
 """
-from typing import Dict, Any, List
-from fastapi import HTTPException
+from typing import Dict, Any, List, Optional
 
 from core.db.repository import BlackFridayRepository
-from core.cache import cache_manager
+from core.cache import cache_manager, cached_json
 from core.config import settings
+from core.exceptions import DataUnavailableError, ValidationError
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -15,47 +16,38 @@ SUPPORTED_DIMENSIONS = {"gender", "age", "marital_status", "occupation", "city_c
 
 
 class AnalyticsService:
-    """Service handling executive aggregations with persistent Redis caching."""
+    """Service handling executive aggregations with persistent Redis caching via decorators."""
 
     @staticmethod
-    def get_summary(repo: BlackFridayRepository) -> Dict[str, Any]:
-        """Returns executive KPI summary. Executed once on DB, cached for 6 hours in Redis."""
-        cache_key = "analytics:summary"
-        cached = cache_manager.get_json(cache_key)
-        if cached:
-            return cached
-
-        summary = repo.get_eda_summary()
+    @cached_json("analytics:eda_summary", ttl=3600)
+    def get_summary(repo: Optional[BlackFridayRepository] = None) -> Dict[str, Any]:
+        """Returns executive KPI summary. Cached for 1 hour (3600s) in Redis."""
+        target_repo = repo or BlackFridayRepository()
+        summary = target_repo.get_eda_summary()
         if not summary or summary.get("total_orders", 0) == 0:
-            raise HTTPException(
-                status_code=404,
-                detail="Analytics data is not populated. Please ensure database is seeded."
+            raise DataUnavailableError(
+                "Analytics data is not populated. Please ensure database is seeded."
             )
-        result = {
+        return {
             "total_orders": summary["total_orders"],
             "total_users": summary["total_users"],
             "total_products": summary["total_products"],
             "avg_order_value": float(summary["avg_order_value"]),
             "total_revenue": float(summary["total_revenue"]),
         }
-        cache_manager.set_json(cache_key, result, ttl=settings.REDIS_DEFAULT_TTL)
-        return result
+
+    get_eda_summary = get_summary
 
     @staticmethod
-    def get_demographics(dimension: str, repo: BlackFridayRepository) -> List[Dict[str, Any]]:
-        """Returns demographic distribution with 6-hour Redis caching."""
+    @cached_json("analytics:demographics:{dimension}", ttl=settings.REDIS_DEFAULT_TTL)
+    def get_demographics(dimension: str, repo: Optional[BlackFridayRepository] = None) -> List[Dict[str, Any]]:
+        """Returns demographic distribution with Redis caching."""
         if dimension not in SUPPORTED_DIMENSIONS:
-            raise HTTPException(status_code=400, detail=f"Unsupported dimension: {dimension}")
+            raise ValidationError(f"Unsupported dimension: {dimension}")
 
-        cache_key = f"analytics:demographics:{dimension}"
-        cached = cache_manager.get_json(cache_key)
-        if cached:
-            return cached
-
-        data = repo.get_demographic_distribution(dimension)
-        if data:
-            cache_manager.set_json(cache_key, data, ttl=settings.REDIS_DEFAULT_TTL)
-        return data
+        target_repo = repo or BlackFridayRepository()
+        data = target_repo.get_demographic_distribution(dimension)
+        return data or []
 
 
 analytics_service = AnalyticsService()

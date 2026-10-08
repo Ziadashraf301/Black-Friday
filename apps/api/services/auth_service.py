@@ -2,9 +2,15 @@
 Authentication service — user registration, credential validation, and JWT sessions.
 """
 from typing import Dict, Any
-from fastapi import HTTPException, status
 
-from core.security import hash_password, verify_password, create_access_token, decode_access_token
+from core.exceptions import ConflictError, UnauthorizedError
+from core.security import (
+    hash_password,
+    verify_password,
+    verify_password_with_upgrade,
+    create_access_token,
+    decode_access_token,
+)
 from core.logging import get_logger
 from core.db.repository import BlackFridayRepository
 
@@ -16,22 +22,18 @@ class AuthService:
 
     hash_password = staticmethod(hash_password)
     verify_password = staticmethod(verify_password)
+    verify_password_with_upgrade = staticmethod(verify_password_with_upgrade)
     create_access_token = staticmethod(create_access_token)
     decode_token = staticmethod(decode_access_token)
 
     @classmethod
     def register_user(cls, user_data: Dict[str, Any], repo: BlackFridayRepository) -> Dict[str, Any]:
         """Registers a new shopper and generates their session token."""
-        try:
-            repo.create_app_tables()
-        except Exception:
-            pass
-
         existing = repo.get_user_by_email(user_data["email"])
         if existing:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"An account with email '{user_data['email']}' already exists.",
+            raise ConflictError(
+                message=f"An account with email '{user_data['email']}' already exists.",
+                code="EMAIL_CONFLICT",
             )
 
         pw_hash = cls.hash_password(user_data["password"])
@@ -74,18 +76,27 @@ class AuthService:
     @classmethod
     def authenticate_user(cls, email: str, password: str, repo: BlackFridayRepository) -> Dict[str, Any]:
         """Validates credentials and returns JWT token."""
-        try:
-            repo.create_app_tables()
-        except Exception:
-            pass
-
         user = repo.get_user_by_email(email)
-        if not user or not cls.verify_password(password, user["password_hash"]):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect email or password.",
-                headers={"WWW-Authenticate": "Bearer"},
+        if not user:
+            raise UnauthorizedError(
+                message="Incorrect email or password.",
+                code="INVALID_CREDENTIALS",
             )
+
+        valid, needs_upgrade = cls.verify_password_with_upgrade(password, user["password_hash"])
+        if not valid:
+            raise UnauthorizedError(
+                message="Incorrect email or password.",
+                code="INVALID_CREDENTIALS",
+            )
+
+        if needs_upgrade:
+            try:
+                new_hash = cls.hash_password(password)
+                repo.update_user_password(user["user_id"], new_hash)
+                logger.info(f"Upgraded password hash for user_id={user['user_id']}")
+            except Exception as e:
+                logger.warning(f"Failed to upgrade password hash for user_id={user['user_id']}: {e}")
 
         token = cls.create_access_token({
             "sub": str(user["user_id"]),

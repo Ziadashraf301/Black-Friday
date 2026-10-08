@@ -17,8 +17,7 @@ from fastapi import HTTPException
 
 from core.config import settings
 from core.db.repository import BlackFridayRepository
-from apps.api.core.rate_limiter import RedisRateLimiter
-from apps.api.services.rate_limiter_service import RateLimiterService
+from apps.api.rate_limiting.rate_limiter import RedisRateLimiter
 from ml.pipelines.seed_curated import CuratedCatalogSeeder
 
 
@@ -154,45 +153,43 @@ def test_redis_rate_limit_5_min_20_day():
     """Validates sliding window rate limiter enforcing 5 req/min and 20 req/day quotas."""
     test_user_id = "test_shopper_99999"
     limiter = RedisRateLimiter(minute_limit=5, day_limit=20)
-    service = RateLimiterService(limiter=limiter)
 
     # 1. Reset user state
-    service.reset(test_user_id)
+    limiter.reset_user(test_user_id)
 
     # 2. First 5 requests within a minute must pass
     for i in range(1, 6):
-        allowed, msg, retry, headers = service.check_user(test_user_id)
+        allowed, msg, retry, headers = limiter.check_rate_limit(test_user_id)
         assert allowed is True, f"Request {i} should be allowed"
         assert headers.get("X-RateLimit-Limit-Minute") == "5"
 
     # 3. 6th request within the same minute must breach quota and return 429
-    allowed, msg, retry, headers = service.check_user(test_user_id)
+    allowed, msg, retry, headers = limiter.check_rate_limit(test_user_id)
     assert allowed is False, "6th request within minute must be blocked"
     assert "Max 5 requests per minute" in msg
     assert int(headers.get("Retry-After", "0")) > 0
 
     with pytest.raises(HTTPException) as exc_info:
-        service.enforce_user(test_user_id)
+        limiter.enforce(test_user_id)
     assert exc_info.value.status_code == 429
 
     # 4. Test daily limit (simulate 20 req/day quota)
     daily_test_user = "test_shopper_daily_limit"
     daily_limiter = RedisRateLimiter(minute_limit=100, day_limit=20)
-    daily_service = RateLimiterService(limiter=daily_limiter)
-    daily_service.reset(daily_test_user)
+    daily_limiter.reset_user(daily_test_user)
 
     for i in range(1, 21):
-        allowed, msg, retry, headers = daily_service.check_user(daily_test_user)
+        allowed, msg, retry, headers = daily_limiter.check_rate_limit(daily_test_user)
         assert allowed is True, f"Request {i} within day must be allowed"
 
     # 21st request exceeds daily quota
-    allowed, msg, retry, headers = daily_service.check_user(daily_test_user)
+    allowed, msg, retry, headers = daily_limiter.check_rate_limit(daily_test_user)
     assert allowed is False, "21st request must exceed daily quota"
     assert "Max 20 requests per day" in msg
 
     # Clean up
-    service.reset(test_user_id)
-    daily_service.reset(daily_test_user)
+    limiter.reset_user(test_user_id)
+    daily_limiter.reset_user(daily_test_user)
 
 
 # ==============================================================================
@@ -230,11 +227,16 @@ def test_frontend_bot_auth_check():
     assert len(auth_state.bot_messages) > 0
 
     # 3. Action chips test (*"Top Deals Today"*, *"Sale Products"*)
-    auth_state.click_action_chip("Top Deals Today")
+    import asyncio
+    async def consume_chip(chip_name: str):
+        async for _ in auth_state.click_action_chip(chip_name):
+            pass
+
+    asyncio.run(consume_chip("Top Deals Today"))
     last_assistant_msg = [m for m in auth_state.bot_messages if m["role"] == "assistant"][-1]
     assert "deal" in last_assistant_msg["content"].lower()
 
-    auth_state.click_action_chip("Sale Products")
+    asyncio.run(consume_chip("Sale Products"))
     last_assistant_msg = [m for m in auth_state.bot_messages if m["role"] == "assistant"][-1]
     assert "sale" in last_assistant_msg["content"].lower()
 

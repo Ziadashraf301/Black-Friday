@@ -12,7 +12,7 @@ logger = get_logger(__name__)
 class UserRepository(BaseRepository):
     """Repository managing app_users and user_purchases tables."""
 
-    def create_app_tables(self):
+    def ensure_user_tables(self):
         """Create app_users and user_purchases tables if they do not exist."""
         ddl = """
             CREATE TABLE IF NOT EXISTS app_users (
@@ -127,6 +127,38 @@ class UserRepository(BaseRepository):
             result = conn.execute(query, data).mappings().first()
             return dict(result)
 
+    def record_purchases_batch(
+        self, records: List[Dict[str, Any]], connection: Optional[Any] = None
+    ) -> List[Dict[str, Any]]:
+        """Save multiple purchases in ONE atomic transaction with rollback on failure."""
+        if not records:
+            return []
+
+        query = text("""
+            INSERT INTO user_purchases
+                (user_id, product_id, product_category_1, product_category_2,
+                 product_category_3, predicted_usd, model_used)
+            VALUES
+                (:user_id, :product_id, :product_category_1, :product_category_2,
+                 :product_category_3, :predicted_usd, :model_used)
+            RETURNING *
+        """)
+
+        if connection is not None:
+            results = []
+            for rec in records:
+                row = connection.execute(query, rec).mappings().first()
+                results.append(dict(row))
+            return results
+
+        with self.engine.begin() as conn:
+            results = []
+            for rec in records:
+                row = conn.execute(query, rec).mappings().first()
+                results.append(dict(row))
+            return results
+
+
     def get_user_purchase_history(self, user_id: int) -> List[Dict[str, Any]]:
         query = text("""
             SELECT id, product_id, product_category_1, product_category_2,
@@ -138,3 +170,14 @@ class UserRepository(BaseRepository):
         """)
         with self.engine.connect() as conn:
             return [dict(r) for r in conn.execute(query, {"user_id": user_id}).mappings().all()]
+
+    def update_user_password(self, user_id: int, new_password_hash: str) -> None:
+        """Update a user's password hash in app_users."""
+        query = text("""
+            UPDATE app_users
+            SET password_hash = :password_hash
+            WHERE user_id = :user_id
+        """)
+        with self.engine.begin() as conn:
+            conn.execute(query, {"user_id": user_id, "password_hash": new_password_hash})
+

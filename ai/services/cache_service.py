@@ -150,7 +150,7 @@ class TwoTierCacheService:
         # Generate embedding if not already provided
         if query_vec is None:
             try:
-                from ai.services.embedding_service import embedding_service
+                from core.embeddings import embedding_service
                 query_vec = embedding_service.generate_embedding(raw_query)
             except Exception as e:
                 logger.debug(f"[CACHE: SEMANTIC] Embedding generation failed: {e}")
@@ -191,7 +191,7 @@ class TwoTierCacheService:
         """Stores a verified query and answer in pgvector semantic_query_cache."""
         if query_vec is None:
             try:
-                from ai.services.embedding_service import embedding_service
+                from core.embeddings import embedding_service
                 query_vec = embedding_service.generate_embedding(query_text)
             except Exception as e:
                 logger.debug(f"[CACHE: SEMANTIC] Embedding generation for store failed: {e}")

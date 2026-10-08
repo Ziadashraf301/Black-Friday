@@ -86,6 +86,24 @@ def select_field(label: str, value, on_change, options: list) -> rx.Component:
     )
 
 
+def auth_error_banner() -> rx.Component:
+    """Reusable authentication error banner component."""
+    return rx.cond(
+        ShoppingState.auth_error != "",
+        rx.hstack(
+            rx.icon(tag="triangle-alert", size=18, color="#dc2626"),
+            rx.text(ShoppingState.auth_error, font_size="0.84rem", color="#b91c1c", font_weight="600"),
+            background="#fef2f2",
+            border="1.5px solid #f87171",
+            border_radius="8px",
+            padding="0.65rem 0.9rem",
+            spacing="2",
+            align_items="center",
+            width="100%",
+        ),
+    )
+
+
 def login_panel() -> rx.Component:
     return rx.vstack(
         rx.text(
@@ -103,20 +121,7 @@ def login_panel() -> rx.Component:
         ),
         input_field("Email", "you@example.com", ShoppingState.login_email, ShoppingState.set_login_email, "email"),
         input_field("Password", "••••••••", ShoppingState.login_password, ShoppingState.set_login_password, "password"),
-        rx.cond(
-            ShoppingState.auth_error != "",
-            rx.hstack(
-                rx.icon(tag="triangle-alert", size=18, color="#dc2626"),
-                rx.text(ShoppingState.auth_error, font_size="0.84rem", color="#b91c1c", font_weight="600"),
-                background="#fef2f2",
-                border="1.5px solid #f87171",
-                border_radius="8px",
-                padding="0.65rem 0.9rem",
-                spacing="2",
-                align_items="center",
-                width="100%",
-            ),
-        ),
+        auth_error_banner(),
         rx.button(
             rx.cond(
                 ShoppingState.auth_loading,
@@ -187,20 +192,8 @@ def signup_panel() -> rx.Component:
             spacing="3",
             width="100%",
         ),
-        rx.cond(
-            ShoppingState.auth_error != "",
-            rx.hstack(
-                rx.icon(tag="triangle-alert", size=18, color="#dc2626"),
-                rx.text(ShoppingState.auth_error, font_size="0.84rem", color="#b91c1c", font_weight="600"),
-                background="#fef2f2",
-                border="1.5px solid #f87171",
-                border_radius="8px",
-                padding="0.65rem 0.9rem",
-                spacing="2",
-                align_items="center",
-                width="100%",
-            ),
-        ),
+        select_field("Occupation", ShoppingState.signup_occupation_str, ShoppingState.set_signup_occupation, OCCUPATION_LABELS),
+        auth_error_banner(),
         rx.button(
             rx.cond(
                 ShoppingState.auth_loading,

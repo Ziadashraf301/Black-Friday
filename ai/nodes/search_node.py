@@ -36,9 +36,28 @@ def search_agent_node(state: AgentState) -> Dict[str, Any]:
     products_payload = [r.model_dump() for r in results]
     relaxation_level = results[0].relaxation_level if results else "TIER_1_STRICT"
 
+    cards = [
+        {
+            "type": "PRODUCT_CARD",
+            "product_id": p.get("product_id"),
+            "name": p.get("name"),
+            "price": p.get("discounted_price", p.get("price")),
+            "original_price": p.get("original_price"),
+            "image_url": p.get("image_url", f"/products/{p.get('product_id')}.jpg"),
+            "badge": p.get("badge", "Catalog Item"),
+        }
+        for p in products_payload
+        if p.get("product_id")
+    ]
+
     return {
         "retrieved_products": products_payload,
         "relaxation_level": relaxation_level,
+        "ui_payload": {
+            "cards": cards,
+            "action_chips": ["View Cart", "Top Deals"],
+            "relaxation_level": relaxation_level,
+        },
         "current_node": "search_agent_node",
     }
 

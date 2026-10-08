@@ -54,7 +54,11 @@ class CartManagementTool:
         # 1. Hot-tier Redis session cache
         if self._cache.is_available:
             try:
-                cached_data = self._cache.get(key)
+                cached_data = self._cache.get_json(key)
+                if cached_data and self._cache.client is not None:
+                    # Slide TTL on active session access
+                    ttl = getattr(settings, "REDIS_DEFAULT_TTL", 21600)
+                    self._cache.client.expire(key, ttl)
             except Exception as e:
                 logger.debug(f"[TOOL: CART] Cache retrieval error: {e}")
 
@@ -70,7 +74,7 @@ class CartManagementTool:
                     logger.info(f"[TOOL: CART] Hydrating cart from PostgreSQL cold-tier snapshot for user={user_id}")
                     cached_data = cold_snapshot
                     if self._cache.is_available:
-                        self._cache.set(key, json.dumps(cold_snapshot), ttl=getattr(settings, "REDIS_DEFAULT_TTL", 21600))
+                        self._cache.set_json(key, cold_snapshot, ttl=getattr(settings, "REDIS_DEFAULT_TTL", 21600))
             except Exception as e:
                 logger.debug(f"[TOOL: CART] Cold-tier cart load error: {e}")
 
@@ -260,14 +264,15 @@ class CartManagementTool:
         payload = json.dumps(cart_dict)
         key = self._get_cart_key(user_id, session_id)
 
-        # 1. Hot-tier Redis 6-hour sliding session
-        try:
-            ttl = getattr(settings, "REDIS_DEFAULT_TTL", 21600)
-            self._cache.set(key, payload, ttl=ttl)
-        except Exception as e:
-            logger.debug(f"[TOOL: CART] Cache set error: {e}")
+        # 1. Hot-tier Redis 6-hour sliding session (refreshes TTL on mutation)
+        ttl = getattr(settings, "REDIS_DEFAULT_TTL", 21600)
+        if self._cache.is_available:
+            try:
+                self._cache.set_json(key, cart_dict, ttl=ttl)
+            except Exception as e:
+                logger.debug(f"[TOOL: CART] Cache set error: {e}")
 
-        self._in_memory_carts[key] = payload
+        self._in_memory_carts[key] = cart_dict
 
         # 2. Cold-tier PostgreSQL Durability Snapshot (Phase 4 - Task P4-06)
         if self.repo:

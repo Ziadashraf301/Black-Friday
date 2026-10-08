@@ -16,14 +16,15 @@ When drift is detected:
     Logs drift telemetry and alerts engineering (supervised retraining requires labels).
 """
 import os
+os.environ.setdefault("MPLBACKEND", "Agg")
 import pandas as pd
 from typing import Optional
 from core.db.repository import BlackFridayRepository
 from ml.models.registry import ModelRegistry
 from ml.tracking.drift_monitor import DriftMonitor, DriftResult
 from ml.tracking.mlflow_tracker import MLflowTracker
-from apps.api.serving.predictor import ONNXPredictor
-from apps.api.serving.imputer import ONNXMissForestImputer
+from ml.serving.predictor import ONNXPredictor
+from ml.serving.imputer import ONNXMissForestImputer
 from core.config import settings
 from core.logging import get_logger
 
@@ -196,7 +197,10 @@ def run_production_drift_monitor(
     # 5. Drift Decision Gate with Target Persistence Check
     should_retrain = drift_result.should_trigger_retrain(dataset_threshold=dataset_drift_threshold)
     target_col = "normalized_purchase"
-    has_target = target_col in current_batch_df.columns and current_batch_df[target_col].notna().any()
+    has_target = (
+        (target_col in curr_eval.columns and curr_eval[target_col].notna().any())
+        or ("purchase" in current_batch_df.columns and current_batch_df["purchase"].notna().any())
+    )
 
     if should_retrain:
         logger.warning(
@@ -222,9 +226,10 @@ def run_production_drift_monitor(
             )
             from ml.pipelines.retrain import run_champion_challenger_retrain
 
+            retrain_new_data = curr_eval if target_col in curr_eval.columns else current_batch_df
             retrain_result = run_champion_challenger_retrain(
                 old_data_df=reference_df,
-                new_data_df=current_batch_df,
+                new_data_df=retrain_new_data,
                 drift_result=drift_result,
                 candidate_model_name=model_name,
                 trigger_reason="drift_detected",

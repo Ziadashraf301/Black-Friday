@@ -6,7 +6,7 @@ Lives in ai.services alongside embedding_service.py to maintain strict Clean Arc
 """
 from typing import List, Optional
 from ai.schemas import ProductSearchResult
-from ai.services.embedding_service import embedding_service
+from core.embeddings import embedding_service
 from ai.extractor.taxonomy import CATEGORY_HIERARCHY
 from core.db.repository import BlackFridayRepository
 from core.logging import get_logger

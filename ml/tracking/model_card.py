@@ -1,6 +1,7 @@
 import os
 import datetime
 from typing import Dict, Any, Optional
+from ml.models.regression import ALL_FEATURES
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -23,12 +24,14 @@ class ModelCardGenerator:
             safe_name = model_name.lower().replace(" ", "_")
             output_filepath = os.path.join("reports", "model_cards", f"MODEL_CARD_{safe_name}_{date_str}.md")
 
+        features_formatted = ", ".join(f"`{f}`" for f in ALL_FEATURES)
+
         content = f"""# Model Card: {model_name}
 
 ## 1. Model Overview
 - **Model Architecture:** {model_name}
 - **Task:** Retail Purchase Amount Regression (Normalized USD)
-- **Input Features:** `product_category_1`, `product_category_2`, `product_category_3`, `product_id`
+- **Input Features:** {features_formatted}
 - **Output:** Normalized purchase price in range `[0, 1]` (scaled by `Purchase_max = 21,399`)
 - **Serving Engine:** ONNX Runtime (CPU Execution Provider)
 - **Date Created:** {date_str}

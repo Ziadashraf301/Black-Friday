@@ -45,8 +45,6 @@ def product_card(product: Dict[str, Any]) -> rx.Component:
                 position="relative",
                 overflow="hidden",
                 border_radius="8px",
-                cursor="pointer",
-                on_click=ShoppingState.open_product_detail(product["product_id"]),
             ),
             # Content & CTA
             rx.hstack(
@@ -60,8 +58,6 @@ def product_card(product: Dict[str, Any]) -> rx.Component:
                         color="#07281e",
                         line_height="1.25",
                         no_of_lines=1,
-                        cursor="pointer",
-                        on_click=ShoppingState.open_product_detail(product["product_id"]),
                     ),
                     rx.hstack(
                         rx.text(
@@ -71,7 +67,11 @@ def product_card(product: Dict[str, Any]) -> rx.Component:
                         ),
                         rx.text("•", font_size="0.75rem", color="#b0beb6"),
                         rx.text(
-                            "$" + product["discounted_price"].to_string(),
+                            product["discounted_price"].to_string()
+                            if hasattr(product["discounted_price"], "to_string")
+                            else f"${float(product['discounted_price']):.2f}"
+                            if isinstance(product.get("discounted_price"), (int, float))
+                            else str(product.get("discounted_price", "")),
                             font_size="0.88rem",
                             font_weight="700",
                             color="#07281e",
@@ -83,26 +83,18 @@ def product_card(product: Dict[str, Any]) -> rx.Component:
                     spacing="1",
                     flex="1",
                 ),
-                # Circular Orange Arrow Action Button
-                rx.button(
+                # Circular Orange Arrow Action Indicator
+                rx.box(
                     rx.icon(tag="arrow-right", size=16, color="#ffffff"),
-                    on_click=ShoppingState.open_product_detail(product["product_id"]),
                     width="34px",
                     height="34px",
                     border_radius="9999px",
                     background="#f59b38",
-                    border="none",
-                    padding="0",
                     display="flex",
                     align_items="center",
                     justify_content="center",
-                    cursor="pointer",
                     box_shadow="0 3px 8px rgba(245, 155, 56, 0.35)",
-                    _hover={
-                        "background": "#e28624",
-                        "transform": "scale(1.08)",
-                        "transition": "all 0.15s ease",
-                    },
+                    transition="all 0.15s ease",
                 ),
                 width="100%",
                 justify_content="space-between",

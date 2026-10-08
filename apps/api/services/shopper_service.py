@@ -6,11 +6,17 @@ import re
 import pandas as pd
 import numpy as np
 from typing import Dict, Any, List, Optional
-from fastapi import HTTPException, status
+
+from core.exceptions import AppException, NotFoundError, ValidationError
 
 from core.db.repository import BlackFridayRepository
 from apps.api.services.model_service import model_service
-from apps.api.services.helpers import parse_recommendation_ids, make_price_cache_key, resolve_item_demographics
+from apps.api.services.helpers import (
+    parse_recommendation_ids,
+    make_price_cache_key,
+    resolve_item_demographics,
+    calculate_member_discount_price,
+)
 from core.cache import cache_manager
 from core.config import settings
 from core.logging import get_logger
@@ -89,9 +95,9 @@ class ShopperService:
                 cache_manager.set_json(cache_key, res, ttl=settings.REDIS_DEFAULT_TTL)
                 return res
 
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Product '{product_id}' not found in catalog."
+            raise NotFoundError(
+                message=f"Product '{product_id}' not found in catalog.",
+                code="PRODUCT_NOT_FOUND",
             )
 
         bundles = parse_recommendation_ids(product.get("top_bundle_recommendations"))
@@ -141,6 +147,14 @@ class ShopperService:
         item_keys: List[str] = []
         item_metas: List[Dict[str, Any]] = []
 
+        # Pre-fetch categories in ONE bulk query for all items missing product_category_1
+        missing_cat_pids = [
+            item.get("product_id") for item in items if item.get("product_category_1") is None and item.get("product_id")
+        ]
+        cat_map: Dict[str, Dict[str, Any]] = {}
+        if missing_cat_pids:
+            cat_map = repo.get_bulk_product_categories(missing_cat_pids)
+
         for item in items:
             product_id = item.get("product_id") or ""
             demo = resolve_item_demographics(item, user_demographics)
@@ -151,13 +165,12 @@ class ShopperService:
             stay = demo["stay_in_current_city_years"]
             mar = demo["marital_status"]
 
-
             cat1 = item.get("product_category_1")
             cat2 = item.get("product_category_2")
             cat3 = item.get("product_category_3")
 
             if cat1 is None:
-                db_cats = repo.get_product_categories(product_id)
+                db_cats = cat_map.get(product_id)
                 if db_cats:
                     cat1 = int(db_cats["product_category_1"] or 1)
                     cat2 = cat2 or (int(db_cats["product_category_2"]) if db_cats.get("product_category_2") else None)
@@ -222,11 +235,7 @@ class ShopperService:
                 pid = meta["product_id"]
                 base_price = price_map.get(pid, 49.90)
 
-                norm = max(0.0, min(1.0, float(pred_df.iloc[row_idx]["normalized"])))
-                member_discount_factor = 0.72 + 0.16 * norm
-                member_price = round(base_price * member_discount_factor, 2)
-                if member_price >= base_price:
-                    member_price = round(base_price * 0.85, 2)
+                member_price = calculate_member_discount_price(base_price, float(pred_df.iloc[row_idx]["normalized"]))
 
                 quote = {
                     "product_id": pid,
@@ -298,26 +307,21 @@ class ShopperService:
                 marital_status=marital_status,
             )
         except ValueError as val_err:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Price Prediction Failed: {val_err}"
+            raise ValidationError(
+                message=f"Price Prediction Failed: {val_err}",
+                code="PRICE_PREDICTION_FAILED",
             )
         except RuntimeError as run_err:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Inference Service Failure: {run_err}"
+            raise AppException(
+                message=f"Inference Service Failure: {run_err}",
+                code="INFERENCE_FAILURE",
             )
 
         curated = ShopperService.get_curated_catalog(repo=repo)
         match = next((p for p in curated if p["product_id"] == product_id), None)
         base_price = float(match.get("discounted_price", 49.90)) if match else 49.90
 
-        norm = max(0.0, min(1.0, float(pred_res.get("normalized", 0.5))))
-        member_discount_factor = 0.72 + 0.16 * norm
-        member_price = round(base_price * member_discount_factor, 2)
-
-        if member_price >= base_price:
-            member_price = round(base_price * 0.85, 2)
+        member_price = calculate_member_discount_price(base_price, float(pred_res.get("normalized", 0.5)))
 
         result = {
             "product_id": product_id,
@@ -346,11 +350,6 @@ class ShopperService:
         marital_status: Optional[int] = None,
     ) -> Dict[str, Any]:
         """Executes price calculation and stores purchase record in database. Uncached transaction path."""
-        try:
-            repo.create_app_tables()
-        except Exception:
-            pass
-
         quote = cls.estimate_price(
             product_id=product_id,
             cat1=cat1,
@@ -383,6 +382,82 @@ class ShopperService:
             "model_used": record["model_used"],
             "purchased_at": str(record["purchased_at"]),
         }
+
+    @classmethod
+    def process_batch_purchase(
+        cls,
+        user_id: int,
+        items: List[Dict[str, Any]],
+        repo: BlackFridayRepository,
+        user_demographics: Optional[Dict[str, Any]] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Processes batch purchase of cart items in ONE transaction with quantities.
+        Returns per-item purchase records. If any item fails, the entire transaction rolls back.
+        """
+        if not items:
+            return []
+
+        # 1. Validate items and quantities
+        for it in items:
+            if not it.get("product_id"):
+                raise ValidationError(message="Missing product_id", code="MISSING_PRODUCT_ID")
+            qty = it.get("quantity", 1)
+            if not isinstance(qty, int) or qty < 1:
+                raise ValidationError(
+                    message=f"Invalid quantity {qty} for product '{it.get('product_id')}'",
+                    code="INVALID_QUANTITY",
+                )
+
+        # 2. Get price estimates for each cart item
+        quotes = cls.estimate_price_batch(
+            items=items,
+            repo=repo,
+            user_id=user_id,
+            user_demographics=user_demographics,
+        )
+
+        quote_map = {q["product_id"]: q for q in quotes}
+
+        # 3. Assemble all purchase unit records
+        records_to_insert = []
+        for it in items:
+            pid = it["product_id"]
+            quote = quote_map.get(pid)
+            if not quote:
+                raise ValidationError(
+                    message=f"Unable to price product '{pid}'",
+                    code="PRICING_UNAVAILABLE",
+                )
+            qty = int(it.get("quantity", 1))
+            cat1 = it.get("product_category_1")
+            cat2 = it.get("product_category_2")
+            cat3 = it.get("product_category_3")
+
+            for _ in range(qty):
+                records_to_insert.append({
+                    "user_id": user_id,
+                    "product_id": pid,
+                    "product_category_1": cat1 or 1,
+                    "product_category_2": cat2,
+                    "product_category_3": cat3,
+                    "predicted_usd": quote["predicted_usd"],
+                    "model_used": quote["model_used"],
+                })
+
+        # 4. Insert all records in ONE atomic transaction
+        records = repo.record_purchases_batch(records_to_insert)
+
+        return [
+            {
+                "id": r["id"],
+                "product_id": r["product_id"],
+                "predicted_usd": float(r["predicted_usd"]),
+                "model_used": r["model_used"],
+                "purchased_at": str(r["purchased_at"]),
+            }
+            for r in records
+        ]
 
     @staticmethod
     def get_purchase_history(user_id: int, repo: BlackFridayRepository) -> Dict[str, Any]:

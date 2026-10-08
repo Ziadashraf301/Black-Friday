@@ -3,7 +3,7 @@ Recommendation repository for product network metrics, PageRank centrality, and 
 """
 import pandas as pd
 from typing import Dict, Any, List, Optional
-from sqlalchemy import text
+from sqlalchemy import text, bindparam
 from core.db.repositories.base import BaseRepository
 from core.logging import get_logger
 
@@ -51,10 +51,11 @@ class RecommendationRepository(BaseRepository):
             result = conn.execute(query, {"product_id": product_id}).mappings().first()
             return dict(result) if result else None
 
-    def get_product_categories(self, product_id: str) -> Optional[Dict[str, Any]]:
+    def get_product_categories(self, product_id: str, session: Optional[Any] = None) -> Optional[Dict[str, Any]]:
         """
         Returns the most-common product_category_1, _2, _3 for a product_id.
         Used for ONNX inference when shopper hasn't supplied category values.
+        Utilizes index on product_id in black_friday_cleaned.
         """
         query = text("""
             SELECT
@@ -64,6 +65,41 @@ class RecommendationRepository(BaseRepository):
             FROM black_friday_cleaned
             WHERE product_id = :pid
         """)
+        if session is not None:
+            result = session.execute(query, {"pid": product_id}).mappings().first()
+            return dict(result) if result else None
+
         with self.engine.connect() as conn:
             result = conn.execute(query, {"pid": product_id}).mappings().first()
             return dict(result) if result else None
+
+    def get_bulk_product_categories(
+        self, product_ids: List[str], session: Optional[Any] = None
+    ) -> Dict[str, Dict[str, Any]]:
+        """
+        Returns the most-common product_category_1, _2, _3 for a list of product_ids in ONE query.
+        Eliminates N+1 category queries during batch pricing.
+        """
+        clean_pids = list({pid for pid in product_ids if pid})
+        if not clean_pids:
+            return {}
+
+        query = text("""
+            SELECT
+                product_id,
+                MODE() WITHIN GROUP (ORDER BY product_category_1) AS product_category_1,
+                MODE() WITHIN GROUP (ORDER BY product_category_2) AS product_category_2,
+                MODE() WITHIN GROUP (ORDER BY product_category_3) AS product_category_3
+            FROM black_friday_cleaned
+            WHERE product_id IN :pids
+            GROUP BY product_id
+        """).bindparams(bindparam("pids", expanding=True))
+
+        if session is not None:
+            results = session.execute(query, {"pids": clean_pids}).mappings().all()
+        else:
+            with self.engine.connect() as conn:
+                results = conn.execute(query, {"pids": clean_pids}).mappings().all()
+
+        return {row["product_id"]: dict(row) for row in results}
+

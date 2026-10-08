@@ -6,6 +6,7 @@ Provides dual-mode interaction:
   2. WebSocket /bot/live-ws: Full-duplex continuous live Gemini Multimodal Voice-to-Voice streaming
      with live audio exchange, synchronized product card pushes, and interruption handling.
 """
+import re
 from typing import Optional, Dict, Any, List, AsyncGenerator
 import json
 import asyncio
@@ -19,6 +20,7 @@ from ai.workflow.graph import shopping_graph
 from ai.workflow.state import AgentState
 from ai.services.cache_service import cache_service
 from ai.guardrails.strike_tracker import strike_tracker
+from apps.api.rate_limiting.rate_limiter import rate_limit_client_dependency
 from core.config import settings
 from core.logging import get_logger
 
@@ -26,12 +28,28 @@ logger = get_logger(__name__)
 
 router = APIRouter(prefix="/bot", tags=["Conversational AI Assistant"])
 
+TOKEN_STREAM_REGEX = re.compile(r"\S+\s*|\s+")
+
+
+def tokenize_for_stream(text: str) -> List[str]:
+    """Splits text into stream tokens preserving all spaces, indentation, and newlines."""
+    if not text:
+        return []
+    return TOKEN_STREAM_REGEX.findall(text)
+
 
 # =============================================================================
 # Helper: Build Grounding URL Citations
 # =============================================================================
 def extract_grounding_citations(ui_payload: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Builds website catalog citations and URLs for retrieved products."""
+    if not ui_payload:
+        return []
+
+    # If citations are already pre-computed or aggregated in the payload, use them
+    if ui_payload.get("citations"):
+        return ui_payload["citations"]
+
     citations: List[Dict[str, Any]] = []
     ui_type = ui_payload.get("type", "")
     ui_data = ui_payload.get("data", {})
@@ -69,6 +87,18 @@ def extract_grounding_citations(ui_payload: Dict[str, Any]) -> List[Dict[str, An
                     "price": b.get("price", 0.0),
                     "badge": f"{b.get('savings_pct', 15.0):.0f}% Off Bundle",
                 })
+    elif ui_type == "multi_card" or "cards" in ui_payload:
+        cards = ui_payload.get("cards", [])
+        for c in cards:
+            pid = c.get("product_id")
+            if pid:
+                citations.append({
+                    "product_id": pid,
+                    "title": c.get("name", f"Product {pid}"),
+                    "url": f"/shopper/browse/{pid}",
+                    "price": c.get("price", c.get("discounted_price", 0.0)),
+                    "badge": c.get("badge", "Featured"),
+                })
     return citations
 
 
@@ -91,10 +121,8 @@ async def sse_response_generator(
         citations = extract_grounding_citations(ui_payload)
 
         # Stream cached tokens in fast pulses
-        words = response_text.split(" ")
-        for w in words:
-            yield f"data: {json.dumps({'type': 'token', 'content': w + ' '})}\n\n"
-            await asyncio.sleep(0.01)
+        for token in tokenize_for_stream(response_text):
+            yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
 
         if ui_payload:
             yield f"data: {json.dumps({'type': 'ui_card', 'payload': ui_payload})}\n\n"
@@ -124,10 +152,8 @@ async def sse_response_generator(
     citations = extract_grounding_citations(ui_payload)
 
     # Stream generated tokens
-    words = final_text.split(" ")
-    for w in words:
-        yield f"data: {json.dumps({'type': 'token', 'content': w + ' '})}\n\n"
-        await asyncio.sleep(0.02)
+    for token in tokenize_for_stream(final_text):
+        yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
 
     # Yield Synchronized UI Card
     if ui_payload:
@@ -148,7 +174,11 @@ class BotStreamRequest(BaseModel):
     mode: str = "text"
 
 
-@router.get("/stream", summary="Text-to-Text SSE Stream with Product Cards (GET)")
+@router.get(
+    "/stream",
+    summary="Text-to-Text SSE Stream with Product Cards (GET)",
+    dependencies=[Depends(rate_limit_client_dependency)],
+)
 async def bot_stream_get_endpoint(
     query: str = Query(..., description="User search or conversational inquiry"),
     user_id: str = Query("guest_user", description="Shopper identifier"),
@@ -169,7 +199,11 @@ async def bot_stream_get_endpoint(
     )
 
 
-@router.post("/stream", summary="Text-to-Text SSE Stream with Product Cards (POST)")
+@router.post(
+    "/stream",
+    summary="Text-to-Text SSE Stream with Product Cards (POST)",
+    dependencies=[Depends(rate_limit_client_dependency)],
+)
 async def bot_stream_post_endpoint(payload: BotStreamRequest):
     """
     Server-Sent Events endpoint streaming token-by-token responses,
@@ -199,19 +233,34 @@ async def bot_live_websocket(websocket: WebSocket):
       - Synchronized product cards sent down the socket alongside voice
       - Interruption handling (barge-in)
     """
-    await websocket.accept()
     client_ip = websocket.client.host if websocket.client else "unknown"
-    logger.info(f"[WS: LIVE] Accepted live voice connection from {client_ip}")
 
-    # Check ban lockout
-    if strike_tracker.is_banned(client_ip):
-        await websocket.send_json({
-            "type": "error",
-            "error_code": "SECURITY_STRIKE_LOCKOUT",
-            "message": "Access revoked due to repeated security policy violations. Lockout expires in 24 hours.",
-        })
+    # Extract user identity from Authorization header or query parameter if available
+    auth_user_id = None
+    auth_header = websocket.headers.get("authorization")
+    token = None
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ", 1)[1].strip()
+    elif "token" in websocket.query_params:
+        token = websocket.query_params.get("token")
+
+    if token:
+        try:
+            from core.security import decode_access_token
+            payload = decode_access_token(token)
+            if payload.get("sub"):
+                auth_user_id = str(payload.get("sub"))
+        except Exception as e:
+            logger.debug(f"[WS: LIVE] Handshake token decode warning: {e}")
+
+    # Check ban lockout by IP or user_id before accept
+    if strike_tracker.is_banned(client_ip) or (auth_user_id and strike_tracker.is_banned(auth_user_id)):
         await websocket.close(code=1008)
+        logger.warning(f"[WS: LIVE] Handshake rejected for banned identifier (ip={client_ip}, user={auth_user_id})")
         return
+
+    await websocket.accept()
+    logger.info(f"[WS: LIVE] Accepted live voice connection from {client_ip} (user={auth_user_id})")
 
     try:
         api_key = getattr(settings, "GEMINI_API_KEY", None)
@@ -247,6 +296,15 @@ async def bot_live_websocket(websocket: WebSocket):
             query_text = data.get("query") or data.get("text") or ""
             user_id = data.get("user_id", "guest_voice_shopper")
             session_id = data.get("session_id", "live_session")
+
+            if user_id and strike_tracker.is_banned(str(user_id)):
+                await websocket.send_json({
+                    "type": "error",
+                    "error_code": "SECURITY_STRIKE_LOCKOUT",
+                    "message": "Access revoked due to repeated security policy violations. Lockout expires in 24 hours.",
+                })
+                await websocket.close(code=1008)
+                return
 
             if not query_text and frame_type == "audio":
                 # In offline/test environments, decode audio packet or mock voice response

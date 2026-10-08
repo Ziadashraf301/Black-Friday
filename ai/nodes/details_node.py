@@ -32,8 +32,27 @@ def details_agent_node(state: AgentState) -> Dict[str, Any]:
     details = catalog_details_tool.get_details(target_pid)
     details_payload = details.model_dump() if details else None
 
+    cards = []
+    if details_payload and details_payload.get("product_id"):
+        cards.append({
+            "type": "PRODUCT_DETAIL_CARD",
+            "product_id": details_payload.get("product_id"),
+            "name": details_payload.get("name"),
+            "price": details_payload.get("discounted_price", details_payload.get("price")),
+            "original_price": details_payload.get("original_price"),
+            "image_url": details_payload.get("image_url", f"/products/{details_payload.get('product_id')}.jpg"),
+            "materials": details_payload.get("materials", []),
+            "care_instructions": details_payload.get("care_instructions"),
+            "sizes": details_payload.get("sizes", []),
+            "stock_status": details_payload.get("stock_status", "IN_STOCK"),
+        })
+
     return {
         "product_details": details_payload,
+        "ui_payload": {
+            "cards": cards,
+            "action_chips": ["Select Size", "Add to Cart"],
+        },
         "current_node": "details_agent_node",
     }
 

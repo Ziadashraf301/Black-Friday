@@ -1,6 +1,7 @@
 """
 Warehouse repository for transaction ingestion and cleaned data warehouse queries.
 """
+import json
 import pandas as pd
 from typing import Dict, Optional, List, Any
 from sqlalchemy import text
@@ -115,12 +116,10 @@ class WarehouseRepository(BaseRepository):
 
     def seed_curated_products(self, products: list):
         """Seeds curated products into curated_products table preserving existing vector embeddings."""
-        from core.db.models import Base
         from core.db.models.warehouse import CuratedProduct
         from core.db.session import get_db_session
 
         self.enable_pgvector_extension()
-        Base.metadata.create_all(bind=self.engine)
 
         with get_db_session() as session:
             for p in products:
@@ -135,10 +134,8 @@ class WarehouseRepository(BaseRepository):
 
     def get_curated_products(self) -> list:
         """Retrieves curated products from curated_products table."""
-        from core.db.models import Base
         from core.db.models.warehouse import CuratedProduct
         from core.db.session import get_db_session
-        Base.metadata.create_all(bind=self.engine)
         with get_db_session() as session:
             records = session.query(CuratedProduct).all()
             return [
@@ -224,7 +221,8 @@ class WarehouseRepository(BaseRepository):
         params: Dict[str, Any] = {
             "query_vec": query_vec_str,
             "query_text": query_text,
-            "top_k_candidates": max(top_k * 3, 20),
+            "top_k_candidates": max(int(top_k) * 3, 20),
+            "top_k": int(top_k),
         }
 
         if max_price is not None:
@@ -279,7 +277,7 @@ class WarehouseRepository(BaseRepository):
             FROM combined_scores c
             JOIN curated_products p ON c.product_id = p.product_id
             ORDER BY c.rrf_score DESC
-            LIMIT {top_k};
+            LIMIT :top_k;
         """)
 
         with self.engine.connect() as conn:
@@ -369,7 +367,7 @@ class WarehouseRepository(BaseRepository):
 
         # Tier 4: Guaranteed Doorbuster Deals Fallback
         logger.info("[SEARCH: LADDER] All constraints yielded 0 results. Activating Tier 4 Zero-Data Deals fallback.")
-        fallback_query = text(f"""
+        fallback_query = text("""
             SELECT 
                 p.product_id,
                 p.name,
@@ -384,10 +382,10 @@ class WarehouseRepository(BaseRepository):
             FROM curated_products p
             WHERE p.is_hero = TRUE OR p.badge ILIKE '%deal%' OR p.badge ILIKE '%sale%'
             ORDER BY ((p.original_price - p.discounted_price) / NULLIF(p.original_price, 0)) DESC
-            LIMIT {top_k};
+            LIMIT :top_k;
         """)
         with self.engine.connect() as conn:
-            rows = conn.execute(fallback_query).fetchall()
+            rows = conn.execute(fallback_query, {"top_k": int(top_k)}).fetchall()
 
         deals: List[Dict[str, Any]] = []
         for r in rows:
@@ -474,7 +472,6 @@ class WarehouseRepository(BaseRepository):
 
     def save_user_cart_snapshot(self, user_id: str, session_id: str, cart_dict: Dict[str, Any]) -> bool:
         """Upserts cart snapshot to PostgreSQL user_carts table."""
-        self.ensure_user_carts_table()
         import json
         from datetime import datetime, timezone
         query = text("""
@@ -500,7 +497,6 @@ class WarehouseRepository(BaseRepository):
 
     def load_user_cart_snapshot(self, user_id: str) -> Optional[Dict[str, Any]]:
         """Retrieves cold-tier cart snapshot from PostgreSQL."""
-        self.ensure_user_carts_table()
         import json
         query = text("""
             SELECT cart_data FROM user_carts WHERE user_id = :uid LIMIT 1;

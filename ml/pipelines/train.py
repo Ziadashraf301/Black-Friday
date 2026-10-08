@@ -1,9 +1,10 @@
 import os
+os.environ.setdefault("MPLBACKEND", "Agg")
 import json
 
 from core.db.repository import BlackFridayRepository
 from ml.models.registry import ModelRegistry
-from ml.models.evaluate import ModelEvaluator
+from ml.models.metrics import ModelEvaluator
 from ml.models.onnx_exporter import ONNXExporter
 from ml.tracking.mlflow_tracker import MLflowTracker
 from ml.tracking.explainability import ModelExplainability
@@ -41,9 +42,11 @@ def run_training_pipeline(model_names: list = None):
     # Dynamically load registered models from ModelRegistry (SSOT)
     available_model_names = ModelRegistry.list_available_models()
     if model_names:
-        available_model_names = [m for m in model_names if m in available_model_names]
-        if not available_model_names:
-            raise ValueError(f"Requested models {model_names} not found. Available: {ModelRegistry.list_available_models()}")
+        resolved_names = [ModelRegistry.resolve_name(m) for m in model_names]
+        unrecognized = [m for m, r in zip(model_names, resolved_names) if r not in available_model_names]
+        if unrecognized:
+            raise ValueError(f"Requested models {unrecognized} not found. Available: {available_model_names}")
+        available_model_names = resolved_names
     models = {name: ModelRegistry.get_model(name) for name in available_model_names}
 
     os.makedirs(os.path.join(settings.BASE_DIR, "models", "onnx"), exist_ok=True)

@@ -282,6 +282,20 @@ def cart_drawer() -> rx.Component:
                             justify_content="space-between",
                             width="100%",
                         ),
+                        rx.cond(
+                            ShoppingState.checkout_error != "",
+                            rx.hstack(
+                                rx.icon(tag="triangle-alert", size=15, color="#dc2626"),
+                                rx.text(ShoppingState.checkout_error, font_size="0.78rem", color="#b91c1c", font_weight="500"),
+                                background="#fef2f2",
+                                border="1px solid #fecaca",
+                                border_radius="6px",
+                                padding="0.4rem 0.6rem",
+                                spacing="2",
+                                align_items="center",
+                                width="100%",
+                            ),
+                        ),
                         rx.button(
                             rx.hstack(
                                 rx.icon(tag="credit-card", size=16, color="#ffffff"),

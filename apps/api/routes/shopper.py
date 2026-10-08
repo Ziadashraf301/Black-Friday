@@ -9,10 +9,12 @@ from apps.api.schemas import (
     ShopperPredictRequest, ShopperPredictResponse,
     ShopperBatchPredictRequest, ShopperBatchPredictResponse,
     CuratedProductItem,
-    ShopperPurchaseResponse, PurchaseHistoryResponse
+    ShopperPurchaseResponse, ShopperBatchPurchaseRequest, ShopperBatchPurchaseResponse,
+    PurchaseHistoryResponse
 )
 from apps.api.dependencies import get_repository
-from apps.api.auth import get_current_user
+from apps.api.auth import get_current_user, get_optional_user
+from apps.api.rate_limiting.rate_limiter import rate_limit_dependency
 from apps.api.services.shopper_service import shopper_service
 from core.db.repository import BlackFridayRepository
 
@@ -48,7 +50,7 @@ def browse_product(
 @router.post("/predict-price-batch", response_model=ShopperBatchPredictResponse)
 def predict_price_batch(
     request: ShopperBatchPredictRequest,
-    current_user: Optional[Dict[str, Any]] = Depends(get_current_user),
+    current_user: Optional[Dict[str, Any]] = Depends(get_optional_user),
     repo: BlackFridayRepository = Depends(get_repository),
 ):
     """Calculates personalized batch quotes for high-concurrency cart processing."""
@@ -73,7 +75,7 @@ def predict_price_batch(
 @router.post("/predict-price", response_model=ShopperPredictResponse)
 def predict_price_for_shopper(
     request: ShopperPredictRequest,
-    current_user: Dict[str, Any] = Depends(get_current_user),
+    current_user: Dict[str, Any] = Depends(rate_limit_dependency),
     repo: BlackFridayRepository = Depends(get_repository),
 ):
     """Calculates personalized purchase price quote for shopper."""
@@ -116,6 +118,30 @@ def record_purchase(
         repo=repo
     )
     return ShopperPurchaseResponse(**res)
+
+
+@router.post("/purchase/batch", response_model=ShopperBatchPurchaseResponse)
+def record_batch_purchase(
+    request: ShopperBatchPurchaseRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+    repo: BlackFridayRepository = Depends(get_repository),
+):
+    """Records all cart items in ONE transaction with quantities, returning per-item results."""
+    user_id = current_user["user_id"]
+    results = shopper_service.process_batch_purchase(
+        user_id=user_id,
+        items=[item.model_dump() for item in request.items],
+        repo=repo,
+        user_demographics=current_user,
+    )
+    purchases = [ShopperPurchaseResponse(**r) for r in results]
+    total_amount = round(sum(p.predicted_usd for p in purchases), 2)
+    return ShopperBatchPurchaseResponse(
+        purchases=purchases,
+        total_items=len(purchases),
+        total_amount=total_amount,
+    )
+
 
 
 @router.get("/history", response_model=PurchaseHistoryResponse)

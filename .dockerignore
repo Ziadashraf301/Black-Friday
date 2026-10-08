@@ -1,0 +1,36 @@
+# Git and local environment
+.git
+.gitignore
+.venv
+venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.coverage
+htmlcov
+
+# Node and web frontend builds
+node_modules
+.web
+assets
+*.log
+
+# Secrets and local config
+.env
+.env.*
+!.env.example
+
+# Legacy and scratch artifacts
+legacy_project
+scratch
+
+# Large data files (preserve JSON catalogs and benchmark datasets)
+data/*.csv
+*.csv
+
+# Large models cache and temporary artifacts
+models/cache
+models/**/*.joblib
+mlruns

@@ -32,6 +32,14 @@ def run_ingestion(csv_path: Optional[str] = None):
     repo = BlackFridayRepository()
     repo.truncate_raw_table()
     repo.insert_raw_batch(raw_df)
+
+    try:
+        from core.cache import cache_manager
+        cache_manager.delete_pattern("analytics:*")
+        logger.info("Invalidated analytics cache entries.")
+    except Exception as e:
+        logger.warning(f"Analytics cache invalidation warning: {e}")
+
     logger.info("Raw data ingestion successfully finished.")
 
 if __name__ == "__main__":

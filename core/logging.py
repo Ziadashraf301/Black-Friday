@@ -2,11 +2,19 @@ import os
 import sys
 import logging
 from logging.handlers import RotatingFileHandler
+from typing import Optional
 from core.config import settings
 
-# Ensure persistent log directory exists
-os.makedirs(settings.LOG_DIR, exist_ok=True)
 LOG_FILE_PATH = os.path.join(settings.LOG_DIR, settings.LOG_FILE)
+
+
+def _ensure_log_dir() -> Optional[str]:
+    """Lazily creates the log directory with graceful error handling."""
+    try:
+        os.makedirs(settings.LOG_DIR, exist_ok=True)
+        return os.path.join(settings.LOG_DIR, settings.LOG_FILE)
+    except Exception:
+        return None
 
 
 def get_logger(name: str) -> logging.Logger:
@@ -29,15 +37,17 @@ def get_logger(name: str) -> logging.Logger:
 
         # 2. Rotating File Handler (persists full execution logs to logs/app.log)
         try:
-            file_handler = RotatingFileHandler(
-                LOG_FILE_PATH,
-                maxBytes=15 * 1024 * 1024,  # 15 MB per file
-                backupCount=5,
-                encoding="utf-8"
-            )
-            file_handler.setLevel(log_level)
-            file_handler.setFormatter(formatter)
-            logger.addHandler(file_handler)
+            log_path = _ensure_log_dir()
+            if log_path:
+                file_handler = RotatingFileHandler(
+                    log_path,
+                    maxBytes=15 * 1024 * 1024,  # 15 MB per file
+                    backupCount=5,
+                    encoding="utf-8"
+                )
+                file_handler.setLevel(log_level)
+                file_handler.setFormatter(formatter)
+                logger.addHandler(file_handler)
         except Exception:
             # Fall back to console only if file permission is restricted
             pass

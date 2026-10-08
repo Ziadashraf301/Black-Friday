@@ -1,8 +1,9 @@
 from typing import Optional, Any
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field, field_validator
-import os
 from pathlib import Path
+import urllib.parse
+from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 class Settings(BaseSettings):
     """Central configuration for Black Friday v2 application."""
@@ -46,17 +47,32 @@ class Settings(BaseSettings):
 
     @property
     def database_url(self) -> str:
-        return f"postgresql+psycopg2://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.APP_DB_NAME}"
+        user = urllib.parse.quote(self.POSTGRES_USER, safe="")
+        pwd = urllib.parse.quote(self.POSTGRES_PASSWORD, safe="")
+        return f"postgresql+psycopg2://{user}:{pwd}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.APP_DB_NAME}"
 
     @property
     def async_database_url(self) -> str:
-        return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.APP_DB_NAME}"
+        user = urllib.parse.quote(self.POSTGRES_USER, safe="")
+        pwd = urllib.parse.quote(self.POSTGRES_PASSWORD, safe="")
+        return f"postgresql+asyncpg://{user}:{pwd}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.APP_DB_NAME}"
 
     # MinIO / S3 Storage
+    MINIO_HOST: str = Field(default="localhost")
     MINIO_ROOT_USER: str = Field(default="admin")
     MINIO_ROOT_PASSWORD: str = Field(default="password123")
     MINIO_PORT: int = Field(default=9000)
     MINIO_BUCKET_MLFLOW: str = Field(default="mlflow-artifacts")
+    S3_ENDPOINT_URL: Optional[str] = Field(default=None)
+    MLFLOW_S3_ENDPOINT_URL: Optional[str] = Field(default=None)
+
+    @property
+    def s3_endpoint_url(self) -> str:
+        if self.MLFLOW_S3_ENDPOINT_URL:
+            return self.MLFLOW_S3_ENDPOINT_URL
+        if self.S3_ENDPOINT_URL:
+            return self.S3_ENDPOINT_URL
+        return f"http://{self.MINIO_HOST}:{self.MINIO_PORT}"
 
     # Redis Cache Configuration (6-Hour Persistent TTL = 21,600 Seconds)
     REDIS_HOST: str = Field(default="localhost")
@@ -68,9 +84,9 @@ class Settings(BaseSettings):
     @property
     def redis_url(self) -> str:
         if self.REDIS_PASSWORD:
-            return f"redis://:{self.REDIS_PASSWORD}@{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+            pwd = urllib.parse.quote(self.REDIS_PASSWORD, safe="")
+            return f"redis://:{pwd}@{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
         return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
-
 
     # MLflow Tracking
     MLFLOW_TRACKING_URI: str = Field(default="http://localhost:5000")
@@ -81,6 +97,7 @@ class Settings(BaseSettings):
     # ML Constants matching R analysis
     PURCHASE_MAX: float = 21399.0
     OUTLIER_THRESHOLD: float = 21400.5
+    INR_TO_USD: float = Field(default=80.0)
     RANDOM_SEED: int = Field(default=1234)
 
     # Customer Segmentation Hyperparameters
@@ -104,16 +121,15 @@ class Settings(BaseSettings):
     IMPUTER_MIN_SAMPLES_LEAF: int = Field(default=5)
     IMPUTER_N_JOBS: int = Field(default=-1)
 
-    @field_validator("IMPUTER_SAMPLE_SIZE", mode="before")
+    @field_validator(
+        "IMPUTER_SAMPLE_SIZE",
+        "IMPUTER_MAX_DEPTH",
+        "DT_MAX_DEPTH",
+        "RF_MAX_DEPTH",
+        mode="before"
+    )
     @classmethod
-    def parse_optional_imputer_sample_size(cls, v):
-        if v == "" or v is None or str(v).lower() in ("none", "null"):
-            return None
-        return int(v)
-
-    @field_validator("IMPUTER_MAX_DEPTH", mode="before")
-    @classmethod
-    def parse_optional_imputer_max_depth(cls, v):
+    def parse_optional_integer(cls, v):
         if v == "" or v is None or str(v).lower() in ("none", "null"):
             return None
         return int(v)
@@ -143,13 +159,6 @@ class Settings(BaseSettings):
     LGBM_COLSAMPLE_BYTREE: float = Field(default=0.8)
     LGBM_N_JOBS: int = Field(default=-1)
 
-    @field_validator("DT_MAX_DEPTH", "RF_MAX_DEPTH", mode="before")
-    @classmethod
-    def parse_optional_depth(cls, v):
-        if v == "" or v is None or str(v).lower() in ("none", "null"):
-            return None
-        return int(v)
-
     # Drift-Triggered Retraining Thresholds
     # DRIFT_DATASET_THRESHOLD: fraction of features that must drift before retraining is triggered (0–1)
     DRIFT_DATASET_THRESHOLD: float = 0.30   # retrain if >30% of features drift
@@ -161,14 +170,20 @@ class Settings(BaseSettings):
     API_HOST: str = "0.0.0.0"
     API_BASE_URL: str = Field(default="http://localhost:8000")
     REFLEX_PORT: int = 3000
+    CORS_ORIGINS: Optional[str] = Field(default=None)
+
+    # Rate Limiting
+    RATE_LIMIT_MINUTE: int = Field(default=60)
+    RATE_LIMIT_DAY: int = Field(default=1000)
 
     # JWT Authentication
     SECRET_KEY: str = Field(default="blackfriday-super-secret-key-change-in-production-2024")
     JWT_ALGORITHM: str = Field(default="HS256")
     JWT_EXPIRY_HOURS: int = Field(default=24)
 
-    GEMINI_API_KEY: str
+    GEMINI_API_KEY: Optional[str] = Field(default=None)
     TYPESAFE_API_KEY: Optional[str] = Field(default=None)
     LLM_MODEL: str = Field(default="gemini-2.0-flash")
+
 
 settings = Settings()

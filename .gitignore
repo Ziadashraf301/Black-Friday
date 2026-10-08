@@ -20,7 +20,10 @@ legacy_project/
 src/improvements_in_v2.md
 src/improvements*.md
 reports/
-/models/
+models/
+models_backup_*/
+metrics_before.json
+metrics_after_part_a.json
 improvements_in_v2.md
 docs/poc.mp4
 apps/reflex_app/assets/*
@@ -28,7 +31,7 @@ reflex.lock
 /apps/reflex_app/assets
 implementation_plan.md
 Phase1_Implementation_Plan.xlsx
-*.md
 *.xlsx
 Phase2_Implementation_Plan.xlsx
 .antigravityignore
+docs/archive/

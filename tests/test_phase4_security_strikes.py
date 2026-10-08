@@ -24,6 +24,8 @@ class TestSecurityStrikeTracker:
         strike_tracker.reset_strikes(self.attacker_id)
 
     def test_strike_accumulation_and_lockout(self):
+        from core.cache.redis_client import cache_manager
+
         # Initial state: clean
         assert strike_tracker.is_banned(self.attacker_id) is False
 
@@ -31,16 +33,24 @@ class TestSecurityStrikeTracker:
         s1 = strike_tracker.record_strike(self.attacker_id)
         assert s1 == 1
         assert strike_tracker.is_banned(self.attacker_id) is False
+        if cache_manager.is_available and cache_manager.client is not None:
+            assert cache_manager.client.get(f"security:strikes:{self.attacker_id}") == "1"
 
         # Strike 2: Second attempt
         s2 = strike_tracker.record_strike(self.attacker_id)
         assert s2 == 2
         assert strike_tracker.is_banned(self.attacker_id) is False
+        if cache_manager.is_available and cache_manager.client is not None:
+            assert cache_manager.client.get(f"security:strikes:{self.attacker_id}") == "2"
 
         # Strike 3: Reaches threshold -> 24h ban triggered!
         s3 = strike_tracker.record_strike(self.attacker_id)
         assert s3 == 3
         assert strike_tracker.is_banned(self.attacker_id) is True
+        if cache_manager.is_available and cache_manager.client is not None:
+            assert cache_manager.client.get(f"security:strikes:{self.attacker_id}") == "3"
+            assert cache_manager.client.get(f"security:banned:{self.attacker_id}") == "BANNED_FOR_24H"
+            assert cache_manager.client.ttl(f"security:banned:{self.attacker_id}") > 0
 
     def test_guardrail_service_lockout_fast_path(self):
         # Manually ban user

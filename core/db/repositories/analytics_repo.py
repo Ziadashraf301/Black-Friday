@@ -13,9 +13,7 @@ class AnalyticsRepository(BaseRepository):
     """Repository managing executive analytics, aggregations, and demographic stats."""
 
     def get_eda_summary(self) -> Dict[str, Any]:
-        """Calculates executive KPI totals from the cleaned data with in-memory caching."""
-        if hasattr(self, "_cache_eda_summary"):
-            return self._cache_eda_summary
+        """Calculates executive KPI totals from the cleaned data."""
         query = text("""
             SELECT 
                 COUNT(*) as total_orders,
@@ -28,8 +26,7 @@ class AnalyticsRepository(BaseRepository):
         with self.engine.connect() as conn:
             result = conn.execute(query).mappings().first()
             res = dict(result) if result else {}
-            if res:
-                self._cache_eda_summary = res
+            res = {k: (float(v) if hasattr(v, "as_tuple") else v) for k, v in res.items()}
             return res
 
     def get_demographic_distribution(self, column_name: str) -> List[Dict[str, Any]]:

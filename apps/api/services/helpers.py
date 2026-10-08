@@ -75,3 +75,14 @@ def resolve_item_demographics(
         "stay_in_current_city_years": item.get("stay_in_current_city_years") or demo.get("stay_in_current_city_years"),
         "marital_status": item.get("marital_status") if item.get("marital_status") is not None else demo.get("marital_status"),
     }
+
+
+def calculate_member_discount_price(base_price: float, normalized_prediction: float) -> float:
+    """Calculates personalized member price given base price and normalized ML prediction."""
+    norm = max(0.0, min(1.0, float(normalized_prediction)))
+    member_discount_factor = 0.72 + 0.16 * norm
+    member_price = round(base_price * member_discount_factor, 2)
+    if member_price >= base_price:
+        return round(base_price * 0.85, 2)
+    return member_price
+

@@ -62,9 +62,10 @@ def test_cleaned_data_contract_with_split(sample_transactions):
     assert validated["split"].iloc[0] == "train"
 
     # Invalid split value fails validation
+    from pandera.errors import SchemaError
     cleaned_invalid = cleaned.copy()
     cleaned_invalid["split"] = "invalid_split"
-    with pytest.raises(Exception):
+    with pytest.raises(SchemaError):
         validate_cleaned_data(cleaned_invalid)
 
 

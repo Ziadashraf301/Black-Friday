@@ -2,13 +2,14 @@
 Authentication routes — signup, login, and profile.
 """
 from typing import Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 
 from apps.api.schemas import SignupRequest, LoginRequest, TokenResponse, UserMeResponse
 from apps.api.dependencies import get_repository
 from apps.api.auth import get_current_user
 from apps.api.services.auth_service import auth_service
 from core.db.repository import BlackFridayRepository
+from core.exceptions import NotFoundError
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -35,5 +36,5 @@ def get_me(
     """Returns the authenticated shopper's profile."""
     user = repo.get_user_by_id(current_user["user_id"])
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
+        raise NotFoundError("User not found.", code="USER_NOT_FOUND")
     return UserMeResponse(**{k: user.get(k) for k in UserMeResponse.model_fields})

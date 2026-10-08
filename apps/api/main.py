@@ -1,10 +1,15 @@
+from contextlib import asynccontextmanager
+from typing import List
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from contextlib import asynccontextmanager
+
 from apps.api.routes import analytics
 from apps.api.routes import auth as auth_router
 from apps.api.routes import shopper as shopper_router
+from apps.api.routes import bot as bot_router
+from apps.api.handlers import register_exception_handlers
+from apps.api.middleware.security_ban_middleware import SecurityBanMiddleware
 from apps.api.services.model_service import model_service
 from core.config import settings
 from core.logging import get_logger
@@ -42,21 +47,37 @@ app = FastAPI(
 # GZip compression for responses > 1000 bytes
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-# CORS
+# Explicit CORS origins for credentialed access (Fix 5.1)
+default_origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "http://localhost:8001",
+    "http://127.0.0.1:8001",
+]
+configured_origins = [
+    o.strip() for o in (getattr(settings, "CORS_ORIGINS", "") or "").split(",") if o.strip()
+]
+cors_origins = sorted(list(set(default_origins + configured_origins)))
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Security Ban & Strike Lockout Gateway Middleware (Phase 4 - Task P4-07)
-from apps.api.middleware.security_ban_middleware import SecurityBanMiddleware
 app.add_middleware(SecurityBanMiddleware)
 
-# Mount thin route controllers
-from apps.api.routes import bot as bot_router
+
+# Register Structured Exception Handlers (Fix 5.1 & Fix 10.1)
+register_exception_handlers(app)
+
+
+# Mount route controllers
 app.include_router(analytics.router)
 app.include_router(auth_router.router)
 app.include_router(shopper_router.router)

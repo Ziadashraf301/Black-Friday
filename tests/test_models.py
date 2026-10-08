@@ -10,7 +10,7 @@ from ml.models.regression import (
 )
 from ml.models.registry import ModelRegistry
 from ml.models.onnx_exporter import ONNXExporter
-from apps.api.serving.predictor import ONNXPredictor
+from ml.serving.predictor import ONNXPredictor
 from ml.tracking.explainability import ModelExplainability
 from core.config import settings
 

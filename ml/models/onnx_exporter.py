@@ -9,8 +9,8 @@ from skl2onnx.common.data_types import StringTensorType, Int64TensorType, FloatT
 import onnxruntime as ort
 
 from core.logging import get_logger
-from apps.api.serving.imputer import ONNXMissForestImputer
-from apps.api.serving.predictor import ONNXPredictor
+from ml.serving.imputer import ONNXMissForestImputer
+from ml.serving.predictor import ONNXPredictor
 
 logger = get_logger(__name__)
 
@@ -155,7 +155,7 @@ class ONNXExporter:
         """
         os.makedirs(output_dir, exist_ok=True)
         inner = missforest_imputer.imputer
-        cols = getattr(missforest_imputer, "cols", ["product_category_1", "product_category_2", "product_category_3", "purchase"])
+        cols = getattr(missforest_imputer, "cols", ["gender", "age", "occupation", "city_category", "stay_in_current_city_years", "marital_status", "product_category_1", "product_category_2", "product_category_3", "product_id"])
         category_mappings = getattr(missforest_imputer, "category_mappings", {})
 
         metadata = {
