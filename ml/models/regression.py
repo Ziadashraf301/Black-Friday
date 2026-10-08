@@ -34,8 +34,8 @@ ALL_FEATURES: List[str] = [
     "product_id"
 ]
 
-NUMERIC_FEATS: List[str] = ["occupation", "marital_status", "product_category_1", "product_category_2", "product_category_3"]
-CATEGORICAL_FEATS: List[str] = ["gender", "age", "city_category", "stay_in_current_city_years"]
+NUMERIC_FEATS: List[str] = ["marital_status", "product_category_1", "product_category_2", "product_category_3"]
+CATEGORICAL_FEATS: List[str] = ["gender", "age", "occupation", "city_category", "stay_in_current_city_years"]
 
 
 def create_tree_preprocessor() -> ColumnTransformer:
