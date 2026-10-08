@@ -4,10 +4,12 @@ Executes stateful cart actions (add, remove, change size, clear, view subtotal).
 """
 import re
 from typing import Dict, Any
-from loguru import logger
+from core.logging import get_logger
 
 from ai.workflow.state import AgentState
 from ai.tools.cart_tools import cart_tool
+
+logger = get_logger(__name__)
 
 
 def cart_agent_node(state: AgentState) -> Dict[str, Any]:
@@ -60,5 +62,8 @@ def cart_agent_node(state: AgentState) -> Dict[str, Any]:
 
     return {
         "cart": updated_cart.model_dump(),
+        "ui_payload": {
+            "action_chips": ["View Cart", "Checkout Now"],
+        },
         "current_node": "cart_agent_node",
     }

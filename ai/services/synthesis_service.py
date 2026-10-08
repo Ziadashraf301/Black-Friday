@@ -3,11 +3,14 @@ RAG Synthesis Service for Black Friday Assistant.
 Manages context augmentation, LLM model invocation from configuration,
 and deterministic fallback generation.
 """
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, TYPE_CHECKING
 from langchain_core.messages import AIMessage
 
-from ai.workflow.state import AgentState
+if TYPE_CHECKING:
+    from ai.workflow.state import AgentState, UIPayload
+
 from ai.prompts.synthesis_prompts import format_rag_prompt
+from ai.services.template_service import ResponseTemplateService, template_service
 from core.config import settings
 from core.logging import get_logger
 
@@ -17,8 +20,15 @@ logger = get_logger(__name__)
 class SynthesisService:
     """Service handling RAG augmentation, LLM inference, and rich UI payload assembly."""
 
-    def __init__(self, model_name: Optional[str] = None):
+    def __init__(
+        self,
+        model_name: Optional[str] = None,
+        template_service_instance: Optional[ResponseTemplateService] = None,
+        llm_client: Optional[Any] = None,
+    ):
         self._configured_model = model_name or getattr(settings, "LLM_MODEL", "gemini-2.0-flash")
+        self._templates = template_service_instance or template_service
+        self._llm_client = llm_client
 
     @property
     def model_name(self) -> str:
@@ -97,19 +107,25 @@ class SynthesisService:
 
     def generate_llm_rag(self, context_block: str, query: str) -> Optional[str]:
         """Invokes configured LLM model with prompt grounding."""
-        api_key = getattr(settings, "GEMINI_API_KEY", None)
-        if not api_key or api_key == "test_api_key_placeholder":
-            return None
+        client = self._llm_client
+        if client is None:
+            api_key = getattr(settings, "GEMINI_API_KEY", None)
+            if not api_key or api_key == "test_api_key_placeholder":
+                return None
+            try:
+                from google import genai
+                client = genai.Client(api_key=api_key)
+            except Exception as e:
+                logger.debug(f"[SYNTHESIS-SERVICE] Could not initialize genai client: {e}")
+                return None
 
         try:
-            from google import genai
-            client = genai.Client(api_key=api_key)
             prompt = format_rag_prompt(context_block=context_block, query=query)
             response = client.models.generate_content(
                 model=self._configured_model,
                 contents=prompt,
             )
-            if response and response.text:
+            if response and getattr(response, "text", None):
                 return response.text.strip()
         except Exception as e:
             logger.debug(f"[SYNTHESIS-SERVICE] LLM generation with {self._configured_model} skipped: {e}")
@@ -120,89 +136,27 @@ class SynthesisService:
         self,
         intent: str,
         query: str,
-        retrieved: List[Dict[str, Any]],
-        details: Optional[Dict[str, Any]],
-        bundles: List[Dict[str, Any]],
-        cart: Optional[Dict[str, Any]],
-        order_status: Optional[Dict[str, Any]],
-        policy: Optional[Dict[str, Any]],
+        retrieved: Optional[List[Dict[str, Any]]] = None,
+        details: Optional[Dict[str, Any]] = None,
+        bundles: Optional[List[Dict[str, Any]]] = None,
+        cart: Optional[Dict[str, Any]] = None,
+        order_status: Optional[Dict[str, Any]] = None,
+        policy: Optional[Dict[str, Any]] = None,
     ) -> str:
-        """Deterministic high-speed template formatting."""
-        response_lines: List[str] = []
+        """Deterministic high-speed template formatting delegated to ResponseTemplateService."""
+        return self._templates.render(
+            intent=intent,
+            query=query,
+            retrieved=retrieved,
+            details=details,
+            bundles=bundles,
+            cart=cart,
+            order_status=order_status,
+            policy=policy,
+        )
 
-        if retrieved:
-            rl = retrieved[0].get("relaxation_level", "TIER_1_STRICT")
-            if rl == "TIER_2_RELAX_SIZE":
-                response_lines.append(f"We expanded the size filter to show you top-rated Black Friday styles matching **'{query}'**:\n")
-            elif rl == "TIER_3_RELAX_BUDGET":
-                response_lines.append(f"We expanded the price range by up to 25% to find the best deals for **'{query}'**:\n")
-            elif rl == "TIER_4_ZERO_DATA_DEALS":
-                response_lines.append(f"We couldn't find exact matches for **'{query}'**, but check out our top-trending Black Friday doorbuster deals!\n")
-            else:
-                response_lines.append(f"Here are top-matched Black Friday selections for **'{query}'**:\n")
-
-            for idx, p in enumerate(retrieved, start=1):
-                badge = f" `[{p['badge']}]`" if p.get("badge") else ""
-                response_lines.append(
-                    f"**{idx}. [{p['product_id']}] {p['name']}**{badge}\n"
-                    f"- **Price**: ~~${p['original_price']:.2f}~~ **${p['discounted_price']:.2f}**\n"
-                    f"- **Category**: {p['category_name']} | **Sizes**: {', '.join(p['sizes'])}\n"
-                )
-        elif details:
-            badge = f" `[{details['badge']}]`" if details.get("badge") else ""
-            response_lines.append(f"### **[{details['product_id']}] {details['name']}**{badge}\n")
-            response_lines.append(f"> *{details['tagline']}*\n")
-            response_lines.append(f"{details['description']}\n")
-            response_lines.append(f"- **Special Price**: ~~${details['original_price']:.2f}~~ **${details['discounted_price']:.2f}**")
-            response_lines.append(f"- **Materials**: {', '.join(details['materials'])}")
-            response_lines.append(f"- **Care**: {details['care_instructions']}")
-            response_lines.append(f"- **Available Sizes**: {', '.join(details['sizes'])}\n")
-        elif bundles:
-            response_lines.append("Here are curated styling pairings and Apriori bundle savings:\n")
-            for b in bundles:
-                rel = "Frequent Match" if b.get("relationship_type") == "apriori" else "Similar Style"
-                response_lines.append(
-                    f"- **[{b['product_id']}] {b['name']}** (${b['price']:.2f}) — *{rel}* (Save {b.get('savings_pct', 15.0):.0f}%)"
-                )
-        elif cart:
-            item_count = cart.get("item_count", 0)
-            items = cart.get("items", [])
-            if item_count > 0:
-                response_lines.append(f"Your shopping cart has been updated (**{item_count} item{'s' if item_count > 1 else ''}**):\n")
-                for item in items:
-                    response_lines.append(
-                        f"- **{item['name']}** (Size: {item['size']}, Qty: {item['quantity']}) — **${item['total_price']:.2f}**"
-                    )
-                response_lines.append(f"\n**Subtotal**: ${cart.get('subtotal', 0.0):.2f}")
-                if cart.get("discount_total", 0.0) > 0:
-                    response_lines.append(f"**Holiday Promo (10% off $150+)**: -${cart['discount_total']:.2f}")
-                response_lines.append(f"**Total**: **${cart.get('final_total', 0.0):.2f}**\n")
-            else:
-                response_lines.append("Your shopping cart is currently empty.")
-        elif order_status:
-            response_lines.append(f"### Order Status: **{order_status['order_id']}**\n")
-            response_lines.append(f"- **Status**: **{order_status['status']}**")
-            response_lines.append(f"- **Carrier**: {order_status['carrier']} (`{order_status['tracking_number']}`)")
-            response_lines.append(f"- **Estimated Delivery**: {order_status['estimated_delivery']}")
-            if order_status.get("return_eligible_until"):
-                response_lines.append(f"- **Free Return Eligible Until**: {order_status['return_eligible_until']}")
-        elif policy:
-            response_lines.append(f"### {policy.get('title', 'Store Policy')}\n")
-            response_lines.append(f"{policy.get('summary', '')}\n")
-            if policy.get("conditions"):
-                response_lines.append("**Key Guidelines**:")
-                for cond in policy["conditions"]:
-                    response_lines.append(f"- {cond}")
-        else:
-            response_lines.append(
-                "I'm here to assist with your Black Friday shopping! "
-                "You can search our catalog, ask about item details, get outfit bundles, or check active discounts."
-            )
-
-        return "\n".join(response_lines)
-
-    def synthesize(self, state: AgentState) -> Dict[str, Any]:
-        """Main synthesis orchestrator generating response text and UI payload."""
+    def synthesize(self, state: "AgentState") -> Dict[str, Any]:
+        """Main synthesis orchestrator generating response text and unified UI payload."""
         intent = state.get("intent", "PRODUCT_SEARCH")
         query = state.get("query", "")
         retrieved = state.get("retrieved_products") or []
@@ -212,7 +166,7 @@ class SynthesisService:
         order_status = state.get("order_status")
         policy = state.get("policy_details")
 
-        # Determine UI Payload
+        # Determine UI Payload type and legacy data
         ui_type = "general"
         ui_data: Dict[str, Any] = {}
 
@@ -234,6 +188,78 @@ class SynthesisService:
         elif policy:
             ui_type = "policy_card"
             ui_data = {"policy": policy}
+
+        # Preserve and merge aggregated specialist UI elements
+        existing_ui = state.get("ui_payload") or {}
+        cards = list(existing_ui.get("cards") or [])
+
+        # Fallback card assembly if no specialist cards were present in state
+        if not cards:
+            if retrieved:
+                for p in retrieved:
+                    pid = p.get("product_id")
+                    if pid:
+                        cards.append({
+                            "type": "PRODUCT_CARD",
+                            "product_id": pid,
+                            "name": p.get("name"),
+                            "price": p.get("discounted_price", p.get("price")),
+                            "original_price": p.get("original_price"),
+                            "image_url": p.get("image_url", f"/products/{pid}.jpg"),
+                            "badge": p.get("badge", "Catalog Item"),
+                        })
+            elif details and details.get("product_id"):
+                cards.append({
+                    "type": "PRODUCT_DETAIL_CARD",
+                    "product_id": details.get("product_id"),
+                    "name": details.get("name"),
+                    "price": details.get("discounted_price", details.get("price")),
+                    "original_price": details.get("original_price"),
+                    "image_url": details.get("image_url", f"/products/{details.get('product_id')}.jpg"),
+                    "materials": details.get("materials", []),
+                    "care_instructions": details.get("care_instructions"),
+                    "sizes": details.get("sizes", []),
+                    "stock_status": details.get("stock_status", "IN_STOCK"),
+                })
+            elif bundles:
+                for b in bundles:
+                    pid = b.get("product_id")
+                    if pid:
+                        cards.append({
+                            "type": "BUNDLE_CARD",
+                            "product_id": pid,
+                            "name": b.get("name"),
+                            "price": b.get("price"),
+                            "bundle_price": b.get("bundle_price"),
+                            "discount_pct": b.get("discount_pct", "15% OFF"),
+                            "image_url": b.get("image_url", f"/products/{pid}.jpg"),
+                        })
+
+        default_chips = ["View Cart", "Checkout Now", "Top Deals"]
+        existing_chips = list(existing_ui.get("action_chips") or [])
+        action_chips = list(dict.fromkeys(existing_chips + default_chips))
+
+        citations = list(existing_ui.get("citations") or [])
+        if not citations and cards:
+            for c in cards:
+                pid = c.get("product_id")
+                if pid:
+                    citations.append({
+                        "product_id": pid,
+                        "title": c.get("name", f"Product {pid}"),
+                        "url": f"/shopper/browse/{pid}",
+                        "price": float(c.get("discounted_price") or c.get("bundle_price") or c.get("price") or 0.0),
+                        "badge": c.get("badge") or c.get("discount_pct") or "Deal",
+                    })
+
+        final_ui_payload: Dict[str, Any] = {
+            "type": ui_type,
+            "data": ui_data,
+            "cards": cards,
+            "action_chips": action_chips,
+            "citations": citations,
+            "relaxation_level": state.get("relaxation_level", "STRICT"),
+        }
 
         # Build RAG Context & Generate Response
         context_block = self.build_rag_context(
@@ -279,7 +305,7 @@ class SynthesisService:
                 cache_service.store_exact_llm_response(
                     raw_query=query,
                     response_message=final_text,
-                    ui_payload={"type": ui_type, "data": ui_data},
+                    ui_payload=final_ui_payload,
                     target_intents=state.get("target_intents") or ([intent] if intent else []),
                     retrieved_products=retrieved,
                     product_details=details,
@@ -290,20 +316,16 @@ class SynthesisService:
                 cache_service.store_vector_semantic_response(
                     query_text=query,
                     response_text=final_text,
-                    ui_payload={"type": ui_type, "data": ui_data},
+                    ui_payload=final_ui_payload,
                     intent=intent,
                 )
             except Exception as e:
                 logger.debug(f"[SYNTHESIS-SERVICE] Failed to store in cache: {e}")
 
-
         return {
             "messages": [ai_msg],
             "final_response": final_text,
-            "ui_payload": {
-                "type": ui_type,
-                "data": ui_data,
-            },
+            "ui_payload": final_ui_payload,
             "is_cache_hit": False,
             "cache_tier": "NONE",
             "current_node": "response_synthesis_node",

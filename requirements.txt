@@ -56,7 +56,7 @@ pyyaml>=6.0.1
 python-dotenv>=1.0.1
 
 # AI, LLM Providers & System-1 Guardrail
-google-generativeai>=0.8.0
+google-genai>=2.0.0
 typesafe-sdk>=0.7.2
 
 # Testing & Quality
@@ -72,4 +72,3 @@ isort>=5.13.2
 
 langgraph>=1.2.11
 langchain-core>=1.6.2
-loguru>=0.7.3

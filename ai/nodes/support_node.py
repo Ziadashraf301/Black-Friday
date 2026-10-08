@@ -4,10 +4,12 @@ Handles delivery tracking inquiries and Black Friday policy details.
 """
 import re
 from typing import Dict, Any
-from loguru import logger
+from core.logging import get_logger
 
 from ai.workflow.state import AgentState
 from ai.tools.order_tools import order_tool
+
+logger = get_logger(__name__)
 
 
 def support_agent_node(state: AgentState) -> Dict[str, Any]:
@@ -43,6 +45,9 @@ def support_agent_node(state: AgentState) -> Dict[str, Any]:
     return {
         "order_status": order_status_payload,
         "policy_details": policy_payload,
+        "ui_payload": {
+            "action_chips": ["Contact Support", "Store Policies"],
+        },
         "current_node": "support_agent_node",
     }
 

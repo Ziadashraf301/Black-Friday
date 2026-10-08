@@ -4,7 +4,7 @@ Synchronizes parallel specialist worker nodes, aggregates multi-intent document 
 and compiles unified UI payloads with product images and action chips prior to synthesis.
 """
 from typing import Dict, Any, List
-from ai.workflow.state import AgentState
+from ai.workflow.state import AgentState, UIPayload
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -22,6 +22,14 @@ def retrieval_aggregator_join(state: AgentState) -> Dict[str, Any]:
     consolidated_docs: List[Dict[str, Any]] = []
     ui_cards: List[Dict[str, Any]] = []
     seen_product_ids = set()
+
+    # 0. Harvest existing UI cards from specialist nodes via state.ui_payload
+    existing_ui = state.get("ui_payload") or {}
+    for card in existing_ui.get("cards", []):
+        pid = card.get("product_id")
+        if pid:
+            seen_product_ids.add(pid)
+        ui_cards.append(dict(card))
 
     # 1. Gather Search Results
     search_products = state.get("retrieved_products", []) or []
@@ -128,10 +136,36 @@ def retrieval_aggregator_join(state: AgentState) -> Dict[str, Any]:
             "data": cart,
         })
 
+    # Build Grounding Citations
+    citations: List[Dict[str, Any]] = list(existing_ui.get("citations") or [])
+    seen_cite_pids = {c.get("product_id") for c in citations if c.get("product_id")}
+    for c in ui_cards:
+        pid = c.get("product_id")
+        if pid and pid not in seen_cite_pids:
+            seen_cite_pids.add(pid)
+            citations.append({
+                "product_id": pid,
+                "title": c.get("name", f"Product {pid}"),
+                "url": f"/shopper/browse/{pid}",
+                "price": float(c.get("discounted_price") or c.get("bundle_price") or c.get("price") or 0.0),
+                "badge": c.get("badge") or c.get("discount_pct") or "Deal",
+            })
+
+    # Merge action chips preserving specialist intent
+    aggregator_chips = ["View Cart", "Checkout Now", "Top Deals"]
+    specialist_chips = list(existing_ui.get("action_chips") or [])
+    unified_action_chips = list(dict.fromkeys(specialist_chips + aggregator_chips))
+
     # Compile unified UI payload
-    unified_ui_payload = {
+    unified_ui_payload: UIPayload = {
+        "type": "multi_card",
+        "data": {
+            "cards_count": len(ui_cards),
+            "sources": [d.get("source") for d in consolidated_docs],
+        },
         "cards": ui_cards,
-        "action_chips": ["View Cart", "Checkout Now", "Top Deals"],
+        "action_chips": unified_action_chips,
+        "citations": citations,
         "relaxation_level": state.get("relaxation_level", "STRICT"),
     }
 

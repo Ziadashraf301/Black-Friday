@@ -5,7 +5,7 @@ Provides an abstract base interface and concrete provider strategies for 768-dim
   - DeterministicSemanticProvider (Deterministic fallback)
 """
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import List, Optional, Any
 import hashlib
 import numpy as np
 from core.config import settings
@@ -34,42 +34,65 @@ class BaseEmbeddingProvider(ABC):
 
 
 class GeminiEmbeddingProvider(BaseEmbeddingProvider):
-    """Concrete strategy implementing Gemini Embedding 2 ($0.20/1M tokens)."""
+    """Concrete strategy implementing Gemini Embedding via google.genai Client ($0.20/1M tokens)."""
 
-    def __init__(self, api_key: Optional[str] = None, model_name: str = "models/gemini-embedding-2"):
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        model_name: str = "models/gemini-embedding-2",
+        client: Optional[Any] = None,
+    ):
         self._api_key = api_key or getattr(settings, "GEMINI_API_KEY", None) or getattr(settings, "GOOGLE_API_KEY", None)
         self._model_name = model_name
+        self._client = client
 
     @property
     def dimension(self) -> int:
         return 768
 
-    def embed_text(self, text: str) -> List[float]:
+    def _get_client(self):
+        if self._client is not None:
+            return self._client
         if not self._api_key:
             logger.warning("[EMBEDDING-PROVIDER: GEMINI] GEMINI_API_KEY not found in environment.")
             raise ValueError("GEMINI_API_KEY not configured.")
+        from google import genai
+        self._client = genai.Client(api_key=self._api_key)
+        return self._client
 
-        import warnings
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=FutureWarning)
-            import google.generativeai as genai
-            genai.configure(api_key=self._api_key)
-            logger.info(f"[EMBEDDING-PROVIDER: GEMINI] Requesting 768-dim embedding via {self._model_name}...")
-            try:
-                res = genai.embed_content(
-                    model=self._model_name,
-                    content=text,
-                    task_type="retrieval_document",
-                    output_dimensionality=768,
-                )
-            except Exception:
-                res = genai.embed_content(
-                    model=self._model_name,
-                    content=text,
-                    task_type="retrieval_document",
-                )
+    def embed_text(self, text: str) -> List[float]:
+        client = self._get_client()
+        logger.info(f"[EMBEDDING-PROVIDER: GEMINI] Requesting 768-dim embedding via {self._model_name}...")
 
-        raw_vec = [float(x) for x in res["embedding"]]
+        try:
+            from google.genai import types
+            config = types.EmbedContentConfig(
+                task_type="RETRIEVAL_DOCUMENT",
+                output_dimensionality=768,
+            )
+            res = client.models.embed_content(
+                model=self._model_name,
+                contents=text,
+                config=config,
+            )
+        except Exception as e:
+            logger.debug(f"[EMBEDDING-PROVIDER: GEMINI] Standard config failed ({e}), trying fallback call...")
+            res = client.models.embed_content(
+                model=self._model_name,
+                contents=text,
+            )
+
+        if hasattr(res, "embeddings") and res.embeddings:
+            raw_vec = [float(x) for x in res.embeddings[0].values]
+        elif hasattr(res, "embedding") and hasattr(res.embedding, "values"):
+            raw_vec = [float(x) for x in res.embedding.values]
+        elif isinstance(res, dict) and "embedding" in res:
+            raw_vec = [float(x) for x in res["embedding"]]
+        elif isinstance(res, dict) and "embeddings" in res and res["embeddings"]:
+            raw_vec = [float(x) for x in res["embeddings"][0]["values"]]
+        else:
+            raise ValueError(f"Unexpected response structure from embed_content: {res}")
+
         # Matryoshka Representation Learning: slice and L2-normalize to exact 768 dimensions
         if len(raw_vec) != 768:
             logger.info(f"[EMBEDDING-PROVIDER: GEMINI] Aligning vector from {len(raw_vec)} to 768 dimensions via MRL.")
@@ -112,16 +135,13 @@ class EmbeddingService:
     @staticmethod
     def _resolve_default_provider() -> BaseEmbeddingProvider:
         key = getattr(settings, "GEMINI_API_KEY", None) or getattr(settings, "GOOGLE_API_KEY", None)
-        if key:
+        if key and key != "test_api_key_placeholder":
             try:
-                import warnings
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore", category=FutureWarning)
-                    import google.generativeai
+                from google import genai  # noqa: F401
                 logger.info("[EMBEDDING-SERVICE] Active strategy: GeminiEmbeddingProvider (models/gemini-embedding-2).")
                 return GeminiEmbeddingProvider(api_key=key)
             except ImportError:
-                logger.warning("[EMBEDDING-SERVICE] google-generativeai package not installed. Falling back to DeterministicSemanticProvider.")
+                logger.warning("[EMBEDDING-SERVICE] google-genai package not installed. Falling back to DeterministicSemanticProvider.")
         else:
             logger.info("[EMBEDDING-SERVICE] No GEMINI_API_KEY detected in environment. Using DeterministicSemanticProvider (offline / testing mode, 768-dim).")
         return DeterministicSemanticProvider()
