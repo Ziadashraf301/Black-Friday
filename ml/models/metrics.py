@@ -153,6 +153,10 @@ def evaluate_imputation_holdout(
     masked_test = valid_test.copy()
     masked_test["product_category_2"] = np.nan
     masked_test["product_category_3"] = np.nan
+    # Remove target leakage during holdout imputation evaluation (Fix 6.5)
+    for target_col in ["purchase", "normalized_purchase"]:
+        if target_col in masked_test.columns:
+            masked_test.drop(columns=[target_col], inplace=True)
 
     imputed_test = imputer.transform(masked_test)
     y_pred_cat2 = imputed_test["product_category_2"].to_numpy()

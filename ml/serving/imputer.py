@@ -79,11 +79,11 @@ class ONNXMissForestImputer:
 
             arr[col_missing, feat_idx] = preds
 
-        # 3. Post-process integer categories
+        # 3. Post-process integer categories (Fix 3.6: keep imputed columns when absent from input, clip [1, 20], cannot fail on NaN)
         for j, c in enumerate(self.cols):
-            if c in temp_added_cols:
-                continue
             if c in ["product_category_2", "product_category_3"]:
-                result[c] = np.round(arr[:, j]).astype(int)
+                col_vals = np.clip(np.round(arr[:, j]), 1, 20)
+                # Safely convert to integer series without failing on NaN
+                result[c] = pd.Series(col_vals, index=result.index).fillna(1).astype(int)
 
         return result

@@ -155,7 +155,7 @@ class ONNXExporter:
         """
         os.makedirs(output_dir, exist_ok=True)
         inner = missforest_imputer.imputer
-        cols = getattr(missforest_imputer, "cols", ["product_category_1", "product_category_2", "product_category_3", "purchase"])
+        cols = getattr(missforest_imputer, "cols", ["gender", "age", "occupation", "city_category", "stay_in_current_city_years", "marital_status", "product_category_1", "product_category_2", "product_category_3", "product_id"])
         category_mappings = getattr(missforest_imputer, "category_mappings", {})
 
         metadata = {
