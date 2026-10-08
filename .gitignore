@@ -20,8 +20,7 @@ legacy_project/
 src/improvements_in_v2.md
 src/improvements*.md
 reports/
-models/cache
-models/**/*.joblib
+models/
 models_backup_*/
 metrics_before.json
 metrics_after_part_a.json
