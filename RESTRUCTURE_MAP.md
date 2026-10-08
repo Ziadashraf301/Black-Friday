@@ -41,6 +41,11 @@ This document records all module moves, extractions, and rewirings performed to 
    - AST-based scan enforcing architectural boundary rules across all project modules.
    - Validates that direct `import mlflow` is strictly confined to `core/tracking/`.
 
+7. **`ml/models/metrics.py`**:
+   - Core regression and imputation evaluation metrics calculation decoupled from `evaluation/ml/evaluate.py`.
+   - Used by training pipelines (`preprocess`, `train`, `retrain`) within the `ml/` domain so they no longer import `evaluation.ml`.
+   - Allows removing all three allow-list exceptions in `tests/test_architecture.py`.
+
 ## Compatibility Shims Maintained (TODO-remove)
 
 - `ai/services/embedding_service.py`: Re-exports from `core.embeddings`. Marked `TODO-remove`.

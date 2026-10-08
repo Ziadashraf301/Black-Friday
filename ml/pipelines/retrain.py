@@ -6,7 +6,7 @@ from typing import Optional, Dict, Any
 from core.db.repository import BlackFridayRepository
 from ml.features.preprocessor import DataPreprocessor
 from ml.models.registry import ModelRegistry
-from evaluation.ml import ModelEvaluator
+from ml.models.metrics import ModelEvaluator
 from ml.models.onnx_exporter import ONNXExporter
 from ml.tracking.mlflow_tracker import MLflowTracker
 from ml.tracking.model_card import ModelCardGenerator
@@ -187,7 +187,7 @@ def run_champion_challenger_retrain(
 
     # 6. Champion vs Challenger Decision Gate
     meets_r2_threshold = candidate_r2 >= min_r2_threshold
-    beats_champion_margin = candidate_r2 >= (champion_r2 - min_improvement_delta)
+    beats_champion_margin = candidate_r2 >= (champion_r2 + min_improvement_delta)
     is_promoted = meets_r2_threshold and beats_champion_margin
 
     rejection_reason = None
@@ -195,7 +195,7 @@ def run_champion_challenger_retrain(
         if not meets_r2_threshold:
             rejection_reason = f"Candidate R2 ({candidate_r2:.4f}) below minimum absolute threshold ({min_r2_threshold:.4f})"
         else:
-            rejection_reason = f"Candidate R2 ({candidate_r2:.4f}) failed to beat champion ({champion_r2:.4f}) within delta ({min_improvement_delta:.4f})"
+            rejection_reason = f"Candidate R2 ({candidate_r2:.4f}) failed to beat champion ({champion_r2:.4f}) by required delta ({min_improvement_delta:.4f})"
 
     # 7. Assemble Audit Record & Local Artifacts
     os.makedirs("reports/retrain", exist_ok=True)

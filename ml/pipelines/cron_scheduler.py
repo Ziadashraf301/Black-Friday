@@ -1,8 +1,14 @@
 """
 Automated 6-Hour ML Pipeline & Drift Monitor Cron Scheduler.
 
-Executes offline ML pipelines (segmentation, market basket network, drift detection),
-re-seeds catalog metrics, and flushes 6-hour Redis caches every 6 hours.
+Executes offline ML pipelines (customer segmentation, market basket network,
+Evidently AI drift monitoring), and re-seeds catalog metrics periodically.
+
+Note for Production High-Availability Deployments:
+This scheduler runs as an in-process timer loop suitable for standalone/development
+environments. For distributed, multi-worker production deployments, scheduled jobs
+should be migrated to a distributed task queue (e.g., Celery, ARQ, or APScheduler)
+with persistent locking to prevent concurrent overlapping executions across nodes.
 """
 import time
 import datetime
@@ -20,7 +26,7 @@ CRON_INTERVAL_SECONDS = 6 * 3600  # 6 hours = 21,600 seconds
 
 
 def run_cron_cycle():
-    """Executes a full 6-hour cron cycle for ML pipelines and cache invalidation."""
+    """Executes a full 6-hour batch cycle for offline ML pipelines and catalog seeding."""
     now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     logger.info(f"=== Starting 6-Hour Scheduled ML Pipeline Cycle [{now_str}] ===")
     repo = BlackFridayRepository()

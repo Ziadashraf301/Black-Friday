@@ -25,15 +25,10 @@ EXCLUDED_DIRS = {
     "node_modules",
 }
 
-# Allow-list for imports that cannot be decoupled without changing behavior in WP0.
-# Documented in FIX_REPORT_wp0.md:
-# ml.pipelines.{preprocess,retrain,train} import ModelEvaluator from evaluation.ml
-# because evaluate.py moved from ml/models/ to evaluation/ml/ and behavior is preserved.
-ALLOW_LISTED_VIOLATIONS = {
-    ("ml/pipelines/preprocess.py", "evaluation.ml"),
-    ("ml/pipelines/retrain.py", "evaluation.ml"),
-    ("ml/pipelines/train.py", "evaluation.ml"),
-}
+# Allow-list for imports that cannot be decoupled without changing behavior.
+# All previous allow-listed entries from WP0 were resolved in WP4 by relocating
+# metric computations to ml/models/metrics.py.
+ALLOW_LISTED_VIOLATIONS = set()
 
 
 def scan_architectural_imports() -> List[str]:

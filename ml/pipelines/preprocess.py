@@ -9,7 +9,7 @@ from ml.features.preprocessor import DataPreprocessor
 from ml.features.data_contract import validate_cleaned_data
 from ml.tracking.mlflow_tracker import MLflowTracker
 from ml.visualization.visualizer import Visualizer
-from evaluation.ml import ModelEvaluator
+from ml.models.metrics import ModelEvaluator
 from ml.models.onnx_exporter import ONNXExporter
 
 from core.config import settings
