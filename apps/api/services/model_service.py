@@ -154,9 +154,8 @@ class ModelService:
         norm_pred = float(self.predictor.predict(df)[0])
 
         # Step 3: Denormalize from normalized (0-1) → raw INR → USD
-        INR_TO_USD = 80.0
         raw_inr = max(0.0, float(norm_pred * settings.PURCHASE_MAX))
-        usd_pred = raw_inr / INR_TO_USD
+        usd_pred = raw_inr / settings.INR_TO_USD
 
         return {
             "usd": round(usd_pred, 2),
@@ -193,9 +192,8 @@ class ModelService:
         norm_preds = self.predictor.predict(df)
 
         # Step 3: Vectorized Denormalization
-        INR_TO_USD = 80.0
         raw_inr = np.maximum(0.0, norm_preds * float(settings.PURCHASE_MAX))
-        usd_preds = np.round(raw_inr / INR_TO_USD, 2)
+        usd_preds = np.round(raw_inr / settings.INR_TO_USD, 2)
         norm_preds_rounded = np.round(norm_preds, 5)
 
         result_df = pd.DataFrame({

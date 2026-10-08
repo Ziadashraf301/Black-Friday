@@ -97,6 +97,7 @@ class Settings(BaseSettings):
     # ML Constants matching R analysis
     PURCHASE_MAX: float = 21399.0
     OUTLIER_THRESHOLD: float = 21400.5
+    INR_TO_USD: float = Field(default=80.0)
     RANDOM_SEED: int = Field(default=1234)
 
     # Customer Segmentation Hyperparameters

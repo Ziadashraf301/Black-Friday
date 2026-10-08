@@ -98,6 +98,13 @@ def run_preprocessing():
     repo.truncate_cleaned_table()
     repo.insert_cleaned_batch(cleaned_df)
 
+    try:
+        from core.cache import cache_manager
+        cache_manager.delete_pattern("analytics:*")
+        logger.info("Invalidated analytics cache entries.")
+    except Exception as e:
+        logger.warning(f"Analytics cache invalidation warning: {e}")
+
     # 10. Export Fitted MissForest Imputer Model to Lightweight ONNX Format for Production Serving
     imputer_onnx_dir = os.path.join(settings.BASE_DIR, "models", "onnx", "imputer")
     logger.info(f"Exporting MissForest imputer to ONNX format at: {imputer_onnx_dir}...")

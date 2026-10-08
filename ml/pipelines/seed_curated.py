@@ -42,6 +42,13 @@ class CuratedCatalogSeeder:
         self.repo.seed_curated_products(products)
         logger.info(f"Seeded {len(products)} products into warehouse.")
 
+        try:
+            from core.cache import cache_manager
+            cache_manager.delete_pattern("analytics:*")
+            logger.info("Invalidated analytics cache entries.")
+        except Exception as e:
+            logger.warning(f"Analytics cache invalidation warning: {e}")
+
         # 2. Incremental vector embedding skip logic
         if force_reembed:
             items_to_embed = products

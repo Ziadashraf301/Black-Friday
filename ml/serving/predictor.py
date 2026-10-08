@@ -17,7 +17,7 @@ class ONNXPredictor:
 
         self.onnx_model_path = onnx_model_path
         opts = ort.SessionOptions()
-        opts.graph_optimization_level = ort.GraphOptimizationLevel.ORT_DISABLE_ALL
+        opts.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
         self.session = ort.InferenceSession(
             onnx_model_path,
             sess_options=opts,

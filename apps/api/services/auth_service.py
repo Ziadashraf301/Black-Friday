@@ -29,11 +29,6 @@ class AuthService:
     @classmethod
     def register_user(cls, user_data: Dict[str, Any], repo: BlackFridayRepository) -> Dict[str, Any]:
         """Registers a new shopper and generates their session token."""
-        try:
-            repo.ensure_user_tables()
-        except Exception:
-            pass
-
         existing = repo.get_user_by_email(user_data["email"])
         if existing:
             raise HTTPException(
@@ -81,11 +76,6 @@ class AuthService:
     @classmethod
     def authenticate_user(cls, email: str, password: str, repo: BlackFridayRepository) -> Dict[str, Any]:
         """Validates credentials and returns JWT token."""
-        try:
-            repo.ensure_user_tables()
-        except Exception:
-            pass
-
         user = repo.get_user_by_email(email)
         if not user:
             raise HTTPException(

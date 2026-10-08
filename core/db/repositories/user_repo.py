@@ -127,6 +127,38 @@ class UserRepository(BaseRepository):
             result = conn.execute(query, data).mappings().first()
             return dict(result)
 
+    def record_purchases_batch(
+        self, records: List[Dict[str, Any]], connection: Optional[Any] = None
+    ) -> List[Dict[str, Any]]:
+        """Save multiple purchases in ONE atomic transaction with rollback on failure."""
+        if not records:
+            return []
+
+        query = text("""
+            INSERT INTO user_purchases
+                (user_id, product_id, product_category_1, product_category_2,
+                 product_category_3, predicted_usd, model_used)
+            VALUES
+                (:user_id, :product_id, :product_category_1, :product_category_2,
+                 :product_category_3, :predicted_usd, :model_used)
+            RETURNING *
+        """)
+
+        if connection is not None:
+            results = []
+            for rec in records:
+                row = connection.execute(query, rec).mappings().first()
+                results.append(dict(row))
+            return results
+
+        with self.engine.begin() as conn:
+            results = []
+            for rec in records:
+                row = conn.execute(query, rec).mappings().first()
+                results.append(dict(row))
+            return results
+
+
     def get_user_purchase_history(self, user_id: int) -> List[Dict[str, Any]]:
         query = text("""
             SELECT id, product_id, product_category_1, product_category_2,

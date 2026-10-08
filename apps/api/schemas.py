@@ -205,8 +205,34 @@ class ShopperPurchaseResponse(BaseModel):
     model_used: str
     purchased_at: str
 
+
+class ShopperBatchPurchaseItem(BaseModel):
+    product_id: str = Field(..., example="P00110742")
+    product_category_1: Optional[int] = Field(default=None, ge=1, le=20, example=1)
+    product_category_2: Optional[int] = Field(default=None, ge=1, le=20, example=6)
+    product_category_3: Optional[int] = Field(default=None, ge=1, le=20, example=14)
+    quantity: int = Field(default=1, ge=1, example=1)
+    gender: Optional[str] = Field(default=None, example="M")
+    age: Optional[str] = Field(default=None, example="26-35")
+    occupation: Optional[int] = Field(default=None, example=4)
+    city_category: Optional[str] = Field(default=None, example="B")
+    stay_in_current_city_years: Optional[str] = Field(default=None, example="2")
+    marital_status: Optional[int] = Field(default=None, example=0)
+
+
+class ShopperBatchPurchaseRequest(BaseModel):
+    items: List[ShopperBatchPurchaseItem]
+
+
+class ShopperBatchPurchaseResponse(BaseModel):
+    purchases: List[ShopperPurchaseResponse]
+    total_items: int = 0
+    total_amount: float = 0.0
+
+
 class PurchaseHistoryResponse(BaseModel):
     user_id: int
     total_purchases: int
     purchases: List[Dict[str, Any]]
+
 
