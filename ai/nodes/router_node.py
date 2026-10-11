@@ -6,6 +6,7 @@ Enforces security, extracts shopping constraints, and prepares routing decision.
 from typing import Dict, Any
 from langchain_core.messages import HumanMessage
 from ai.schemas.state import AgentState
+from ai.guardrails.strike_tracker import strike_tracker
 from ai.services.guardrail_service import guardrail_service
 from core.logging import get_logger
 
@@ -33,7 +34,9 @@ def guardrail_router_node(state: AgentState) -> Dict[str, Any]:
     # Stateful cart mutations and bypass_cache must never return cached responses
     import re
     is_cart_action = bool(re.search(r"(?i)\b(?:add\s+to\s+cart|put\s+in\s+my\s+cart|remove\s+from\s+cart|clear\s+cart|change\s+size)\b", query))
-    should_check_cache = not state.get("bypass_cache") and not is_cart_action
+    # A locked-out user must reach the guardrail (which refuses them), never a cached answer
+    is_banned = strike_tracker.is_banned(user_id)
+    should_check_cache = not state.get("bypass_cache") and not is_cart_action and not is_banned
 
     if should_check_cache:
         # 1. Tier-0: 6-Hour Exact LLM Response Cache Check (<1ms)
