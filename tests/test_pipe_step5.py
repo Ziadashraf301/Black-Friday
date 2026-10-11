@@ -165,3 +165,20 @@ def test_cron_cycle_flushes_price_shopper_and_analytics_caches(monkeypatch):
     cron_scheduler.run_cron_cycle()
 
     flushed.assert_called_once_with("price:*", "shopper:*", "analytics:*")
+
+
+def test_cron_drift_batch_excludes_outliers_and_is_a_seeded_sample():
+    import pandas as pd
+
+    from ml.pipelines import cron_scheduler
+
+    frame = pd.DataFrame({"x": range(cron_scheduler.DRIFT_BATCH_SIZE + 500)})
+    repo = MagicMock()
+    repo.get_cleaned_records_df.return_value = frame
+
+    first = cron_scheduler._load_drift_batch(repo)
+    second = cron_scheduler._load_drift_batch(repo)
+
+    repo.get_cleaned_records_df.assert_called_with(split="test", exclude_outliers=True)
+    assert len(first) == cron_scheduler.DRIFT_BATCH_SIZE
+    assert first.equals(second)

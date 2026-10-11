@@ -12,6 +12,7 @@ with persistent locking to prevent concurrent overlapping executions across node
 """
 import time
 import datetime
+from core.config import settings
 from core.db.repository import BlackFridayRepository
 from core.logging import get_logger
 
@@ -24,6 +25,16 @@ from ml.pipelines.seed_curated import run_seed_curated_catalog
 logger = get_logger(__name__)
 
 CRON_INTERVAL_SECONDS = 6 * 3600  # 6 hours = 21,600 seconds
+DRIFT_BATCH_SIZE = 5000
+
+
+def _load_drift_batch(repo: BlackFridayRepository):
+    """Holdout rows to monitor. Outliers are excluded like the training reference, and the sample is seeded
+    (a bare LIMIT would return arbitrary rows and flag spurious target drift from the outlier tail)."""
+    batch_df = repo.get_cleaned_records_df(split="test", exclude_outliers=True)
+    if len(batch_df) > DRIFT_BATCH_SIZE:
+        batch_df = batch_df.sample(n=DRIFT_BATCH_SIZE, random_state=settings.RANDOM_SEED)
+    return batch_df
 
 
 def run_cron_cycle():
@@ -49,7 +60,7 @@ def run_cron_cycle():
     try:
         # 3. Production Drift Monitor (monitors recent batch against training baseline)
         logger.info("Executing Evidently AI Production Drift Monitor...")
-        batch_df = repo.get_cleaned_records_df(split="test", limit=5000)
+        batch_df = _load_drift_batch(repo)
         if not batch_df.empty:
             run_production_drift_monitor(current_batch_df=batch_df, auto_trigger_retrain=False)
     except Exception as e:
