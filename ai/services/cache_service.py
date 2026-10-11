@@ -18,6 +18,16 @@ from core.logging import get_logger
 logger = get_logger(__name__)
 
 
+def _trace_lookup(raw_query: str, tier: str, is_hit: bool, latency_ms: float) -> None:
+    """Records a cache lookup span; tracing must never break a cache read."""
+    try:
+        from ai.observability.tracing import agent_tracer
+
+        agent_tracer.trace_cache_lookup(raw_query=raw_query, tier=tier, is_hit=is_hit, latency_ms=latency_ms)
+    except Exception:
+        pass
+
+
 class TwoTierCacheService:
     """
     Two-Tier Caching Pipeline for Black Friday Conversational AI.
@@ -56,8 +66,19 @@ class TwoTierCacheService:
             raise ValueError("A user_id is required to use the response caches")
         return hashlib.sha256(clean.encode("utf-8")).hexdigest()[:32]
 
-    def _exact_key(self, user_id: str, raw_query: str) -> str:
-        return f"{self.EXACT_CACHE_PREFIX}:{self.user_key(user_id)}:{self.hash_query(raw_query)}"
+    def _exact_key(self, user_id: str, q_hash: str) -> str:
+        return f"{self.EXACT_CACHE_PREFIX}:{self.user_key(user_id)}:{q_hash}"
+
+    @staticmethod
+    def _embed(text: str, purpose: str) -> Optional[List[float]]:
+        """Query embedding, or None (logged) when the embedding service fails."""
+        try:
+            from core.embeddings import embedding_service
+
+            return embedding_service.generate_embedding(text)
+        except Exception as e:
+            logger.warning(f"[CACHE: SEMANTIC] Embedding generation {purpose} failed: {e}")
+            return None
 
     @staticmethod
     def hash_constraints(intent: str, constraints: Dict[str, Any]) -> str:
@@ -85,15 +106,10 @@ class TwoTierCacheService:
 
         t0 = time.perf_counter()
         q_hash = self.hash_query(raw_query)
-        data = self._cache.get_json(self._exact_key(user_id, raw_query))
+        data = self._cache.get_json(self._exact_key(user_id, q_hash))
         latency_ms = (time.perf_counter() - t0) * 1000
 
-        is_hit = bool(data)
-        try:
-            from ai.observability.tracing import agent_tracer
-            agent_tracer.trace_cache_lookup(raw_query=raw_query, tier="TIER_0_HARD_6H", is_hit=is_hit, latency_ms=latency_ms)
-        except Exception:
-            pass
+        _trace_lookup(raw_query, "TIER_0_HARD_6H", bool(data), latency_ms)
 
         if data:
             logger.info(f"[CACHE: TIER-0 HIT] Query hash={q_hash[:10]} found in 6h LLM response cache ({latency_ms:.2f}ms)")
@@ -122,7 +138,7 @@ class TwoTierCacheService:
             return False
 
         q_hash = self.hash_query(raw_query)
-        cache_key = self._exact_key(user_id, raw_query)
+        cache_key = self._exact_key(user_id, q_hash)
         ttl_seconds = ttl if ttl is not None else self.DEFAULT_6H_TTL
 
         payload = {
@@ -164,11 +180,8 @@ class TwoTierCacheService:
 
         # Generate embedding if not already provided
         if query_vec is None:
-            try:
-                from core.embeddings import embedding_service
-                query_vec = embedding_service.generate_embedding(raw_query)
-            except Exception as e:
-                logger.warning(f"[CACHE: SEMANTIC] Embedding generation failed: {e}")
+            query_vec = self._embed(raw_query, "lookup")
+            if query_vec is None:
                 return None
 
         # Query pgvector HNSW index
@@ -178,12 +191,7 @@ class TwoTierCacheService:
             )
             latency_ms = (time.perf_counter() - t0) * 1000
 
-            is_hit = bool(cached)
-            try:
-                from ai.observability.tracing import agent_tracer
-                agent_tracer.trace_cache_lookup(raw_query=raw_query, tier="TIER_1_SEMANTIC_VECTOR", is_hit=is_hit, latency_ms=latency_ms)
-            except Exception:
-                pass
+            _trace_lookup(raw_query, "TIER_1_SEMANTIC_VECTOR", bool(cached), latency_ms)
 
             if cached:
                 sim = cached.get("cosine_similarity", 0.95)
@@ -208,11 +216,8 @@ class TwoTierCacheService:
     ) -> bool:
         """Stores a verified query and answer in pgvector semantic_query_cache."""
         if query_vec is None:
-            try:
-                from core.embeddings import embedding_service
-                query_vec = embedding_service.generate_embedding(query_text)
-            except Exception as e:
-                logger.warning(f"[CACHE: SEMANTIC] Embedding generation for store failed: {e}")
+            query_vec = self._embed(query_text, "for store")
+            if query_vec is None:
                 return False
 
         try:
@@ -277,7 +282,7 @@ class TwoTierCacheService:
 
     def invalidate_exact_cache(self, raw_query: str, user_id: str) -> bool:
         """Explicitly evicts a shopper's query from the exact cache."""
-        return self._cache.delete_key(self._exact_key(user_id, raw_query))
+        return self._cache.delete_key(self._exact_key(user_id, self.hash_query(raw_query)))
 
     def clear_all_llm_cache(self) -> int:
         """Clears all cached LLM responses."""
