@@ -18,7 +18,6 @@ from ai.schemas import (
     CartItem,
     CartState,
     OrderStatus,
-    UserProfile,
 )
 from ai.workflow.graph import shopping_graph
 from ai.tools.search_tools import search_tool

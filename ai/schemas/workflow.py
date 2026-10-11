@@ -119,19 +119,6 @@ class OrderStatus(BaseModel):
     return_eligible_until: Optional[str] = None
 
 
-class UserProfile(BaseModel):
-    """Shopper memory profile cached in Redis/Postgres."""
-
-    user_id: str
-    name: Optional[str] = "Shopper"
-    email: Optional[str] = None
-    preferred_category: Optional[str] = None
-    preferred_size: Optional[str] = None
-    budget_affinity: Optional[str] = None
-    cluster_persona: Optional[str] = None
-    total_lifetime_spend: float = 0.0
-
-
 class AgentResponsePayload(BaseModel):
     """Standardized structured response payload sent to the frontend."""
 

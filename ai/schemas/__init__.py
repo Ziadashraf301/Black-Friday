@@ -22,7 +22,6 @@ from ai.schemas.workflow import (
     OrderStatus,
     ProductDetails,
     ProductSearchResult,
-    UserProfile,
 )
 
 __all__ = [
@@ -42,6 +41,5 @@ __all__ = [
     "CartItem",
     "CartState",
     "OrderStatus",
-    "UserProfile",
     "AgentResponsePayload",
 ]
