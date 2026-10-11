@@ -18,6 +18,8 @@ class AprioriAssociationEngine:
     def mine_rules(self, basket_matrix_df: pd.DataFrame) -> pd.DataFrame:
         """Runs Apriori and association rule generation."""
         logger.info(f"Mining frequent itemsets (min_support={self.min_support})...")
+        # A run that finds nothing must not leave the previous run's rules behind for get_top_rules()
+        self.rules = pd.DataFrame()
         self.frequent_itemsets = apriori(
             basket_matrix_df,
             min_support=self.min_support,

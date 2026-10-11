@@ -82,3 +82,12 @@ def test_anl5_negative_association_is_not_labelled_1_2():
                       zip(rules["lift"], rules["lift_level"])))
     lift, level = levels[(("a",), ("b",))]
     assert lift < 1 and level == "<1"
+
+
+def test_anl6_rules_from_a_previous_run_are_cleared():
+    engine = AprioriAssociationEngine(min_support=0.1, min_confidence=0.1)
+    engine.mine_rules(_basket_matrix([[1, 1, 0], [1, 1, 0], [1, 1, 0]]))
+    assert engine.get_top_rules()
+    engine.min_support = 0.99
+    assert engine.mine_rules(_basket_matrix([[1, 0, 0], [0, 1, 0], [0, 0, 1]])).empty
+    assert engine.get_top_rules() == []
