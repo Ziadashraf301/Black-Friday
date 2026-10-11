@@ -10,6 +10,7 @@ from ml.features.basket_encoder import TransactionBasketEncoder
 from ml.market_basket.apriori_engine import AprioriAssociationEngine
 from ml.market_basket.item2vec import Item2VecRecommender
 from ml.market_basket.network_graph import ProductNetworkGraph
+from ml.pipelines.common import reports_dir
 from ml.tracking.mlflow_tracker import MLflowTracker
 from ml.visualization.visualizer import Visualizer
 
@@ -65,13 +66,13 @@ def run_market_basket_pipeline():
         repo.insert_product_network_metrics(metrics_df)
 
     # 6. Generate Summary Artifacts, CSV Reports, and Diagnostic Visual Charts
-    reports_dir = os.path.join(settings.BASE_DIR, "reports", "market_basket")
-    os.makedirs(reports_dir, exist_ok=True)
+    market_basket_dir = reports_dir("market_basket")
+    os.makedirs(market_basket_dir, exist_ok=True)
 
-    # Only artifacts written by this run are logged; files from an earlier run may still sit in reports_dir.
+    # Only artifacts written by this run are logged; files from an earlier run may still sit in market_basket_dir.
     csv_artifacts = {}
     if not rules_df.empty:
-        rules_csv_path = os.path.join(reports_dir, "apriori_rules.csv")
+        rules_csv_path = os.path.join(market_basket_dir, "apriori_rules.csv")
         rules_df.to_csv(rules_csv_path, index=False)
         csv_artifacts["apriori_rules_csv"] = rules_csv_path
 
@@ -82,11 +83,11 @@ def run_market_basket_pipeline():
         for rec_pid, sim_score in sim_list:
             rec_rows.append({"source_product_id": pid, "recommended_product_id": rec_pid, "cosine_similarity": sim_score})
     if rec_rows:
-        i2v_csv_path = os.path.join(reports_dir, "item2vec_recommendations.csv")
+        i2v_csv_path = os.path.join(market_basket_dir, "item2vec_recommendations.csv")
         pd.DataFrame(rec_rows).to_csv(i2v_csv_path, index=False)
         csv_artifacts["item2vec_recommendations_csv"] = i2v_csv_path
 
-    summary_json_path = os.path.join(reports_dir, "market_basket_summary.json")
+    summary_json_path = os.path.join(market_basket_dir, "market_basket_summary.json")
     summary_data = {
         "params": {
             "min_support": min_support,
@@ -111,7 +112,7 @@ def run_market_basket_pipeline():
     with open(summary_json_path, "w", encoding="utf-8") as f:
         json.dump(summary_data, f, indent=2)
 
-    charts = Visualizer.generate_market_basket_charts(rules_df, metrics_df, item2vec=item2vec, output_dir=reports_dir)
+    charts = Visualizer.generate_market_basket_charts(rules_df, metrics_df, item2vec=item2vec, output_dir=market_basket_dir)
 
     # 7. Log Run to MLflow
     artifacts = {"market_basket_summary": summary_json_path, **csv_artifacts, **charts}

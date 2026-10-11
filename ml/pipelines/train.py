@@ -16,6 +16,7 @@ from ml.pipelines.common import (
     invalidate_caches,
     onnx_dir,
     publish_champion_onnx,
+    reports_dir,
     score_local_champion,
 )
 from ml.tracking.explainability import ModelExplainability
@@ -89,7 +90,7 @@ def run_training_pipeline(model_names: list = None):
 
         # 4. Generate Model Evaluation Charts
         artifacts = Visualizer.generate_model_evaluation_charts(
-            y_true=y_test.to_numpy(), y_pred=test_preds, model_name=model_name, output_dir=f"reports/models/{model_name}"
+            y_true=y_test.to_numpy(), y_pred=test_preds, model_name=model_name, output_dir=reports_dir("models", model_name)
         )
 
         # 5. Export to ONNX & Verify Parity
@@ -120,7 +121,7 @@ def run_training_pipeline(model_names: list = None):
                 shap_values=shap_values,
                 eval_features=X_eval,
                 feature_names=feature_names,
-                output_dir=f"reports/shap_{model_name}",
+                output_dir=reports_dir(f"shap_{model_name}"),
             )
             if shap_plot_path:
                 artifacts["shap_summary_plot"] = shap_plot_path

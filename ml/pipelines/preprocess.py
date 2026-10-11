@@ -12,7 +12,7 @@ from ml.features.imputation import MissForestImputer
 from ml.features.preprocessor import DataPreprocessor
 from ml.models.metrics import ModelEvaluator
 from ml.models.onnx_exporter import ONNXExporter
-from ml.pipelines.common import imputer_onnx_dir, invalidate_caches
+from ml.pipelines.common import imputer_onnx_dir, invalidate_caches, reports_dir
 from ml.tracking.mlflow_tracker import MLflowTracker
 from ml.visualization.visualizer import Visualizer
 
@@ -88,12 +88,13 @@ def run_preprocessing():
 
     # 8. Generate Per-Split and Per-Category Diagnostic Visualizations
     logger.info("Generating preprocessing and imputation diagnostic charts...")
-    os.makedirs("reports/preprocessing", exist_ok=True)
+    preprocessing_dir = reports_dir("preprocessing")
+    os.makedirs(preprocessing_dir, exist_ok=True)
     charts = Visualizer.generate_preprocessing_charts(
-        raw_df=raw_df, cleaned_df=cleaned_df, outlier_bounds=preprocessor.outlier_bounds, output_dir="reports/preprocessing"
+        raw_df=raw_df, cleaned_df=cleaned_df, outlier_bounds=preprocessor.outlier_bounds, output_dir=preprocessing_dir
     )
 
-    imputation_charts = Visualizer.generate_imputation_charts(eval_data=imputation_eval, output_dir="reports/preprocessing")
+    imputation_charts = Visualizer.generate_imputation_charts(eval_data=imputation_eval, output_dir=preprocessing_dir)
     charts.update(imputation_charts)
 
     # 9. Persist Cleaned Records with Split Indicator to Warehouse
@@ -166,7 +167,7 @@ def run_preprocessing():
         metrics[f"imputation_{metric_key}"] = float(metric_val)
 
     # 12. Summary JSON audit file
-    summary_path = os.path.join("reports", "preprocessing", "preprocessing_summary.json")
+    summary_path = os.path.join(preprocessing_dir, "preprocessing_summary.json")
     with open(summary_path, "w", encoding="utf-8") as f:
         json.dump(
             {"params": params, "metrics": metrics, "imputer_stats": imputer.stats, "imputation_evaluation": eval_metrics},

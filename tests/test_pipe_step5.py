@@ -366,3 +366,16 @@ def test_customer_frequency_counts_distinct_products_not_purchase_rows():
     features = CustomerFeatureExtractor().extract_features(df)
 
     assert features["frequency"].iloc[0] == 2
+
+
+def test_reports_dir_is_anchored_at_base_dir_not_the_working_directory(tmp_path, monkeypatch):
+    import os
+
+    monkeypatch.setattr(common.settings, "BASE_DIR", tmp_path)
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    monkeypatch.chdir(elsewhere)
+
+    assert common.reports_dir("drift") == os.path.join(str(tmp_path), "reports", "drift")
+    assert common.reports_dir("models", "lgbm") == os.path.join(str(tmp_path), "reports", "models", "lgbm")
+    assert os.path.isabs(common.reports_dir())

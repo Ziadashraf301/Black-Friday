@@ -24,6 +24,11 @@ def onnx_dir() -> str:
     return os.path.join(settings.BASE_DIR, "models", "onnx")
 
 
+def reports_dir(*parts: str) -> str:
+    """Report output location under the project root, independent of the process's working directory."""
+    return os.path.join(settings.BASE_DIR, "reports", *parts)
+
+
 def imputer_onnx_dir() -> str:
     return os.path.join(onnx_dir(), "imputer")
 

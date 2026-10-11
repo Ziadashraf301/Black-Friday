@@ -18,6 +18,7 @@ from ml.pipelines.common import (
     onnx_dir,
     prepare_batch,
     publish_champion_onnx,
+    reports_dir,
     score_local_champion,
 )
 from ml.tracking.drift_monitor import DriftResult
@@ -214,10 +215,11 @@ def run_champion_challenger_retrain(
             )
 
     # 7. Assemble Audit Record & Local Artifacts
-    os.makedirs("reports/retrain", exist_ok=True)
+    retrain_dir = reports_dir("retrain")
+    os.makedirs(retrain_dir, exist_ok=True)
     timestamp_str = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    audit_path = os.path.join("reports", "retrain", f"retrain_audit_{model_name}_{timestamp_str}.json")
-    latest_audit_path = os.path.join("reports", "retrain", "latest_retrain_audit.json")
+    audit_path = os.path.join(retrain_dir, f"retrain_audit_{model_name}_{timestamp_str}.json")
+    latest_audit_path = os.path.join(retrain_dir, "latest_retrain_audit.json")
 
     data_summary = {
         "data_source": data_source,
@@ -313,7 +315,7 @@ def run_champion_challenger_retrain(
     shap_values, X_eval = explainer.explain(test_df[candidate.features].head(200))
     if shap_values is not None:
         shap_plot_path = Visualizer.generate_shap_summary_plot(
-            shap_values=shap_values, eval_features=X_eval, output_dir=f"reports/shap_{model_name}"
+            shap_values=shap_values, eval_features=X_eval, output_dir=reports_dir(f"shap_{model_name}")
         )
         if shap_plot_path:
             artifacts["shap_summary_plot"] = shap_plot_path

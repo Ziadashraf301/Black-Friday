@@ -5,6 +5,7 @@ from core.config import settings
 from core.db.repository import BlackFridayRepository
 from core.logging import get_logger
 from ml.features.customer_features import CustomerFeatureExtractor
+from ml.pipelines.common import reports_dir
 from ml.segmentation.clustering import PERSONA_PROFILES, CustomerSegmentationEngine
 from ml.tracking.mlflow_tracker import MLflowTracker
 from ml.visualization.visualizer import Visualizer
@@ -60,7 +61,7 @@ def run_customer_segmentation():
         if "mean_average_order_value" in row:
             metrics[f"cluster_{cid}_mean_aov"] = float(row["mean_average_order_value"])
 
-    summary_dir = os.path.join(settings.BASE_DIR, "reports", "segmentation")
+    summary_dir = reports_dir("segmentation")
     os.makedirs(summary_dir, exist_ok=True)
     summary_path = os.path.join(summary_dir, "segmentation_summary.json")
 

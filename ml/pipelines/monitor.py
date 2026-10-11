@@ -28,7 +28,7 @@ from core.config import settings
 from core.db.repository import BlackFridayRepository
 from core.logging import get_logger
 from ml.models.registry import ModelRegistry
-from ml.pipelines.common import champion_onnx_path, onnx_dir, prepare_batch
+from ml.pipelines.common import champion_onnx_path, onnx_dir, prepare_batch, reports_dir
 from ml.serving.predictor import ONNXPredictor
 from ml.tracking.drift_monitor import DriftMonitor, DriftResult
 from ml.tracking.mlflow_tracker import MLflowTracker
@@ -134,7 +134,7 @@ def run_production_drift_monitor(
 
     # 3. Evaluate Drift with Evidently AI
     drift_monitor = DriftMonitor(reference_df=ref_eval[active_cols])
-    drift_result = drift_monitor.evaluate_drift(current_df=curr_eval[active_cols], output_dir="reports/drift")
+    drift_result = drift_monitor.evaluate_drift(current_df=curr_eval[active_cols], output_dir=reports_dir("drift"))
 
     logger.info(
         f"Drift Analysis Complete -> Share: {drift_result.drifted_feature_share:.1%} "
