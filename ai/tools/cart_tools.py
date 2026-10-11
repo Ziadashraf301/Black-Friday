@@ -260,7 +260,6 @@ class CartManagementTool:
     def _save_cart(self, user_id: str, session_id: str, items: List[CartItem]) -> CartState:
         new_state = self._recalculate_cart(user_id, session_id, items)
         cart_dict = new_state.model_dump()
-        payload = json.dumps(cart_dict)
         key = self._get_cart_key(user_id, session_id)
 
         # 1. Hot-tier Redis 6-hour sliding session (refreshes TTL on mutation)

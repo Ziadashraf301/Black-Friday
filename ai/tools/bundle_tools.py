@@ -4,7 +4,7 @@ Live Database & Redis Caching Subsystem (Phase 4 - Task P4-05).
 Extracts statistical cross-sell pairings and dynamic bundle discounts directly from
 curated_products JSONB with 24-hour Redis caching (TTL 86,400s) and dynamic pricing.
 """
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 from ai.schemas import BundleItem
 from ai.extractor.catalog_index import CatalogIndex
 from core.db.repository import BlackFridayRepository

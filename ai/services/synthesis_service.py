@@ -3,12 +3,10 @@ RAG Synthesis Service for Black Friday Assistant.
 Manages context augmentation, LLM model invocation from configuration,
 and deterministic fallback generation.
 """
-from typing import Dict, Any, List, Optional, TYPE_CHECKING
+from typing import Dict, Any, List, Optional
 from langchain_core.messages import AIMessage
 
-if TYPE_CHECKING:
-    from ai.schemas.state import AgentState, UIPayload
-
+from ai.schemas.state import AgentState
 from ai.prompts.synthesis_prompts import format_rag_prompt
 from ai.services.template_service import ResponseTemplateService, template_service
 from core.config import settings
@@ -159,12 +157,12 @@ class SynthesisService:
     PERSONAL_INTENTS = frozenset({"CART_ACTIONS"})  # order answers are caught by `order_status`
 
     @classmethod
-    def _is_cacheable(cls, state: "AgentState", intent: str) -> bool:
+    def _is_cacheable(cls, state: AgentState, intent: str) -> bool:
         """True when the answer depends only on the query and the shared catalog, not on the shopper's own data."""
         intents = {intent, *(state.get("target_intents") or [])}
         return not (intents & cls.PERSONAL_INTENTS) and not state.get("cart") and not state.get("order_status")
 
-    def synthesize(self, state: "AgentState") -> Dict[str, Any]:
+    def synthesize(self, state: AgentState) -> Dict[str, Any]:
         """Main synthesis orchestrator generating response text and unified UI payload."""
         intent = state.get("intent", "PRODUCT_SEARCH")
         query = state.get("query", "")

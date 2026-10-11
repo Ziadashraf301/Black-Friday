@@ -2,7 +2,7 @@
 LangGraph Conditional Edges & Routing Logic (Phase 3).
 Maps System-1 RoutingDecision outputs directly to specialized worker agent nodes.
 """
-from typing import List, Union
+from typing import List
 from ai.workflow.state import AgentState
 from ai.schemas import IntentType
 from core.logging import get_logger

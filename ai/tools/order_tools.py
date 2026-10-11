@@ -4,7 +4,7 @@ Provides order fulfillment status, return window policies, shipping estimates,
 and price match guarantee information.
 Connected to PostgreSQL (user_purchases, curated_products) and PolicyKnowledgeBase.
 """
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any
 from datetime import datetime, timedelta, timezone
 import re
 import zlib

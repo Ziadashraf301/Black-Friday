@@ -5,8 +5,7 @@ and audit logging for FastAPI routers and client applications.
 """
 from typing import Optional, Dict, Any
 from datetime import datetime, timezone
-from pydantic import BaseModel, Field
-from ai.router import BaseRouterStrategy, RouterFactory, intent_router
+from ai.router import BaseRouterStrategy, intent_router
 from ai.schemas import GuardrailResponse, RoutingDecision, IntentType, ExtractedEntities
 from core.logging import get_logger
 

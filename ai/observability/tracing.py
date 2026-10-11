@@ -6,10 +6,9 @@ Leverages MLflow GenAI Tracing:
     Guardrail Safety Checks, Progressive Search Relaxation, and Dynamic Bundle Pricing.
   - User & Session Metadata: Propagates mlflow.trace.user and mlflow.trace.session.
 """
-from typing import Optional, Dict, Any, Callable, List
+from typing import Dict, Any, Callable, List
 import time
 import functools
-import os
 
 from core.tracking import (
     SpanType,
@@ -20,7 +19,6 @@ from core.tracking import (
     update_current_trace,
     trace,
 )
-from core.config import settings
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -151,7 +149,7 @@ class AgentTracer:
                 status = "SUCCESS"
                 try:
                     return func(*args, **kwargs)
-                except Exception as e:
+                except Exception:
                     status = "ERROR"
                     raise
                 finally:
