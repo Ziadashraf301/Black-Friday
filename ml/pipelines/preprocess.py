@@ -19,6 +19,17 @@ from core.logging import get_logger
 logger = get_logger(__name__)
 
 
+def _missing_value_metrics(imputer_stats: Dict[str, Any]) -> Dict[str, float]:
+    """Missing counts per imputed column before imputation and still missing afterwards (as reported by the imputer)."""
+    before = imputer_stats.get("missing_before", {})
+    after = imputer_stats.get("missing_after", {})
+    metrics: Dict[str, float] = {}
+    for col in ("product_category_2", "product_category_3"):
+        metrics[f"missing_{col}_raw"] = float(before.get(col, 0))
+        metrics[f"missing_{col}_imputed"] = float(after.get(col, 0))
+    return metrics
+
+
 def run_preprocessing():
     """Extracts raw data, partitions train/test before imputation to prevent data leakage,
     performs MissForest imputation fitted on train with genuine OOB errors, evaluates on holdout test,
@@ -127,18 +138,12 @@ def run_preprocessing():
         "random_seed": settings.RANDOM_SEED
     }
 
-    # Extract missing stats from imputer (calculated cleanly once)
-    missing_before = imputer.stats.get("missing_before", {})
-
     metrics: Dict[str, float] = {
         "raw_records_count": float(len(raw_df)),
         "train_records_count": float(len(train_cleaned)),
         "test_records_count": float(len(test_cleaned)),
         "cleaned_records_count": float(len(cleaned_df)),
-        "missing_product_category_2_raw": float(missing_before.get("product_category_2", 0)),
-        "missing_product_category_3_raw": float(missing_before.get("product_category_3", 0)),
-        "missing_product_category_2_imputed": 0.0,
-        "missing_product_category_3_imputed": 0.0,
+        **_missing_value_metrics(imputer.stats),
         "train_outliers_count": float(train_outliers),
         "train_outliers_percentage": round((train_outliers / len(train_cleaned)) * 100, 3),
         "test_outliers_count": float(test_outliers),

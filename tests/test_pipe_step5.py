@@ -235,3 +235,20 @@ def test_retrain_resolves_model_aliases_before_naming_artifacts(monkeypatch):
         retrain.run_champion_challenger_retrain(frame, frame, candidate_model_name="lgbm")
 
     assert seen == ["lightgbm"]
+
+
+def test_preprocess_missing_metrics_report_what_the_imputer_left_behind():
+    from ml.pipelines.preprocess import _missing_value_metrics
+
+    stats = {
+        "missing_before": {"product_category_2": 10, "product_category_3": 20},
+        "missing_after": {"product_category_2": 0, "product_category_3": 3},
+    }
+
+    assert _missing_value_metrics(stats) == {
+        "missing_product_category_2_raw": 10.0,
+        "missing_product_category_2_imputed": 0.0,
+        "missing_product_category_3_raw": 20.0,
+        "missing_product_category_3_imputed": 3.0,
+    }
+    assert _missing_value_metrics({})["missing_product_category_3_imputed"] == 0.0
