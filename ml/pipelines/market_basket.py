@@ -65,19 +65,23 @@ def run_market_basket_pipeline():
     reports_dir = os.path.join(settings.BASE_DIR, "reports", "market_basket")
     os.makedirs(reports_dir, exist_ok=True)
 
-    rules_csv_path = os.path.join(reports_dir, "apriori_rules.csv")
+    # Only artifacts written by this run are logged; files from an earlier run may still sit in reports_dir.
+    csv_artifacts = {}
     if not rules_df.empty:
+        rules_csv_path = os.path.join(reports_dir, "apriori_rules.csv")
         rules_df.to_csv(rules_csv_path, index=False)
+        csv_artifacts["apriori_rules_csv"] = rules_csv_path
 
     # Export Item2Vec recommendations CSV
-    i2v_csv_path = os.path.join(reports_dir, "item2vec_recommendations.csv")
     all_recs = item2vec.get_all_similar_products(top_n=5)
     rec_rows = []
     for pid, sim_list in all_recs.items():
         for rec_pid, sim_score in sim_list:
             rec_rows.append({"source_product_id": pid, "recommended_product_id": rec_pid, "cosine_similarity": sim_score})
     if rec_rows:
+        i2v_csv_path = os.path.join(reports_dir, "item2vec_recommendations.csv")
         pd.DataFrame(rec_rows).to_csv(i2v_csv_path, index=False)
+        csv_artifacts["item2vec_recommendations_csv"] = i2v_csv_path
 
     summary_json_path = os.path.join(reports_dir, "market_basket_summary.json")
     summary_data = {
@@ -109,12 +113,9 @@ def run_market_basket_pipeline():
     # 7. Log Run to MLflow
     artifacts = {
         "market_basket_summary": summary_json_path,
+        **csv_artifacts,
         **charts
     }
-    if os.path.exists(rules_csv_path):
-        artifacts["apriori_rules_csv"] = rules_csv_path
-    if os.path.exists(i2v_csv_path):
-        artifacts["item2vec_recommendations_csv"] = i2v_csv_path
 
     run_id = tracker.log_run(
         run_name="market_basket_product_network",

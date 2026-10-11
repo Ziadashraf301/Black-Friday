@@ -310,3 +310,17 @@ def test_market_basket_run_logs_the_real_graph_source(basket_run):
     with pytest.raises(TypeError):
         mb.run_market_basket_pipeline(graph_source="item2vec")
 
+
+def test_market_basket_does_not_log_csvs_left_over_from_an_earlier_run(basket_run):
+    tracker, tmp_path, mb = basket_run
+    reports = tmp_path / "reports" / "market_basket"
+    reports.mkdir(parents=True)
+    (reports / "apriori_rules.csv").write_text("stale")
+    (reports / "item2vec_recommendations.csv").write_text("stale")
+
+    mb.run_market_basket_pipeline()
+
+    artifacts = tracker.log_run.call_args.kwargs["artifacts"]
+    assert "apriori_rules_csv" not in artifacts
+    assert "item2vec_recommendations_csv" not in artifacts
+    assert "market_basket_summary" in artifacts
