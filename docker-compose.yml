@@ -134,6 +134,11 @@ services:
         condition: service_started
     ports:
       - "${API_PORT:-8000}:8000"
+    # SECRET_KEY, ENVIRONMENT, CORS_ORIGINS, GEMINI_API_KEY, TYPESAFE_API_KEY, ... come from .env;
+    # the explicit values below win over it (container hostnames instead of localhost).
+    env_file:
+      - path: .env
+        required: false
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
