@@ -87,7 +87,8 @@ class BaseRepository:
                 buffer.seek(0)
 
                 columns_str = ", ".join([f'"{c}"' for c in data.columns])
-                copy_sql = f"COPY {table_name} ({columns_str}) FROM STDIN WITH (FORMAT text, NULL '\\N')"
+                # CSV format: to_csv quotes fields holding tabs, quotes or newlines, which text format would misread.
+                copy_sql = f"COPY {table_name} ({columns_str}) FROM STDIN WITH (FORMAT csv, DELIMITER E'\\t', NULL '\\N')"
 
                 with dbapi_conn.cursor() as cur:
                     cur.copy_expert(sql=copy_sql, file=buffer)
