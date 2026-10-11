@@ -1,9 +1,21 @@
+from typing import Any, Dict, List
+
 import pandas as pd
-from typing import Dict, Any, List
 from mlxtend.frequent_patterns import apriori, association_rules
+
 from core.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+def _lift_level(lift: float) -> str:
+    """Buckets a rule's lift the way the R methodology does."""
+    if lift < 1.0:
+        return "<1"  # negatively associated: bought together less often than chance
+    for upper, label in ((2.0, "1-2"), (3.0, "2-3"), (4.0, "3-4"), (5.0, "4-5"), (6.0, "5-6")):
+        if lift < upper:
+            return label
+    return "6+"
 
 
 class AprioriAssociationEngine:
@@ -20,40 +32,18 @@ class AprioriAssociationEngine:
         logger.info(f"Mining frequent itemsets (min_support={self.min_support})...")
         # A run that finds nothing must not leave the previous run's rules behind for get_top_rules()
         self.rules = pd.DataFrame()
-        self.frequent_itemsets = apriori(
-            basket_matrix_df,
-            min_support=self.min_support,
-            use_colnames=True
-        )
+        self.frequent_itemsets = apriori(basket_matrix_df, min_support=self.min_support, use_colnames=True)
 
-        logger.info(f"Discovered {len(self.frequent_itemsets):,} frequent itemsets. Generating association rules (min_confidence={self.min_confidence})...")
+        logger.info(
+            f"Discovered {len(self.frequent_itemsets):,} frequent itemsets. "
+            f"Generating association rules (min_confidence={self.min_confidence})..."
+        )
         if self.frequent_itemsets.empty:
             return pd.DataFrame()
 
-        rules = association_rules(
-            self.frequent_itemsets,
-            metric="confidence",
-            min_threshold=self.min_confidence
-        )
+        rules = association_rules(self.frequent_itemsets, metric="confidence", min_threshold=self.min_confidence)
 
-        # Categorize lift levels matching R methodology
-        def assign_lift_level(lift: float) -> str:
-            if lift < 1.0:
-                return "<1"  # negatively associated: bought together less often than chance
-            elif lift < 2.0:
-                return "1-2"
-            elif lift < 3.0:
-                return "2-3"
-            elif lift < 4.0:
-                return "3-4"
-            elif lift < 5.0:
-                return "4-5"
-            elif lift < 6.0:
-                return "5-6"
-            else:
-                return "6+"
-
-        rules["lift_level"] = rules["lift"].apply(assign_lift_level)
+        rules["lift_level"] = rules["lift"].apply(_lift_level)
         rules = rules.sort_values(by="support", ascending=False)
         self.rules = rules
         logger.info(f"Derived {len(self.rules):,} association rules.")

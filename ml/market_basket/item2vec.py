@@ -1,6 +1,8 @@
+from typing import Any, Dict, List, Optional, Tuple
+
 import numpy as np
 import pandas as pd
-from typing import List, Dict, Tuple, Optional, Any
+
 from core.config import settings
 from core.logging import get_logger
 
@@ -8,6 +10,7 @@ logger = get_logger(__name__)
 
 try:
     from gensim.models import Word2Vec
+
     HAS_GENSIM = True
 except ImportError:
     HAS_GENSIM = False
@@ -46,7 +49,7 @@ class Item2VecRecommender:
             # One worker plus a fixed seed makes training reproducible; several workers reorder updates between runs
             workers=1,
             seed=settings.RANDOM_SEED,
-            epochs=self.epochs
+            epochs=self.epochs,
         )
         logger.info(f"Item2Vec training complete. Vocabulary size: {len(self.model.wv):,} products.")
         return self
@@ -88,10 +91,7 @@ class Item2VecRecommender:
         return None
 
     def evaluate_embeddings(
-        self,
-        baskets: Optional[List[List[str]]] = None,
-        rules_df: Optional[pd.DataFrame] = None,
-        top_n: int = 5
+        self, baskets: Optional[List[List[str]]] = None, rules_df: Optional[pd.DataFrame] = None, top_n: int = 5
     ) -> Dict[str, float]:
         """Evaluates trained Item2Vec embeddings using vector norms, cosine similarity compactness,
         and alignment with mined Apriori association rules."""
@@ -100,7 +100,7 @@ class Item2VecRecommender:
             "item2vec_catalog_coverage_pct": 0.0,
             "item2vec_avg_top_k_cosine_sim": 0.0,
             "item2vec_mean_vector_norm": 0.0,
-            "item2vec_apriori_alignment_score": 0.0
+            "item2vec_apriori_alignment_score": 0.0,
         }
 
         if not HAS_GENSIM or not self.model or len(self.vocabulary) == 0:
@@ -132,7 +132,17 @@ class Item2VecRecommender:
             if isinstance(val, (set, frozenset, list, tuple)):
                 return [str(x) for x in val]
             elif isinstance(val, str):
-                cleaned = val.replace("frozenset(", "").replace(")", "").replace("[", "").replace("]", "").replace("{", "").replace("}", "").replace("'", "").replace('"', "").strip()
+                cleaned = (
+                    val.replace("frozenset(", "")
+                    .replace(")", "")
+                    .replace("[", "")
+                    .replace("]", "")
+                    .replace("{", "")
+                    .replace("}", "")
+                    .replace("'", "")
+                    .replace('"', "")
+                    .strip()
+                )
                 return [s.strip() for s in cleaned.split(",") if s.strip()]
             return []
 
