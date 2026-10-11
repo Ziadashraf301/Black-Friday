@@ -1,4 +1,4 @@
-from tests.locust_auth import AUTH_MAX_ATTEMPTS, acquire_token
+from tests.load.locust_auth import AUTH_MAX_ATTEMPTS, acquire_token
 
 PAYLOAD = {"email": "u@example.com", "password": "pw"}
 

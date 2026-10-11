@@ -11,7 +11,7 @@ import ast
 from pathlib import Path
 from typing import List, Tuple
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 EXCLUDED_DIRS = {
     ".git",

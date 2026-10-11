@@ -5,7 +5,7 @@ from locust import HttpUser, between, task
 try:  # locust runs this file as a script from its own directory
     from locust_auth import LOCUST_PASSWORD, acquire_token
 except ImportError:  # imported as part of the tests package
-    from tests.locust_auth import LOCUST_PASSWORD, acquire_token
+    from tests.load.locust_auth import LOCUST_PASSWORD, acquire_token
 
 
 class BlackFridayAPIUser(HttpUser):
