@@ -168,7 +168,7 @@ class TwoTierCacheService:
                 from core.embeddings import embedding_service
                 query_vec = embedding_service.generate_embedding(raw_query)
             except Exception as e:
-                logger.debug(f"[CACHE: SEMANTIC] Embedding generation failed: {e}")
+                logger.warning(f"[CACHE: SEMANTIC] Embedding generation failed: {e}")
                 return None
 
         # Query pgvector HNSW index
@@ -193,7 +193,7 @@ class TwoTierCacheService:
                 )
                 return cached
         except Exception as e:
-            logger.debug(f"[CACHE: SEMANTIC] Vector cache lookup error: {e}")
+            logger.warning(f"[CACHE: SEMANTIC] Vector cache lookup error: {e}")
 
         return None
 
@@ -212,7 +212,7 @@ class TwoTierCacheService:
                 from core.embeddings import embedding_service
                 query_vec = embedding_service.generate_embedding(query_text)
             except Exception as e:
-                logger.debug(f"[CACHE: SEMANTIC] Embedding generation for store failed: {e}")
+                logger.warning(f"[CACHE: SEMANTIC] Embedding generation for store failed: {e}")
                 return False
 
         try:
@@ -228,7 +228,7 @@ class TwoTierCacheService:
                 logger.info(f"[CACHE: TIER-1 STORE] Vector semantic cache entry stored for query: '{query_text[:50]}'")
             return stored
         except Exception as e:
-            logger.debug(f"[CACHE: SEMANTIC] Vector cache store error: {e}")
+            logger.warning(f"[CACHE: SEMANTIC] Vector cache store error: {e}")
             return False
 
     # =========================================================================

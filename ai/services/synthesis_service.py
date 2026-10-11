@@ -116,7 +116,7 @@ class SynthesisService:
                 from google import genai
                 client = genai.Client(api_key=api_key)
             except Exception as e:
-                logger.debug(f"[SYNTHESIS-SERVICE] Could not initialize genai client: {e}")
+                logger.warning(f"[SYNTHESIS-SERVICE] Could not initialize genai client: {e}")
                 return None
 
         try:
@@ -128,7 +128,7 @@ class SynthesisService:
             if response and getattr(response, "text", None):
                 return response.text.strip()
         except Exception as e:
-            logger.debug(f"[SYNTHESIS-SERVICE] LLM generation with {self._configured_model} skipped: {e}")
+            logger.warning(f"[SYNTHESIS-SERVICE] LLM generation with {self._configured_model} failed, using template: {e}")
 
         return None
 
@@ -332,7 +332,7 @@ class SynthesisService:
                     intent=intent,
                 )
             except Exception as e:
-                logger.debug(f"[SYNTHESIS-SERVICE] Failed to store in cache: {e}")
+                logger.warning(f"[SYNTHESIS-SERVICE] Failed to store in cache: {e}")
 
         return {
             "messages": [ai_msg],
