@@ -29,7 +29,7 @@
 - [x] **1. Security:** `security-review` on auth, JWT, bcrypt, rate limiting, `SecurityBanMiddleware`, CORS (`apps/api/auth.py`, `apps/api/middleware/`, `apps/api/rate_limiting/`, `core/security/`, `apps/api/main.py`).
 - [x] **2. API:** `apps/api` (routes, services, schemas, dependencies, handlers).
 - [x] **3. Core:** `core` (config, db + repositories, cache, tracking, embeddings).
-- [ ] **4. ML serving:** `ml/serving`, `ml/models` (ONNX loading, input schema mismatches, metrics).
+- [x] **4. ML serving:** `ml/serving`, `ml/models` (ONNX loading, input schema mismatches, metrics).
 - [ ] **5. ML pipelines:** `ml/pipelines`, `ml/features` (data leakage, champion/challenger promotion, drift thresholds, cron cache flush).
 - [ ] **6. ML analytics:** `ml/segmentation`, `ml/market_basket`.
 - [ ] **7. AI assistant:** `ai` (guardrails, prompt injection, LangGraph workflow, tool errors).

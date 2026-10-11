@@ -83,6 +83,18 @@ Result: **299 passed, 1 failed, 1 deselected (the hang)**, 301 tests, ~8 min. Co
 | API-7 | API | The WebSocket error path sends `str(e)` to the client, which can leak internals. A non-object JSON frame (list/number) raises `AttributeError` on `data.get` and ends the session. | `apps/api/routes/bot.py:359,288` | fixed | 304eb6d | |
 | API-8 | API | The global `ValueError` handler returns `str(exc)` for any uncaught `ValueError` in the app, which can expose internals. Decision: added core.exceptions.DomainError for user-safe messages; bare ValueError and RuntimeError now return generic text (details are logged). | `apps/api/handlers.py:20` | fixed | 316bdb2 | |
 | AI-1 | AI | Circular import: `ai.nodes.router_node` → `ai.workflow.state` → `ai/workflow/__init__` → `ai.workflow.graph` → `ai.nodes.router_node` (partially initialised). It breaks collection of `tests/test_fix_wp7_logging.py` when it imports `ai.nodes` first. | `ai/workflow/__init__.py:6`, `ai/workflow/graph.py:9`, `ai/nodes/router_node.py:8` | medium | open | |
+| SRV-1 | ML serving | `_parse_max_features` turned a float `1.0` (the `RF_MAX_FEATURES` default) into the int `1`, so a Random Forest built from defaults used one feature per split; the string `"1.0"` from `.env` was fine. Now int = count, float in (0, 1] = fraction, as in sklearn. | `ml/models/regression.py` | medium | fixed | 38f6882 |
+| SRV-2 | ML serving | `ONNXPredictor.predict` silently skipped model inputs missing from the DataFrame, so ORT failed with an unclear error. Now raises `ValueError` naming the missing columns. | `ml/serving/predictor.py` | medium | fixed | 808c764 |
+| SRV-3 | ML serving | `_save_onnx` crashed on a bare filename (`os.makedirs("")`). | `ml/models/onnx_exporter.py` | low | fixed | 132a88b |
+| SRV-4 | ML serving | `export_imputer` converted and wrote the same ONNX file once per MissForest iteration and listed duplicate steps in the metadata. Now one step per column (the last fit, which is what serving used already). | `ml/models/onnx_exporter.py` | low | fixed | 319128e |
+| SRV-5 | ML models | `LGBM_SUBSAMPLE` had no effect because `subsample_freq` stayed 0. Decision: do not change the champion. Added `LGBM_SUBSAMPLE_FREQ` (default 0, so behaviour is unchanged), passed to `LGBMRegressor` and the model params, and documented in `core/config.py` that subsample needs freq > 0. Test checks the default and an explicit freq. | `core/config.py`, `ml/models/regression.py` | low | fixed | b4a85df |
+| SRV-6 | ML models | `cross_validate` leaves the model fitted on the last fold (both callers refit afterwards). Documented in the docstring only. | `ml/models/metrics.py` | low | fixed | 75dbe87 |
+
+## Refactors (step 4, behaviour-preserving)
+
+- 498d97e black/isort (line length 127) and flake8 clean-up of `ml/serving` and `ml/models`; the exporter reuses `ALL_FEATURES`. `ml/models` is in `.gitignore` (tracked files only), so `black`/`isort` must be given explicit file paths and new files need `git add -f`.
+
+Related tests (each file run separately): tests/test_srv_step4, test_models, test_fix_wp11_imputer, test_fix_4_3_onnx_optimization, test_fix_2_5_model_registry_export, test_fix_10_3_model_card_features, test_architecture. All pass.
 
 ## Refactors (step 3, behaviour-preserving)
 
