@@ -26,7 +26,7 @@
 ## Steps
 
 - [x] **0. Baseline:** run `make test` and `make lint`. Record the pre-existing failures in the log's Baseline section. Don't fix anything.
-- [ ] **1. Security:** `security-review` on auth, JWT, bcrypt, rate limiting, `SecurityBanMiddleware`, CORS (`apps/api/auth.py`, `apps/api/middleware/`, `apps/api/rate_limiting/`, `core/security/`, `apps/api/main.py`).
+- [x] **1. Security:** `security-review` on auth, JWT, bcrypt, rate limiting, `SecurityBanMiddleware`, CORS (`apps/api/auth.py`, `apps/api/middleware/`, `apps/api/rate_limiting/`, `core/security/`, `apps/api/main.py`).
 - [ ] **2. API:** `apps/api` (routes, services, schemas, dependencies, handlers).
 - [ ] **3. Core:** `core` (config, db + repositories, cache, tracking, embeddings).
 - [ ] **4. ML serving:** `ml/serving`, `ml/models` (ONNX loading, input schema mismatches, metrics).
