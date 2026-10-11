@@ -4,7 +4,7 @@ Fetches comprehensive specifications, materials, and care instructions for catal
 """
 from typing import Dict, Any
 import re
-from ai.workflow.state import AgentState
+from ai.schemas.state import AgentState
 from ai.tools.catalog_tools import catalog_details_tool
 from core.logging import get_logger
 

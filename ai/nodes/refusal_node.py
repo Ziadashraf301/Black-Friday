@@ -4,7 +4,7 @@ Halts graph execution immediately on adversarial attacks, returning deterministi
 """
 from typing import Dict, Any
 from langchain_core.messages import AIMessage
-from ai.workflow.state import AgentState
+from ai.schemas.state import AgentState
 from ai.guardrails.base import STANDARD_REFUSAL_MESSAGE
 from core.logging import get_logger
 

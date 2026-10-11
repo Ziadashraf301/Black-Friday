@@ -4,7 +4,7 @@ Politely redirects out-of-domain conversational queries back to the Black Friday
 """
 from typing import Dict, Any
 from langchain_core.messages import AIMessage
-from ai.workflow.state import AgentState
+from ai.schemas.state import AgentState
 from core.logging import get_logger
 
 logger = get_logger(__name__)

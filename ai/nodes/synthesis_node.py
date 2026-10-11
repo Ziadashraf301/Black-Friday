@@ -4,7 +4,7 @@ Delegates RAG augmentation, model inference, and UI payload assembly
 to the dedicated SynthesisService.
 """
 from typing import Dict, Any
-from ai.workflow.state import AgentState
+from ai.schemas.state import AgentState
 from ai.services.synthesis_service import synthesis_service
 
 

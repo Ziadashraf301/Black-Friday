@@ -5,7 +5,7 @@ Retrieves statistical Apriori cross-sell associations and Item2Vec bundles.
 from typing import Dict, Any
 from core.logging import get_logger
 
-from ai.workflow.state import AgentState
+from ai.schemas.state import AgentState
 from ai.tools.bundle_tools import bundle_tool
 
 logger = get_logger(__name__)

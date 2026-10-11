@@ -7,7 +7,7 @@ from typing import Dict, Any, List, Optional, TYPE_CHECKING
 from langchain_core.messages import AIMessage
 
 if TYPE_CHECKING:
-    from ai.workflow.state import AgentState, UIPayload
+    from ai.schemas.state import AgentState, UIPayload
 
 from ai.prompts.synthesis_prompts import format_rag_prompt
 from ai.services.template_service import ResponseTemplateService, template_service

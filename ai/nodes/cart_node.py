@@ -6,7 +6,7 @@ import re
 from typing import Dict, Any
 from core.logging import get_logger
 
-from ai.workflow.state import AgentState
+from ai.schemas.state import AgentState
 from ai.tools.cart_tools import cart_tool
 
 logger = get_logger(__name__)

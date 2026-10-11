@@ -5,7 +5,7 @@ Enforces security, extracts shopping constraints, and prepares routing decision.
 """
 from typing import Dict, Any
 from langchain_core.messages import HumanMessage
-from ai.workflow.state import AgentState
+from ai.schemas.state import AgentState
 from ai.services.guardrail_service import guardrail_service
 from core.logging import get_logger
 

@@ -4,7 +4,7 @@ Synchronizes parallel specialist worker nodes, aggregates multi-intent document 
 and compiles unified UI payloads with product images and action chips prior to synthesis.
 """
 from typing import Dict, Any, List
-from ai.workflow.state import AgentState, UIPayload
+from ai.schemas.state import AgentState, UIPayload
 from core.logging import get_logger
 
 logger = get_logger(__name__)
