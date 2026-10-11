@@ -7,5 +7,5 @@ pytest-cov>=4.1.0
 pytest-timeout>=2.3.0
 locust>=2.24.0
 flake8>=7.0.0
-black>=24.2.0
+black>=25.1.0,<26
 isort>=5.13.2

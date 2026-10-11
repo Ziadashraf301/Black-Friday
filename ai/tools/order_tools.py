@@ -62,14 +62,16 @@ class OrderSupportTool:
                 return None
             order_num = int(num_match.group(0))
 
-        query = text("""
+        query = text(
+            """
             SELECT up.id, up.product_id, up.predicted_usd, up.purchased_at, cp.name, cp.sizes
             FROM user_purchases up
             LEFT JOIN curated_products cp ON up.product_id = cp.product_id
             WHERE up.user_id = :uid AND (CAST(:oid AS INTEGER) IS NULL OR up.id = :oid)
             ORDER BY up.purchased_at DESC
             LIMIT 1;
-            """)
+            """
+        )
         try:
             with self.repo.engine.connect() as conn:
                 row = conn.execute(query, {"uid": int(user_id), "oid": order_num}).fetchone()

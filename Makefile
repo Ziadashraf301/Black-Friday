@@ -1,4 +1,4 @@
-.PHONY: help up down restart ps logs ingest preprocess segmentation basket train monitor retrain cron eval eval-ml eval-ai test lint clean
+.PHONY: help up down restart ps logs ingest preprocess segmentation basket train monitor retrain cron eval eval-ml eval-ai test lint lint-ci clean
 
 # Default target: display help
 help:
@@ -27,7 +27,8 @@ help:
 	@echo "  make eval-ml      - Run standalone ML regression/imputation evaluation"
 	@echo "  make eval-ai      - Run AI System-1 router and extractor benchmarks"
 	@echo "  make test         - Run the pytest suite"
-	@echo "  make lint         - Run flake8 and black code quality checks"
+	@echo "  make lint         - Run flake8, black and isort on everything (all three always run)"
+	@echo "  make lint-ci      - Same, limited to LINT_CLEAN_PATHS (what CI enforces)"
 	@echo "  make clean        - Remove temporary cache files and __pycache__"
 	@echo "======================================================================"
 
@@ -86,10 +87,17 @@ eval: eval-ml eval-ai
 test:
 	pytest tests/ -v
 
+# Everything is checked by `make lint`; most of apps/, evaluation/, ml/ and tests/ predates the black/isort
+# config in pyproject.toml, so CI enforces only the directories that are already clean. Add a directory to
+# LINT_CLEAN_PATHS once it passes.
+LINT_PATHS = ai/ apps/ core/ evaluation/ ml/ tests/
+LINT_CLEAN_PATHS = ai/ core/
+
 lint:
-	flake8 ai/ apps/ core/ evaluation/ ml/ tests/ --max-line-length=127
-	black --check ai/ apps/ core/ evaluation/ ml/ tests/
-	isort --check ai/ apps/ core/ evaluation/ ml/ tests/
+	@rc=0; flake8 $(LINT_PATHS) || rc=1; black --check $(LINT_PATHS) || rc=1; isort --check $(LINT_PATHS) || rc=1; exit $$rc
+
+lint-ci:
+	@rc=0; flake8 $(LINT_CLEAN_PATHS) || rc=1; black --check $(LINT_CLEAN_PATHS) || rc=1; isort --check $(LINT_CLEAN_PATHS) || rc=1; exit $$rc
 
 clean:
 	python -c "import pathlib, shutil; [shutil.rmtree(p, ignore_errors=True) for p in pathlib.Path('.').rglob('__pycache__')]; [p.unlink() for p in pathlib.Path('.').rglob('*.pyc')]; [p.unlink() for p in pathlib.Path('.').rglob('*.pyo')]; shutil.rmtree('.pytest_cache', ignore_errors=True); shutil.rmtree('htmlcov', ignore_errors=True); pathlib.Path('.coverage').unlink(missing_ok=True)"
