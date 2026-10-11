@@ -5,9 +5,10 @@ Implements SHA-256 pre-hashing before bcrypt to safely handle arbitrary length
 and multi-byte UTF-8 passwords without silent 72-byte truncation.
 Provides upgrade-on-login for legacy bcrypt hashes.
 """
+
 import hashlib
 from datetime import datetime, timedelta, timezone
-from typing import Dict, Any, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from core.config import settings
 from core.logging import get_logger
@@ -16,7 +17,8 @@ logger = get_logger(__name__)
 
 # JWT library check
 try:
-    from jose import JWTError, jwt as jose_jwt
+    from jose import jwt as jose_jwt
+
     HAS_JOSE = True
 except ImportError:
     HAS_JOSE = False
@@ -24,6 +26,7 @@ except ImportError:
 # bcrypt library check
 try:
     import bcrypt
+
     HAS_BCRYPT = True
 except ImportError:
     HAS_BCRYPT = False

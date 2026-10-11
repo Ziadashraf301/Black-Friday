@@ -1,7 +1,8 @@
 """
 SQLAlchemy ORM model for user purchase history.
 """
-from sqlalchemy import Column, Integer, Float, Text, DateTime, ForeignKey, func
+from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, Text, func
+
 from core.db.models.base import Base
 
 

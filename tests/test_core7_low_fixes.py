@@ -1,4 +1,5 @@
 """CORE-7..10: embedding dimension guard, analytics column validation, pool settings, semantic-cache failure logging."""
+
 from unittest.mock import MagicMock
 
 import pytest

@@ -1,4 +1,5 @@
 """CORE-1: the Redis JSON serializer must terminate on arbitrary objects (e.g. MagicMock) and unwrap numpy types."""
+
 import datetime
 import decimal
 import json

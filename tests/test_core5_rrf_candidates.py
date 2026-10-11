@@ -1,4 +1,5 @@
 """CORE-5: RRF candidate CTEs must keep the best-ranked rows, and the size filter must be valid JSON."""
+
 import json
 
 import pytest
@@ -32,5 +33,10 @@ def test_nearest_vector_survives_candidate_limit(repo):
 
 def test_size_with_quote_is_valid_json_filter(repo):
     # A raw f-string would build '["M"X"]' and make the jsonb cast fail.
-    assert repo.warehouse._execute_rrf_query(query_vec_str="[" + ",".join(["0.1"] * 768) + "]", query_text="x", size='M"X', top_k=1) == []
+    assert (
+        repo.warehouse._execute_rrf_query(
+            query_vec_str="[" + ",".join(["0.1"] * 768) + "]", query_text="x", size='M"X', top_k=1
+        )
+        == []
+    )
     assert json.dumps(['M"X']) == '["M\\"X"]'

@@ -1,4 +1,5 @@
 """CORE-4: bulk COPY must round-trip values containing tabs, quotes, newlines and backslashes."""
+
 import json
 
 import pandas as pd

@@ -1,7 +1,9 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
 from contextlib import contextmanager
 from typing import Generator
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
+
 from core.config import settings
 from core.logging import get_logger
 
@@ -13,7 +15,7 @@ engine = create_engine(
     pool_size=settings.DB_POOL_SIZE,
     max_overflow=settings.DB_MAX_OVERFLOW,
     pool_recycle=settings.DB_POOL_RECYCLE,
-    pool_pre_ping=True
+    pool_pre_ping=True,
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

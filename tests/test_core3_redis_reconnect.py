@@ -1,4 +1,5 @@
 """CORE-3: after the cooldown expires only one thread may attempt the reconnect."""
+
 import concurrent.futures
 import time
 

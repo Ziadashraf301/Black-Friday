@@ -1,4 +1,5 @@
 """CORE-6: all loggers share one rotating file handler (separate handlers on one file break rotation on Windows)."""
+
 import logging
 from logging.handlers import RotatingFileHandler
 

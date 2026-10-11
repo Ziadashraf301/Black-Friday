@@ -1,9 +1,10 @@
 """
 SQLAlchemy ORM models for warehouse tables (raw, cleaned, segments, network metrics).
 """
-from sqlalchemy import Column, Integer, BigInteger, String, Float, Boolean, Text, JSON
-from sqlalchemy.dialects.postgresql import TSVECTOR
 from pgvector.sqlalchemy import Vector
+from sqlalchemy import JSON, BigInteger, Boolean, Column, Float, Integer, String, Text
+from sqlalchemy.dialects.postgresql import TSVECTOR
+
 from core.db.models.base import Base
 
 
@@ -122,6 +123,3 @@ class UserCart(Base):
     item_count = Column(Integer, default=0)
     total_amount = Column(Float, default=0.0)
     updated_at = Column(String(64), nullable=True)
-
-
-

@@ -2,9 +2,11 @@
 Caching decorators for application services.
 Provides non-blocking, fault-tolerant Redis JSON caching with transparent fallback to execution.
 """
+
 import functools
 import inspect
-from typing import Callable, Any, Optional, Union
+from typing import Any, Callable, Optional, Union
+
 from core.cache.redis_client import cache_manager
 from core.logging import get_logger
 

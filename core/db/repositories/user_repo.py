@@ -1,8 +1,11 @@
 """
 User repository for shopper authentication, profiles, and order history.
 """
-from typing import Dict, Any, List, Optional
+
+from typing import Any, Dict, List, Optional
+
 from sqlalchemy import text
+
 from core.db.repositories.base import BaseRepository
 from core.logging import get_logger
 
@@ -80,19 +83,22 @@ class UserRepository(BaseRepository):
             return self._demographics_from_row(user)
 
         # 2. Check black_friday_cleaned table
-        query = text("""
+        query = text(
+            """
             SELECT gender, age, occupation, city_category, stay_in_current_city_years, marital_status
             FROM black_friday_cleaned
             WHERE user_id = :user_id
             LIMIT 1
-        """)
+        """
+        )
         with self.engine.connect() as conn:
             res = conn.execute(query, {"user_id": user_id}).mappings().first()
             return self._demographics_from_row(dict(res)) if res else None
 
     def create_user(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Insert a new user and return the created record."""
-        query = text("""
+        query = text(
+            """
             INSERT INTO app_users
                 (name, email, password_hash, gender, age, city_category,
                  marital_status, occupation, stay_in_current_city_years,
@@ -102,12 +108,14 @@ class UserRepository(BaseRepository):
                  :marital_status, :occupation, :stay_in_current_city_years,
                  :cluster_id, :cluster_persona, :recommended_action)
             RETURNING *
-        """)
+        """
+        )
         with self.engine.begin() as conn:
             result = conn.execute(query, data).mappings().first()
             return dict(result)
 
-    _INSERT_PURCHASE = text("""
+    _INSERT_PURCHASE = text(
+        """
         INSERT INTO user_purchases
             (user_id, product_id, product_category_1, product_category_2,
              product_category_3, predicted_usd, model_used)
@@ -115,7 +123,8 @@ class UserRepository(BaseRepository):
             (:user_id, :product_id, :product_category_1, :product_category_2,
              :product_category_3, :predicted_usd, :model_used)
         RETURNING *
-    """)
+    """
+    )
 
     def record_purchase(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Save a shopper's product prediction/purchase event."""
@@ -123,9 +132,7 @@ class UserRepository(BaseRepository):
             result = conn.execute(self._INSERT_PURCHASE, data).mappings().first()
             return dict(result)
 
-    def record_purchases_batch(
-        self, records: List[Dict[str, Any]], connection: Optional[Any] = None
-    ) -> List[Dict[str, Any]]:
+    def record_purchases_batch(self, records: List[Dict[str, Any]], connection: Optional[Any] = None) -> List[Dict[str, Any]]:
         """Save multiple purchases in ONE atomic transaction with rollback on failure."""
         if not records:
             return []
@@ -139,24 +146,27 @@ class UserRepository(BaseRepository):
             return insert_all(conn)
 
     def get_user_purchase_history(self, user_id: int) -> List[Dict[str, Any]]:
-        query = text("""
+        query = text(
+            """
             SELECT id, product_id, product_category_1, product_category_2,
                    product_category_3, predicted_usd, model_used, purchased_at
             FROM user_purchases
             WHERE user_id = :user_id
             ORDER BY purchased_at DESC
             LIMIT 50
-        """)
+        """
+        )
         with self.engine.connect() as conn:
             return [dict(r) for r in conn.execute(query, {"user_id": user_id}).mappings().all()]
 
     def update_user_password(self, user_id: int, new_password_hash: str) -> None:
         """Update a user's password hash in app_users."""
-        query = text("""
+        query = text(
+            """
             UPDATE app_users
             SET password_hash = :password_hash
             WHERE user_id = :user_id
-        """)
+        """
+        )
         with self.engine.begin() as conn:
             conn.execute(query, {"user_id": user_id, "password_hash": new_password_hash})
-

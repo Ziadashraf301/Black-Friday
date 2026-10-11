@@ -1,11 +1,13 @@
-import json
-import decimal
 import datetime
+import decimal
+import json
 import threading
 import time
-from typing import Optional, Any, List, Dict
+from typing import Any, Dict, List, Optional
+
 import numpy as np
 import redis
+
 from core.config import settings
 from core.logging import get_logger
 
@@ -53,7 +55,9 @@ class RedisCacheManager:
                 self._client.ping()
                 self._is_available = True
                 self._last_failure_time = 0.0
-                logger.info(f"Redis Cache Service initialized cleanly at {settings.REDIS_HOST}:{settings.REDIS_PORT} (DB {target_db})")
+                logger.info(
+                    f"Redis Cache Service initialized cleanly at {settings.REDIS_HOST}:{settings.REDIS_PORT} (DB {target_db})"
+                )
             except Exception as err:
                 self._is_available = False
                 self._client = None
@@ -228,4 +232,3 @@ class RedisCacheManager:
 
 
 cache_manager = RedisCacheManager()
-

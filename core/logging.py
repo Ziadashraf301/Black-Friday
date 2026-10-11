@@ -1,9 +1,11 @@
+import logging
 import os
 import sys
-import logging
 from logging.handlers import RotatingFileHandler
 from typing import Optional
+
 from core.config import settings
+
 
 def _ensure_log_dir() -> Optional[str]:
     """Lazily creates the log directory with graceful error handling."""
@@ -29,10 +31,7 @@ def _get_file_handler(formatter: logging.Formatter, log_level: int) -> Optional[
             log_path = _ensure_log_dir()
             if log_path:
                 handler = RotatingFileHandler(
-                    log_path,
-                    maxBytes=15 * 1024 * 1024,  # 15 MB per file
-                    backupCount=5,
-                    encoding="utf-8"
+                    log_path, maxBytes=15 * 1024 * 1024, backupCount=5, encoding="utf-8"  # 15 MB per file
                 )
                 handler.setLevel(log_level)
                 handler.setFormatter(formatter)

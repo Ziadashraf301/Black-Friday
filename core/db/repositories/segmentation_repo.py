@@ -1,9 +1,12 @@
 """
 Segmentation repository for customer personas and clusters.
 """
+
+from typing import Any, Dict, List, Optional
+
 import pandas as pd
-from typing import Dict, Any, List, Optional
 from sqlalchemy import text
+
 from core.db.repositories.base import BaseRepository
 from core.logging import get_logger
 
@@ -28,8 +31,9 @@ class SegmentationRepository(BaseRepository):
 
     def get_all_personas_summary(self) -> List[Dict[str, Any]]:
         """Returns aggregate metrics for all 10 customer personas."""
-        query = text("""
-            SELECT 
+        query = text(
+            """
+            SELECT
                 cluster_id,
                 cluster_persona,
                 COUNT(*) as customer_count,
@@ -40,6 +44,7 @@ class SegmentationRepository(BaseRepository):
             FROM customer_segments
             GROUP BY cluster_id, cluster_persona, recommended_action
             ORDER BY cluster_id ASC
-        """)
+        """
+        )
         with self.engine.connect() as conn:
             return [dict(row) for row in conn.execute(query).mappings().all()]

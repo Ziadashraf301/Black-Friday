@@ -1,6 +1,7 @@
-from typing import Optional, Any
-from pathlib import Path
 import urllib.parse
+from pathlib import Path
+from typing import Any, Optional
+
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -11,11 +12,7 @@ DEV_ENVIRONMENTS = {"development", "dev", "local", "test", "testing"}
 class Settings(BaseSettings):
     """Central configuration for Black Friday v2 application."""
 
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        extra="ignore"
-    )
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     # Project metadata
     PROJECT_NAME: str = "Black-Friday-v2"
@@ -127,13 +124,7 @@ class Settings(BaseSettings):
     IMPUTER_MIN_SAMPLES_LEAF: int = Field(default=5)
     IMPUTER_N_JOBS: int = Field(default=-1)
 
-    @field_validator(
-        "IMPUTER_SAMPLE_SIZE",
-        "IMPUTER_MAX_DEPTH",
-        "DT_MAX_DEPTH",
-        "RF_MAX_DEPTH",
-        mode="before"
-    )
+    @field_validator("IMPUTER_SAMPLE_SIZE", "IMPUTER_MAX_DEPTH", "DT_MAX_DEPTH", "RF_MAX_DEPTH", mode="before")
     @classmethod
     def parse_optional_integer(cls, v):
         if v == "" or v is None or str(v).lower() in ("none", "null"):
@@ -167,7 +158,7 @@ class Settings(BaseSettings):
 
     # Drift-Triggered Retraining Thresholds
     # DRIFT_DATASET_THRESHOLD: fraction of features that must drift before retraining is triggered (0–1)
-    DRIFT_DATASET_THRESHOLD: float = 0.30   # retrain if >30% of features drift
+    DRIFT_DATASET_THRESHOLD: float = 0.30  # retrain if >30% of features drift
     # DRIFT_TARGET_PSI_THRESHOLD: population stability index threshold for target drift
     DRIFT_TARGET_PSI_THRESHOLD: float = 0.20  # PSI > 0.2 = significant target distribution shift
 
