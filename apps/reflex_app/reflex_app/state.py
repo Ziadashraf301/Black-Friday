@@ -26,6 +26,23 @@ _OCCUPATION_MAP = {
 }
 
 
+PRICE_UNAVAILABLE = "Price unavailable"
+
+
+def _price_or_none(value: Any) -> Optional[float]:
+    """A usable positive price, or None. Missing prices are never replaced by made-up numbers."""
+    try:
+        price = float(value)
+    except (TypeError, ValueError):
+        return None
+    return price if price > 0 else None
+
+
+def _format_price(value: Any, missing: str = PRICE_UNAVAILABLE) -> str:
+    price = _price_or_none(value)
+    return f"${price:.2f}" if price is not None else missing
+
+
 def _parse_auth_error(resp: httpx.Response) -> str:
     """Convert FastAPI/Pydantic validation errors to human-friendly messages."""
     try:
@@ -296,19 +313,11 @@ class ShoppingState(rx.State):
 
     @rx.var
     def hero_original_price_display(self) -> str:
-        try:
-            p = float(self.hero_product.get("original_price", 99.90))
-        except (ValueError, TypeError):
-            p = 99.90
-        return f"${p:.2f}"
+        return _format_price(self.hero_product.get("original_price"), missing="")
 
     @rx.var
     def hero_discounted_price_display(self) -> str:
-        try:
-            p = float(self.hero_product.get("discounted_price", 49.90))
-        except (ValueError, TypeError):
-            p = 49.90
-        return f"${p:.2f}"
+        return _format_price(self.hero_product.get("discounted_price"))
 
     def open_hero_detail(self):
         if self.has_hero:
@@ -427,23 +436,25 @@ class ShoppingState(rx.State):
 
     @rx.var
     def active_product_original_price(self) -> float:
-        return float(self.active_product.get("original_price", 0.0))
+        return _price_or_none(self.active_product.get("original_price")) or 0.0
 
     @rx.var
     def active_product_sale_price(self) -> float:
-        return float(self.active_product.get("discounted_price", 0.0))
+        return _price_or_none(self.active_product.get("discounted_price")) or 0.0
 
     @rx.var
     def active_sale_price_display(self) -> str:
-        return f"${self.active_product_sale_price:.2f}"
+        return _format_price(self.active_product_sale_price)
 
     @rx.var
     def active_original_price_display(self) -> str:
+        if not self.active_product_original_price:
+            return ""
         return f"Original: ${self.active_product_original_price:.2f}"
 
     @rx.var
     def active_estimated_price_display(self) -> str:
-        return f"${self.estimated_price_usd:.2f}"
+        return _format_price(self.estimated_price_usd)
 
     @rx.var
     def active_product_badge(self) -> str:
@@ -453,7 +464,7 @@ class ShoppingState(rx.State):
     def active_product_sizes(self) -> List[str]:
         return self.active_product.get("sizes", ["S", "M", "L", "XL"]) if self.active_product else ["S", "M", "L", "XL"]
 
-    def _extract_recs(self, key: str, default_name: str, default_price: float, badge: str) -> List[RecProduct]:
+    def _extract_recs(self, key: str, default_name: str, badge: str) -> List[RecProduct]:
         raw = self.active_product.get(key, []) if self.active_product else []
         active_id = str(self.active_product.get("product_id", ""))
         seen = {active_id}
@@ -463,13 +474,13 @@ class ShoppingState(rx.State):
             if not pid or pid in seen:
                 continue
             seen.add(pid)
-            p = float(item.get("price", default_price))
+            p = _price_or_none(item.get("price"))
             res.append(RecProduct(
                 product_id=pid,
                 name=str(item.get("name", default_name)),
                 image_url=str(item.get("image_url", f"/products/{pid}.jpg")),
-                price=p,
-                price_display=f"${p:.2f}",
+                price=p or 0.0,
+                price_display=_format_price(p),
                 badge_label=badge,
             ))
             if len(res) >= 3:
@@ -478,11 +489,11 @@ class ShoppingState(rx.State):
 
     @rx.var
     def active_apriori_bundles_list(self) -> List[RecProduct]:
-        return self._extract_recs("apriori_bundles", "Curated Bundle", 69.0, "Bundle Rule")
+        return self._extract_recs("apriori_bundles", "Curated Bundle", "Bundle Rule")
 
     @rx.var
     def active_item2vec_similars_list(self) -> List[RecProduct]:
-        return self._extract_recs("item2vec_similars", "Similar Piece", 59.0, "Similar Style")
+        return self._extract_recs("item2vec_similars", "Similar Piece", "Similar Style")
 
     # ── Dashboard computed vars ─────────────────────────────────────────
     @rx.var
@@ -765,9 +776,9 @@ class ShoppingState(rx.State):
             self.active_product = target
             self.active_selected_size = "M"
             self.is_quick_view_open = True
-            base_price = float(target.get("discounted_price", 49.90))
-            self.estimated_price_usd = base_price
-            self.price_prediction_model = "Catalog Price"
+            base_price = _price_or_none(target.get("discounted_price"))
+            self.estimated_price_usd = base_price or 0.0
+            self.price_prediction_model = "Catalog Price" if base_price else PRICE_UNAVAILABLE
             if self.is_authenticated:
                 self.fetch_ai_price_estimate(target)
 
@@ -785,8 +796,6 @@ class ShoppingState(rx.State):
                         "category_name": "Archive",
                         "product_category_1": 1,
                         "image_url": f"/products/{product_id}.jpg",
-                        "original_price": 149.0,
-                        "discounted_price": 79.0,
                         "order_count": d.get("order_count", 0),
                         "sizes": ["S", "M", "L", "XL"],
                         "badge": "Vintage",
@@ -795,11 +804,11 @@ class ShoppingState(rx.State):
                         "style": "Vintage",
                         "season": "All-Season",
                         "apriori_bundles": [
-                            {"product_id": pid, "name": f"Archive {pid}", "image_url": f"/products/{pid}.jpg", "price": 89.0}
+                            {"product_id": pid, "name": f"Archive {pid}", "image_url": f"/products/{pid}.jpg"}
                             for pid in d.get("apriori_bundles", [])[:3]
                         ],
                         "item2vec_similars": [
-                            {"product_id": pid, "name": f"Similar {pid}", "image_url": f"/products/{pid}.jpg", "price": 69.0}
+                            {"product_id": pid, "name": f"Similar {pid}", "image_url": f"/products/{pid}.jpg"}
                             for pid in d.get("item2vec_similar", [])[:3]
                         ],
                     }
@@ -905,8 +914,9 @@ class ShoppingState(rx.State):
                     return
         except Exception:
             pass
-        self.estimated_price_usd = float(product.get("discounted_price", 0.0))
-        self.price_prediction_model = "Catalog Price"
+        catalog_price = _price_or_none(product.get("discounted_price"))
+        self.estimated_price_usd = catalog_price or 0.0
+        self.price_prediction_model = "Catalog Price" if catalog_price else PRICE_UNAVAILABLE
         self.is_predicting_price = False
 
     # ── Hero ─────────────────────────────────────────────────────────────
@@ -924,7 +934,9 @@ class ShoppingState(rx.State):
             return
 
         key = f"{product_id}_{size}"
-        base_price = float(target.get("discounted_price", target.get("original_price", 49.99)))
+        base_price = _price_or_none(target.get("discounted_price")) or _price_or_none(target.get("original_price"))
+        if base_price is None:
+            return
 
         # Determine personalized price if logged in
         pers_price = 0.0
@@ -1007,7 +1019,10 @@ class ShoppingState(rx.State):
                     pid_to_price = {q["product_id"]: float(q["predicted_usd"]) for q in quotes}
                     updated_items = []
                     for item in self.cart_items:
-                        p_price = pid_to_price.get(item.product_id, item.price * 0.85)
+                        p_price = pid_to_price.get(item.product_id)
+                        if p_price is None:
+                            updated_items.append(item)
+                            continue
                         updated_items.append(CartItem(
                             key=item.key,
                             product_id=item.product_id,
