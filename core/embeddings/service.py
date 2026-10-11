@@ -42,7 +42,7 @@ class GeminiEmbeddingProvider(BaseEmbeddingProvider):
         model_name: str = "models/gemini-embedding-2",
         client: Optional[Any] = None,
     ):
-        self._api_key = api_key or getattr(settings, "GEMINI_API_KEY", None) or getattr(settings, "GOOGLE_API_KEY", None)
+        self._api_key = api_key or settings.GEMINI_API_KEY
         self._model_name = model_name
         self._client = client
 
@@ -93,6 +93,9 @@ class GeminiEmbeddingProvider(BaseEmbeddingProvider):
         else:
             raise ValueError(f"Unexpected response structure from embed_content: {res}")
 
+        if len(raw_vec) < 768:
+            raise ValueError(f"Embedding has {len(raw_vec)} dimensions; expected at least 768.")
+
         # Matryoshka Representation Learning: slice and L2-normalize to exact 768 dimensions
         if len(raw_vec) != 768:
             logger.info(f"[EMBEDDING-PROVIDER: GEMINI] Aligning vector from {len(raw_vec)} to 768 dimensions via MRL.")
@@ -134,7 +137,7 @@ class EmbeddingService:
 
     @staticmethod
     def _resolve_default_provider() -> BaseEmbeddingProvider:
-        key = getattr(settings, "GEMINI_API_KEY", None) or getattr(settings, "GOOGLE_API_KEY", None)
+        key = settings.GEMINI_API_KEY
         if key and key != "test_api_key_placeholder":
             try:
                 from google import genai  # noqa: F401
