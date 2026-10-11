@@ -51,6 +51,22 @@ class FastRuleRouter(BaseRouterStrategy):
 
         # Step 2: Multi-intent classification by rules
         multi_intents = IntentClassifier.classify_multi_by_rules(query)
+        if IntentType.ADVERSARIAL_BLOCKED in multi_intents:
+            latency = (time.perf_counter() - start_t) * 1000
+            return RoutingDecision(
+                query=query,
+                intent=IntentType.ADVERSARIAL_BLOCKED,
+                target_intents=[IntentType.ADVERSARIAL_BLOCKED],
+                confidence=0.90,
+                is_safe=False,
+                adversarial_prob=0.90,
+                entities=ExtractedEntities(extraction_strategy="none"),
+                steering_response=STANDARD_REFUSAL_MESSAGE,
+                strategy_used="FastRuleRouter",
+                prompt_version="local_rules_v1",
+                latency_ms=round(latency, 2),
+                metadata={"rule_match": True, "flagged_rules": ["INTENT_RULE_ADVERSARIAL"]},
+            )
         primary_intent = multi_intents[0]
         conf = 0.90 if len(multi_intents) > 1 else 0.85
 

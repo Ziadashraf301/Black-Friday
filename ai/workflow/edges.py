@@ -25,7 +25,13 @@ def route_after_guardrail(state: AgentState) -> List[str]:
         return [END]
 
     # 1. Safety check
-    if not state.get("is_safe", True) or state.get("adversarial_prob", 0.0) >= 0.80:
+    blocked = IntentType.ADVERSARIAL_BLOCKED.value
+    if (
+        not state.get("is_safe", True)
+        or state.get("adversarial_prob", 0.0) >= 0.80
+        or state.get("intent") == blocked
+        or blocked in (state.get("target_intents") or [])
+    ):
         logger.warning("[EDGE: ROUTE] Routing to refusal_node")
         return ["refusal_node"]
 

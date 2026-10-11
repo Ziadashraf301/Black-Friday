@@ -101,8 +101,8 @@ class JevApiRouter(BaseRouterStrategy):
             adv_prob = float(response.nouls["is_adversarial"].noul)
             raw_intent = response.choices["intent"].choice if "intent" in response.choices else None
 
-            # Check if Jev flagged query as an adversarial attack
-            if adv_prob >= self._threshold:
+            # Check if Jev flagged query as an adversarial attack (probability or the intent choice itself)
+            if adv_prob >= self._threshold or raw_intent == IntentType.ADVERSARIAL_BLOCKED.value:
                 logger.warning(f"[ROUTER: JEV] Adversarial attack detected (P={adv_prob:.4f})")
                 return RoutingDecision(
                     query=query,
