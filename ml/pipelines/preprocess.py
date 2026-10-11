@@ -1,20 +1,20 @@
-import os
 import json
-import pandas as pd
-from typing import Dict, Any
+import os
+from typing import Any, Dict
 
+import pandas as pd
+
+from core.config import settings
 from core.db.repository import BlackFridayRepository
+from core.logging import get_logger
+from ml.features.data_contract import validate_cleaned_data
 from ml.features.imputation import MissForestImputer
 from ml.features.preprocessor import DataPreprocessor
-from ml.features.data_contract import validate_cleaned_data
-from ml.tracking.mlflow_tracker import MLflowTracker
-from ml.visualization.visualizer import Visualizer
 from ml.models.metrics import ModelEvaluator
 from ml.models.onnx_exporter import ONNXExporter
 from ml.pipelines.common import imputer_onnx_dir, invalidate_caches
-
-from core.config import settings
-from core.logging import get_logger
+from ml.tracking.mlflow_tracker import MLflowTracker
+from ml.visualization.visualizer import Visualizer
 
 logger = get_logger(__name__)
 
@@ -64,10 +64,7 @@ def run_preprocessing():
     # 3. Evaluate Imputation Quality on Truly Unseen Holdout Ground-Truth Test Records
     logger.info("Evaluating MissForest imputation on held-out observed test records (NRMSE & PFC)...")
     imputation_eval = ModelEvaluator.evaluate_imputation_holdout(
-        imputer=imputer,
-        test_df=test_raw,
-        sample_size=settings.IMPUTER_SAMPLE_SIZE or 50000,
-        random_state=settings.RANDOM_SEED
+        imputer=imputer, test_df=test_raw, sample_size=settings.IMPUTER_SAMPLE_SIZE or 50000, random_state=settings.RANDOM_SEED
     )
 
     # 4. Outlier Detection: Calculate Bounds on Train Only, Tag Both
@@ -93,16 +90,10 @@ def run_preprocessing():
     logger.info("Generating preprocessing and imputation diagnostic charts...")
     os.makedirs("reports/preprocessing", exist_ok=True)
     charts = Visualizer.generate_preprocessing_charts(
-        raw_df=raw_df,
-        cleaned_df=cleaned_df,
-        outlier_bounds=preprocessor.outlier_bounds,
-        output_dir="reports/preprocessing"
+        raw_df=raw_df, cleaned_df=cleaned_df, outlier_bounds=preprocessor.outlier_bounds, output_dir="reports/preprocessing"
     )
 
-    imputation_charts = Visualizer.generate_imputation_charts(
-        eval_data=imputation_eval,
-        output_dir="reports/preprocessing"
-    )
+    imputation_charts = Visualizer.generate_imputation_charts(eval_data=imputation_eval, output_dir="reports/preprocessing")
     charts.update(imputation_charts)
 
     # 9. Persist Cleaned Records with Split Indicator to Warehouse
@@ -135,7 +126,7 @@ def run_preprocessing():
         "outlier_threshold_constant": settings.OUTLIER_THRESHOLD,
         "normalization_method": "max_scaling",
         "normalization_purchase_max": preprocessor.purchase_max,
-        "random_seed": settings.RANDOM_SEED
+        "random_seed": settings.RANDOM_SEED,
     }
 
     metrics: Dict[str, float] = {
@@ -154,9 +145,13 @@ def run_preprocessing():
         "test_raw_purchase_mean": round(float(test_cleaned["purchase"].mean()), 2),
         "train_cleaned_purchase_mean": round(float(train_cleaned[~train_cleaned["is_outlier"]]["purchase"].mean()), 2),
         "test_cleaned_purchase_mean": round(float(test_cleaned[~test_cleaned["is_outlier"]]["purchase"].mean()), 2),
-        "train_normalized_purchase_mean": round(float(train_cleaned[~train_cleaned["is_outlier"]]["normalized_purchase"].mean()), 4),
-        "test_normalized_purchase_mean": round(float(test_cleaned[~test_cleaned["is_outlier"]]["normalized_purchase"].mean()), 4),
-        "imputation_duration_seconds": float(imputer.stats.get("imputation_duration_seconds", 0.0))
+        "train_normalized_purchase_mean": round(
+            float(train_cleaned[~train_cleaned["is_outlier"]]["normalized_purchase"].mean()), 4
+        ),
+        "test_normalized_purchase_mean": round(
+            float(test_cleaned[~test_cleaned["is_outlier"]]["normalized_purchase"].mean()), 4
+        ),
+        "imputation_duration_seconds": float(imputer.stats.get("imputation_duration_seconds", 0.0)),
     }
 
     # Training OOB metrics from fitted estimators
@@ -174,20 +169,12 @@ def run_preprocessing():
     summary_path = os.path.join("reports", "preprocessing", "preprocessing_summary.json")
     with open(summary_path, "w", encoding="utf-8") as f:
         json.dump(
-            {
-                "params": params,
-                "metrics": metrics,
-                "imputer_stats": imputer.stats,
-                "imputation_evaluation": eval_metrics
-            },
+            {"params": params, "metrics": metrics, "imputer_stats": imputer.stats, "imputation_evaluation": eval_metrics},
             f,
-            indent=2
+            indent=2,
         )
 
-    artifacts = {
-        **charts,
-        "preprocessing_summary": summary_path
-    }
+    artifacts = {**charts, "preprocessing_summary": summary_path}
 
     # 13. Log Preprocessing Run and Register/Promote Imputer Model in MLflow
     logger.info("Logging preprocessing run, metrics, charts, and registering ONNX imputer in MLflow...")
@@ -201,11 +188,11 @@ def run_preprocessing():
             "outlier_strategy": "flagged_exclude_from_training",
             "split_ratio": "90/10",
             "model_format": "ONNX",
-            "imputer_status": "PROMOTED_TO_PRODUCTION"
+            "imputer_status": "PROMOTED_TO_PRODUCTION",
         },
         artifacts=artifacts,
         imputer_model_path=imputer_dir,
-        register_imputer_name=settings.MLFLOW_IMPUTER_MODEL_NAME
+        register_imputer_name=settings.MLFLOW_IMPUTER_MODEL_NAME,
     )
 
     logger.info(f"Preprocessing pipeline finished successfully. MLflow Run ID: {run_id}")

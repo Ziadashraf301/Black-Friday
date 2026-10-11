@@ -1,3 +1,4 @@
+# flake8: noqa: E402  (env vars must be set before the imports below)
 """
 Production Drift Monitor & Retrain Orchestrator
 ================================================
@@ -15,18 +16,22 @@ When drift is detected:
   - If target labels are missing:
     Logs drift telemetry and alerts engineering (supervised retraining requires labels).
 """
+
 import os
+
 os.environ.setdefault("MPLBACKEND", "Agg")
-import pandas as pd
 from typing import Optional
+
+import pandas as pd
+
+from core.config import settings
 from core.db.repository import BlackFridayRepository
+from core.logging import get_logger
 from ml.models.registry import ModelRegistry
 from ml.pipelines.common import champion_onnx_path, onnx_dir, prepare_batch
+from ml.serving.predictor import ONNXPredictor
 from ml.tracking.drift_monitor import DriftMonitor, DriftResult
 from ml.tracking.mlflow_tracker import MLflowTracker
-from ml.serving.predictor import ONNXPredictor
-from core.config import settings
-from core.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -55,7 +60,7 @@ def run_production_drift_monitor(
     reference_df: Optional[pd.DataFrame] = None,
     candidate_model_name: Optional[str] = None,
     dataset_drift_threshold: float = settings.DRIFT_DATASET_THRESHOLD,
-    auto_trigger_retrain: bool = True
+    auto_trigger_retrain: bool = True,
 ) -> DriftResult:
     """Compares incoming production data batch against the training reference baseline.
 
@@ -129,10 +134,7 @@ def run_production_drift_monitor(
 
     # 3. Evaluate Drift with Evidently AI
     drift_monitor = DriftMonitor(reference_df=ref_eval[active_cols])
-    drift_result = drift_monitor.evaluate_drift(
-        current_df=curr_eval[active_cols],
-        output_dir="reports/drift"
-    )
+    drift_result = drift_monitor.evaluate_drift(current_df=curr_eval[active_cols], output_dir="reports/drift")
 
     logger.info(
         f"Drift Analysis Complete -> Share: {drift_result.drifted_feature_share:.1%} "
@@ -182,19 +184,18 @@ def run_production_drift_monitor(
             "reference_rows": len(reference_df),
             "current_batch_rows": len(current_batch_df),
             "dataset_drift_threshold": dataset_drift_threshold,
-            "monitored_columns_count": len(active_cols)
+            "monitored_columns_count": len(active_cols),
         },
         metrics=drift_metrics,
         tags=drift_tags,
-        artifacts=drift_artifacts
+        artifacts=drift_artifacts,
     )
 
     # 5. Drift Decision Gate with Target Persistence Check
     should_retrain = drift_result.should_trigger_retrain(dataset_threshold=dataset_drift_threshold)
     target_col = "normalized_purchase"
-    has_target = (
-        (target_col in curr_eval.columns and curr_eval[target_col].notna().any())
-        or ("purchase" in current_batch_df.columns and current_batch_df["purchase"].notna().any())
+    has_target = (target_col in curr_eval.columns and curr_eval[target_col].notna().any()) or (
+        "purchase" in current_batch_df.columns and current_batch_df["purchase"].notna().any()
     )
 
     if should_retrain:
@@ -263,41 +264,33 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
         description="Black Friday Production Drift Monitor & Automated Retrain Trigger",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
+    parser.add_argument("--batch", "-b", type=str, default=None, help="Path to CSV containing incoming production batch data")
     parser.add_argument(
-        "--batch", "-b",
+        "--reference",
+        "-r",
         type=str,
         default=None,
-        help="Path to CSV containing incoming production batch data"
+        help="Path to CSV containing baseline reference data (defaults to warehouse train split)",
     )
     parser.add_argument(
-        "--reference", "-r",
+        "--model",
+        "-m",
         type=str,
         default=None,
-        help="Path to CSV containing baseline reference data (defaults to warehouse train split)"
+        help="Candidate model architecture (e.g. lgbm, random_forest). Defaults to DEFAULT_REGRESSION_MODEL.",
     )
     parser.add_argument(
-        "--model", "-m",
-        type=str,
-        default=None,
-        help="Candidate model architecture (e.g. lgbm, random_forest). Defaults to DEFAULT_REGRESSION_MODEL."
-    )
-    parser.add_argument(
-        "--threshold", "-t",
+        "--threshold",
+        "-t",
         type=float,
         default=settings.DRIFT_DATASET_THRESHOLD,
-        help="Dataset drift threshold to trigger continuous retraining"
+        help="Dataset drift threshold to trigger continuous retraining",
     )
+    parser.add_argument("--no-retrain", action="store_true", help="Disable automatic retraining trigger if drift is detected")
     parser.add_argument(
-        "--no-retrain",
-        action="store_true",
-        help="Disable automatic retraining trigger if drift is detected"
-    )
-    parser.add_argument(
-        "--demo",
-        action="store_true",
-        help="Run monitoring in demonstration mode using warehouse holdout test batch"
+        "--demo", action="store_true", help="Run monitoring in demonstration mode using warehouse holdout test batch"
     )
 
     args = parser.parse_args()
@@ -334,5 +327,5 @@ if __name__ == "__main__":
         reference_df=ref_df,
         candidate_model_name=args.model,
         dataset_drift_threshold=args.threshold,
-        auto_trigger_retrain=not args.no_retrain
+        auto_trigger_retrain=not args.no_retrain,
     )

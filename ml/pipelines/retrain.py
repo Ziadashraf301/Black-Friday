@@ -1,22 +1,31 @@
-import os
-import json
 import datetime
+import json
+import os
+from typing import Any, Dict, Optional
+
 import pandas as pd
-from typing import Optional, Dict, Any
+
+from core.config import settings
 from core.db.repository import BlackFridayRepository
+from core.logging import get_logger
 from ml.features.preprocessor import DataPreprocessor
-from ml.models.registry import ModelRegistry
-from ml.pipelines.common import MODEL_CACHE_PATTERNS, champion_onnx_path, invalidate_caches, onnx_dir, prepare_batch, publish_champion_onnx
 from ml.models.metrics import ModelEvaluator, evaluate_holdout
 from ml.models.onnx_exporter import ONNXExporter
+from ml.models.registry import ModelRegistry
+from ml.pipelines.common import (
+    MODEL_CACHE_PATTERNS,
+    champion_onnx_path,
+    invalidate_caches,
+    onnx_dir,
+    prepare_batch,
+    publish_champion_onnx,
+)
 from ml.serving.predictor import ONNXPredictor
-from ml.tracking.mlflow_tracker import MLflowTracker
-from ml.tracking.model_card import ModelCardGenerator
 from ml.tracking.drift_monitor import DriftResult
 from ml.tracking.explainability import ModelExplainability
+from ml.tracking.mlflow_tracker import MLflowTracker
+from ml.tracking.model_card import ModelCardGenerator
 from ml.visualization.visualizer import Visualizer
-from core.config import settings
-from core.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -38,7 +47,7 @@ class RetrainResult:
         data_summary: Dict[str, Any],
         audit_summary_path: Optional[str],
         metrics: Dict[str, Any],
-        rejection_reason: Optional[str] = None
+        rejection_reason: Optional[str] = None,
     ):
         self.is_promoted = is_promoted
         self.candidate_model_name = candidate_model_name
@@ -72,7 +81,7 @@ class RetrainResult:
             "drift_info": self.drift_result.to_dict() if self.drift_result else None,
             "data_summary": self.data_summary,
             "audit_summary_path": self.audit_summary_path,
-            "metrics": self.metrics
+            "metrics": self.metrics,
         }
 
     def __repr__(self) -> str:
@@ -138,9 +147,7 @@ def run_champion_challenger_retrain(
 
     target_col = "normalized_purchase"
     if target_col not in new_data_df.columns:
-        raise ValueError(
-            f"new_data_df must contain ground-truth '{target_col}' column for supervised retraining."
-        )
+        raise ValueError(f"new_data_df must contain ground-truth '{target_col}' column for supervised retraining.")
 
     model_name = ModelRegistry.resolve_name(candidate_model_name)
     logger.info("=" * 70)
@@ -219,7 +226,10 @@ def run_champion_challenger_retrain(
         if not meets_r2_threshold:
             rejection_reason = f"Candidate R2 ({candidate_r2:.4f}) below minimum absolute threshold ({min_r2_threshold:.4f})"
         else:
-            rejection_reason = f"Candidate R2 ({candidate_r2:.4f}) failed to beat champion ({champion_r2:.4f}) by required delta ({min_improvement_delta:.4f})"
+            rejection_reason = (
+                f"Candidate R2 ({candidate_r2:.4f}) failed to beat champion ({champion_r2:.4f}) "
+                f"by required delta ({min_improvement_delta:.4f})"
+            )
 
     # 7. Assemble Audit Record & Local Artifacts
     os.makedirs("reports/retrain", exist_ok=True)
@@ -251,11 +261,11 @@ def run_champion_challenger_retrain(
             "candidate_rmse": candidate_rmse,
             "r2_improvement_delta": round(improvement_delta, 4),
             "min_r2_threshold": min_r2_threshold,
-            "min_improvement_delta": min_improvement_delta
+            "min_improvement_delta": min_improvement_delta,
         },
         "drift_summary": drift_result.to_dict() if drift_result else None,
         "cv_metrics": cv_metrics,
-        "holdout_metrics": holdout_metrics
+        "holdout_metrics": holdout_metrics,
     }
 
     for p in [audit_path, latest_audit_path]:
@@ -276,14 +286,16 @@ def run_champion_challenger_retrain(
         "data_new_rows": float(new_rows),
     }
     if drift_result:
-        mlflow_metrics.update({
-            "drift_drifted_feature_share": drift_result.drifted_feature_share,
-            "drift_drifted_features": float(drift_result.drifted_features),
-            "drift_total_features": float(drift_result.total_features),
-            "drift_dataset_drift_detected": 1.0 if drift_result.dataset_drift_detected else 0.0,
-            "drift_target_drift_detected": 1.0 if drift_result.target_drift_detected else 0.0,
-            "drift_prediction_drift_detected": 1.0 if drift_result.prediction_drift_detected else 0.0,
-        })
+        mlflow_metrics.update(
+            {
+                "drift_drifted_feature_share": drift_result.drifted_feature_share,
+                "drift_drifted_features": float(drift_result.drifted_features),
+                "drift_total_features": float(drift_result.total_features),
+                "drift_dataset_drift_detected": 1.0 if drift_result.dataset_drift_detected else 0.0,
+                "drift_target_drift_detected": 1.0 if drift_result.target_drift_detected else 0.0,
+                "drift_prediction_drift_detected": 1.0 if drift_result.prediction_drift_detected else 0.0,
+            }
+        )
 
     mlflow_tags = {
         "trigger_reason": trigger_reason,
@@ -295,17 +307,17 @@ def run_champion_challenger_retrain(
         "pipeline_stage": "retrain_champion_challenger",
     }
     if drift_result:
-        mlflow_tags.update({
-            "dataset_drift_detected": str(drift_result.dataset_drift_detected),
-            "target_drift_detected": str(drift_result.target_drift_detected),
-            "prediction_drift_detected": str(drift_result.prediction_drift_detected),
-            "drift_engine": drift_result.engine,
-            "drifted_columns": ",".join(drift_result.drifted_columns),
-        })
+        mlflow_tags.update(
+            {
+                "dataset_drift_detected": str(drift_result.dataset_drift_detected),
+                "target_drift_detected": str(drift_result.target_drift_detected),
+                "prediction_drift_detected": str(drift_result.prediction_drift_detected),
+                "drift_engine": drift_result.engine,
+                "drifted_columns": ",".join(drift_result.drifted_columns),
+            }
+        )
 
-    artifacts: Dict[str, str] = {
-        "retrain_audit_summary": audit_path
-    }
+    artifacts: Dict[str, str] = {"retrain_audit_summary": audit_path}
     if drift_result:
         if drift_result.report_path and os.path.exists(drift_result.report_path):
             artifacts["data_drift_report"] = drift_result.report_path
@@ -319,9 +331,7 @@ def run_champion_challenger_retrain(
     shap_values, X_eval = explainer.explain(test_df[candidate.features].head(200))
     if shap_values is not None:
         shap_plot_path = Visualizer.generate_shap_summary_plot(
-            shap_values=shap_values,
-            eval_features=X_eval,
-            output_dir=f"reports/shap_{model_name}"
+            shap_values=shap_values, eval_features=X_eval, output_dir=f"reports/shap_{model_name}"
         )
         if shap_plot_path:
             artifacts["shap_summary_plot"] = shap_plot_path
@@ -356,7 +366,7 @@ def run_champion_challenger_retrain(
         metrics=mlflow_metrics,
         tags=mlflow_tags,
         artifacts=artifacts,
-        onnx_model_path=onnx_file if is_promoted else None
+        onnx_model_path=onnx_file if is_promoted else None,
     )
 
     if is_promoted and run_id:
@@ -378,7 +388,7 @@ def run_champion_challenger_retrain(
         data_summary=data_summary,
         audit_summary_path=audit_path,
         metrics=all_metrics,
-        rejection_reason=rejection_reason
+        rejection_reason=rejection_reason,
     )
 
     if drift_result:
@@ -392,43 +402,29 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
         description="Black Friday Champion vs Challenger Retrain Pipeline",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
+    parser.add_argument("--new-data", "-n", type=str, default=None, help="Path to CSV containing new data batch")
     parser.add_argument(
-        "--new-data", "-n",
+        "--old-data",
+        "-o",
         type=str,
         default=None,
-        help="Path to CSV containing new data batch"
+        help="Path to CSV containing old baseline data (defaults to warehouse train split)",
     )
     parser.add_argument(
-        "--old-data", "-o",
-        type=str,
-        default=None,
-        help="Path to CSV containing old baseline data (defaults to warehouse train split)"
-    )
-    parser.add_argument(
-        "--model", "-m",
-        type=str,
-        default=settings.DEFAULT_REGRESSION_MODEL,
-        help="Candidate challenger model architecture"
+        "--model", "-m", type=str, default=settings.DEFAULT_REGRESSION_MODEL, help="Candidate challenger model architecture"
     )
     parser.add_argument(
         "--min-improvement",
         type=float,
         default=settings.CHAMPION_MIN_IMPROVEMENT_DELTA,
-        help="Minimum R2 improvement required over Champion"
+        help="Minimum R2 improvement required over Champion",
     )
     parser.add_argument(
-        "--min-r2",
-        type=float,
-        default=settings.CHAMPION_MIN_R2_THRESHOLD,
-        help="Minimum absolute R2 threshold required"
+        "--min-r2", type=float, default=settings.CHAMPION_MIN_R2_THRESHOLD, help="Minimum absolute R2 threshold required"
     )
-    parser.add_argument(
-        "--demo",
-        action="store_true",
-        help="Run retraining demonstration using warehouse partitions"
-    )
+    parser.add_argument("--demo", action="store_true", help="Run retraining demonstration using warehouse partitions")
 
     args = parser.parse_args()
     repo = BlackFridayRepository()
@@ -478,7 +474,7 @@ if __name__ == "__main__":
         candidate_model_name=args.model,
         trigger_reason="manual_cli_execution",
         min_improvement_delta=args.min_improvement,
-        min_r2_threshold=args.min_r2
+        min_r2_threshold=args.min_r2,
     )
 
     logger.info(

@@ -1,14 +1,16 @@
 import os
-import pandas as pd
-from core.db.repository import BlackFridayRepository
-from ml.features.data_contract import validate_raw_data
-from core.config import settings
-from ml.pipelines.common import invalidate_caches
-from core.logging import get_logger
-
 from typing import Optional
 
+import pandas as pd
+
+from core.config import settings
+from core.db.repository import BlackFridayRepository
+from core.logging import get_logger
+from ml.features.data_contract import validate_raw_data
+from ml.pipelines.common import invalidate_caches
+
 logger = get_logger(__name__)
+
 
 def run_ingestion(csv_path: Optional[str] = None):
     """Ingests raw CSV transaction data into raw_black_friday staging table via repository layer."""
@@ -36,6 +38,7 @@ def run_ingestion(csv_path: Optional[str] = None):
     invalidate_caches("analytics:*")
 
     logger.info("Raw data ingestion successfully finished.")
+
 
 if __name__ == "__main__":
     run_ingestion()

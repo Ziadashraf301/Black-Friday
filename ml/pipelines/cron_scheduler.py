@@ -10,17 +10,18 @@ environments. For distributed, multi-worker production deployments, scheduled jo
 should be migrated to a distributed task queue (e.g., Celery, ARQ, or APScheduler)
 with persistent locking to prevent concurrent overlapping executions across nodes.
 """
-import time
+
 import datetime
+import time
+
 from core.config import settings
 from core.db.repository import BlackFridayRepository
 from core.logging import get_logger
-
 from ml.pipelines.common import MODEL_CACHE_PATTERNS, invalidate_caches
-from ml.pipelines.segmentation import run_customer_segmentation
 from ml.pipelines.market_basket import run_market_basket_pipeline
 from ml.pipelines.monitor import run_production_drift_monitor
 from ml.pipelines.seed_curated import run_seed_curated_catalog
+from ml.pipelines.segmentation import run_customer_segmentation
 
 logger = get_logger(__name__)
 

@@ -1,11 +1,14 @@
-import pandas as pd
-import numpy as np
 from typing import Dict, Tuple
+
+import numpy as np
+import pandas as pd
 from sklearn.model_selection import train_test_split
+
 from core.config import settings
 from core.logging import get_logger
 
 logger = get_logger(__name__)
+
 
 class DataPreprocessor:
     """Handles IQR outlier detection, max-scaling, and train-test splits."""
@@ -35,7 +38,9 @@ class DataPreprocessor:
             )
 
         result_df = df.copy()
-        is_outlier = (result_df["purchase"] < self.outlier_bounds["lower"]) | (result_df["purchase"] > self.outlier_bounds["upper"])
+        is_outlier = (result_df["purchase"] < self.outlier_bounds["lower"]) | (
+            result_df["purchase"] > self.outlier_bounds["upper"]
+        )
         result_df["is_outlier"] = is_outlier
         outlier_count = is_outlier.sum()
         logger.info(f"Tagged {outlier_count} outliers ({outlier_count / len(df) * 100:.2f}% of data).")

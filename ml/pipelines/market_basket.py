@@ -1,15 +1,17 @@
-import os
 import json
+import os
+
 import pandas as pd
+
+from core.config import settings
 from core.db.repository import BlackFridayRepository
+from core.logging import get_logger
 from ml.features.basket_encoder import TransactionBasketEncoder
 from ml.market_basket.apriori_engine import AprioriAssociationEngine
-from ml.market_basket.network_graph import ProductNetworkGraph
 from ml.market_basket.item2vec import Item2VecRecommender
+from ml.market_basket.network_graph import ProductNetworkGraph
 from ml.tracking.mlflow_tracker import MLflowTracker
 from ml.visualization.visualizer import Visualizer
-from core.config import settings
-from core.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -18,7 +20,8 @@ GRAPH_SOURCE = "apriori+item2vec"
 
 
 def run_market_basket_pipeline():
-    """Extracts baskets, mines Apriori rules & Item2Vec embeddings, computes graph centrality, logs telemetry to MLflow, and stores metrics.
+    """Extracts baskets, mines Apriori rules & Item2Vec embeddings, computes graph centrality,
+    logs telemetry to MLflow, and stores metrics.
 
     The product network is always built from both sources (see ProductNetworkGraph.build_unified_metrics).
     """
@@ -92,7 +95,7 @@ def run_market_basket_pipeline():
             "window": window,
             "min_count": min_count,
             "epochs": epochs,
-            "graph_source": GRAPH_SOURCE
+            "graph_source": GRAPH_SOURCE,
         },
         "metrics": {
             "total_baskets": len(baskets),
@@ -102,8 +105,8 @@ def run_market_basket_pipeline():
             "avg_rule_confidence": round(float(rules_df["confidence"].mean()), 4) if not rules_df.empty else 0.0,
             "avg_rule_lift": round(float(rules_df["lift"].mean()), 4) if not rules_df.empty else 0.0,
             "product_network_nodes": len(metrics_df),
-            **item2vec_metrics
-        }
+            **item2vec_metrics,
+        },
     }
     with open(summary_json_path, "w", encoding="utf-8") as f:
         json.dump(summary_data, f, indent=2)
@@ -111,11 +114,7 @@ def run_market_basket_pipeline():
     charts = Visualizer.generate_market_basket_charts(rules_df, metrics_df, item2vec=item2vec, output_dir=reports_dir)
 
     # 7. Log Run to MLflow
-    artifacts = {
-        "market_basket_summary": summary_json_path,
-        **csv_artifacts,
-        **charts
-    }
+    artifacts = {"market_basket_summary": summary_json_path, **csv_artifacts, **charts}
 
     run_id = tracker.log_run(
         run_name="market_basket_product_network",
@@ -124,9 +123,9 @@ def run_market_basket_pipeline():
         tags={
             "pipeline_stage": "market_basket_network",
             "algorithm": "Apriori_Item2Vec_NetworkGraph",
-            "graph_source": GRAPH_SOURCE
+            "graph_source": GRAPH_SOURCE,
         },
-        artifacts=artifacts
+        artifacts=artifacts,
     )
 
     logger.info(f"Market basket and product network analysis pipeline complete. MLflow Run ID: {run_id}")
