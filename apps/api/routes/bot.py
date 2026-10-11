@@ -11,7 +11,7 @@ from typing import Optional, Dict, Any, List, AsyncGenerator
 import json
 import asyncio
 import base64
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, Depends, Request
 from fastapi.responses import StreamingResponse
 from langchain_core.messages import HumanMessage
@@ -20,7 +20,7 @@ from ai.workflow.graph import shopping_graph
 from ai.workflow.state import AgentState
 from ai.services.cache_service import cache_service
 from ai.guardrails.strike_tracker import strike_tracker
-from apps.api.client_identity import bot_user_id
+from apps.api.client_identity import DEFAULT_SESSION_ID, bot_user_id, guest_user_id, sanitize_session_id
 from apps.api.rate_limiting.rate_limiter import rate_limit_client_dependency
 from core.config import settings
 from core.logging import get_logger
@@ -29,6 +29,7 @@ logger = get_logger(__name__)
 
 router = APIRouter(prefix="/bot", tags=["Conversational AI Assistant"])
 
+SESSION_ID_PATTERN = r"^[A-Za-z0-9_.:-]+$"
 TOKEN_STREAM_REGEX = re.compile(r"\S+\s*|\s+")
 
 
@@ -171,7 +172,7 @@ async def sse_response_generator(
 class BotStreamRequest(BaseModel):
     query: str
     user_id: Optional[str] = None  # Deprecated and ignored: identity comes from the Bearer JWT
-    session_id: str = "default_session"
+    session_id: str = Field(DEFAULT_SESSION_ID, pattern=SESSION_ID_PATTERN, max_length=64)
     mode: str = "text"
 
 
@@ -181,14 +182,17 @@ class BotStreamRequest(BaseModel):
     dependencies=[Depends(rate_limit_client_dependency)],
 )
 async def bot_stream_get_endpoint(
+    request: Request,
     query: str = Query(..., description="User search or conversational inquiry"),
-    user_id: str = Depends(bot_user_id),
-    session_id: str = Query("default_session", description="Session identifier"),
+    session_id: str = Query(
+        DEFAULT_SESSION_ID, pattern=SESSION_ID_PATTERN, max_length=64, description="Session identifier"
+    ),
 ):
     """
     Server-Sent Events endpoint streaming token-by-token responses,
     synchronized product cards, and website catalog citations via GET.
     """
+    user_id = bot_user_id(request, session_id)
     return StreamingResponse(
         sse_response_generator(query=query, user_id=user_id, session_id=session_id),
         media_type="text/event-stream",
@@ -205,11 +209,12 @@ async def bot_stream_get_endpoint(
     summary="Text-to-Text SSE Stream with Product Cards (POST)",
     dependencies=[Depends(rate_limit_client_dependency)],
 )
-async def bot_stream_post_endpoint(payload: BotStreamRequest, user_id: str = Depends(bot_user_id)):
+async def bot_stream_post_endpoint(request: Request, payload: BotStreamRequest):
     """
     Server-Sent Events endpoint streaming token-by-token responses,
     synchronized product cards, and website catalog citations via POST.
     """
+    user_id = bot_user_id(request, payload.session_id)
     return StreamingResponse(
         sse_response_generator(query=payload.query, user_id=user_id, session_id=payload.session_id),
         media_type="text/event-stream",
@@ -295,8 +300,9 @@ async def bot_live_websocket(websocket: WebSocket):
 
             # Process User Query (from voice transcription or text)
             query_text = data.get("query") or data.get("text") or ""
-            user_id = auth_user_id or "guest_voice_shopper"  # client-supplied user_id is ignored
-            session_id = data.get("session_id", "live_session")
+            session_id = sanitize_session_id(data.get("session_id", "live_session"))
+            # client-supplied user_id is ignored; guests get a per-(address, session) id
+            user_id = auth_user_id or guest_user_id(client_ip, session_id)
 
             if user_id and strike_tracker.is_banned(str(user_id)):
                 await websocket.send_json({

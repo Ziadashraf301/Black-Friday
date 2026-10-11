@@ -32,16 +32,16 @@ def test_post_uses_jwt_user_not_body_user_id(captured):
 def test_post_without_token_is_guest_even_if_body_claims_user(captured):
     client = TestClient(app)
     client.post("/bot/stream", json={"query": "hi", "user_id": "victim"})
-    assert captured == ["guest_user"]
+    assert len(captured) == 1 and captured[0].startswith("guest_")
 
 
 def test_get_ignores_user_id_query_and_header(captured):
     client = TestClient(app)
     client.get("/bot/stream?query=hi&user_id=victim", headers={"X-User-ID": "victim"})
-    assert captured == ["guest_user"]
+    assert len(captured) == 1 and captured[0].startswith("guest_")
 
 
 def test_get_with_invalid_token_is_guest(captured):
     client = TestClient(app)
     client.get("/bot/stream?query=hi", headers={"Authorization": "Bearer garbage"})
-    assert captured == ["guest_user"]
+    assert len(captured) == 1 and captured[0].startswith("guest_")
