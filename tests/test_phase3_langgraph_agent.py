@@ -207,8 +207,10 @@ def test_support_agent_node_tracking_and_policies():
     res_track = shopping_graph.invoke(track_state)
     order = res_track.get("order_status")
     assert order is not None
+    # A guest-style id owns no orders, so the lookup reports "Not Found" instead of inventing a status
     assert order["order_id"] == "ORD-9842"
-    assert order["status"] == "Delivered"
+    assert order["status"] == "Not Found"
+    assert "couldn't find that order" in res_track["final_response"]
 
     # Policy
     policy_state: AgentState = {

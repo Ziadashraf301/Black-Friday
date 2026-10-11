@@ -14,6 +14,7 @@ from ai.schemas import CartItem, CartState
 from core.cache.redis_client import RedisCacheManager, cache_manager
 from core.config import settings
 from core.db.repository import BlackFridayRepository
+from core.exceptions import DomainError
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -131,18 +132,6 @@ class CartManagementTool:
             if matched_id:
                 return self._lookup_product_info(matched_id)
 
-        # Default fallback
-        if clean_id:
-            return {
-                "product_id": clean_id,
-                "name": f"Product {clean_id}",
-                "discounted_price": 49.99,
-                "original_price": 79.99,
-                "sizes": ["S", "M", "L", "XL"],
-                "image_url": f"/products/{clean_id}.jpg",
-                "category_name": "Apparel",
-            }
-
         return None
 
     def modify_cart(
@@ -172,16 +161,17 @@ class CartManagementTool:
             clean_id = f"P{clean_id.zfill(8)}"
 
         if act == "add":
+            if not clean_id:
+                raise DomainError("No product was specified to add to the cart.", code="PRODUCT_REQUIRED")
             prod_info = self._lookup_product_info(clean_id)
             if not prod_info:
-                clean_id = clean_id or "P00025442"
-                prod_info = self._lookup_product_info(clean_id)
+                raise DomainError(f"Product {clean_id} is not in our catalog.", code="UNKNOWN_PRODUCT")
 
-            target_pid = prod_info["product_id"] if prod_info else (clean_id or "P00025442")
-            name = prod_info["name"] if prod_info else f"Product {target_pid}"
-            unit_price = prod_info["discounted_price"] if prod_info else 49.99
-            img_url = prod_info["image_url"] if prod_info else f"/products/{target_pid}.jpg"
-            available_sizes = prod_info["sizes"] if prod_info else ["M"]
+            target_pid = prod_info["product_id"]
+            name = prod_info["name"]
+            unit_price = prod_info["discounted_price"]
+            img_url = prod_info["image_url"]
+            available_sizes = prod_info["sizes"]
             chosen_size = (size or available_sizes[0]).upper()
 
             # Catalog size validation (Phase 4 - Task P4-06); there is no inventory, only listed sizes

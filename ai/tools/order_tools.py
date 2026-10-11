@@ -6,7 +6,6 @@ Connected to PostgreSQL (user_purchases, curated_products) and PolicyKnowledgeBa
 """
 
 import re
-import zlib
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 
@@ -36,13 +35,6 @@ class OrderSupportTool:
                 self._repo = None
         return self._repo
 
-    # Fixed demo orders that exist for every shopper (offline demos and tests); real orders always win.
-    DEMO_ORDER_STATUS = {
-        "ORD-9842": "Delivered",
-        "ORD-1102": "Out for Delivery",
-        "ORD-5541": "Shipped",
-    }
-
     def track_order(self, order_id: Optional[str], user_id: Optional[str] = None) -> OrderStatus:
         """
         Looks up delivery status for one of the caller's own orders.
@@ -56,22 +48,7 @@ class OrderSupportTool:
         if db_order:
             return db_order
 
-        if clean_id in self.DEMO_ORDER_STATUS:
-            return self._demo_order(clean_id)
-
         return OrderStatus(order_id=clean_id or "LATEST", status="Not Found", carrier="", items_count=0)
-
-    def _demo_order(self, order_id: str) -> OrderStatus:
-        now = datetime.now(timezone.utc)
-        return OrderStatus(
-            order_id=order_id,
-            status=self.DEMO_ORDER_STATUS[order_id],
-            carrier="FedEx Priority",
-            tracking_number=f"FX{zlib.crc32(order_id.encode('utf-8')) % 10000000000:010d}",
-            estimated_delivery=(now + timedelta(days=2)).strftime("%B %d, %Y"),
-            items=[{"product_id": "P00025442", "name": "Artisan Paisley Silk Kimono Shirt", "size": "L"}],
-            return_eligible_until=(now + timedelta(days=60)).strftime("%B %d, %Y"),
-        )
 
     def _query_database_order(self, order_id: str, user_id: Optional[str] = None) -> Optional[OrderStatus]:
         """Reads one purchase owned by `user_id` (by order number, else the latest). Guests own no orders."""

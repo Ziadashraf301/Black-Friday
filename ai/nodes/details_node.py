@@ -6,6 +6,7 @@ Fetches comprehensive specifications, materials, and care instructions for catal
 import re
 from typing import Any, Dict
 
+from ai.schemas.identity import ASK_WHICH_PRODUCT, unknown_product_message
 from ai.schemas.state import AgentState
 from ai.tools.catalog_tools import catalog_details_tool
 from core.logging import get_logger
@@ -30,11 +31,17 @@ def details_agent_node(state: AgentState) -> Dict[str, Any]:
             raw_digits = p_match.group(1).upper().replace("O", "0")
             product_ids = [f"P{raw_digits.zfill(8)}"]
 
-    target_pid = product_ids[0] if product_ids else "P00025442"
+    if not product_ids:
+        logger.info("[GRAPH: DETAILS-NODE] No product resolved from the query; asking the shopper")
+        return {"clarification": ASK_WHICH_PRODUCT, "current_node": "details_agent_node"}
+
+    target_pid = product_ids[0]
     logger.info(f"[GRAPH: DETAILS-NODE] Fetching details for product_id={target_pid}")
 
     details = catalog_details_tool.get_details(target_pid)
     details_payload = details.model_dump() if details else None
+    if details_payload is None:
+        return {"clarification": unknown_product_message(target_pid), "current_node": "details_agent_node"}
 
     cards = []
     if details_payload and details_payload.get("product_id"):

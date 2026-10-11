@@ -23,6 +23,12 @@ def last_str_reducer(a: Optional[str], b: Optional[str]) -> Optional[str]:
     return b if b is not None else a
 
 
+def join_unique_reducer(a: Optional[str], b: Optional[str]) -> Optional[str]:
+    """Combines questions from parallel specialists, dropping repeats."""
+    parts = list(dict.fromkeys(x for x in (a, b) if x))
+    return " ".join(parts) if parts else None
+
+
 class UICard(TypedDict, total=False):
     """Unified UI card schema for catalog, bundle, detail, and promo displays."""
 
@@ -177,6 +183,9 @@ class AgentState(TypedDict, total=False):
     is_cache_hit: Optional[bool]
     cache_tier: Optional[str]
 
+    # Question for the shopper when a specialist could not resolve which product they mean
+    clarification: Annotated[Optional[str], join_unique_reducer]
+
     # Execution control with parallel-safe reducers
     current_node: Annotated[Optional[str], last_str_reducer]
     error_message: Annotated[Optional[str], last_str_reducer]
@@ -191,4 +200,5 @@ __all__ = [
     "ui_payload_reducer",
     "merge_dicts",
     "last_str_reducer",
+    "join_unique_reducer",
 ]

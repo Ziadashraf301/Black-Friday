@@ -75,8 +75,7 @@ def test_guest_cannot_read_real_orders(orders):
     assert tool.track_order(f"ORD-{ids['alice_new']}", None).status == "Not Found"
 
 
-def test_demo_orders_are_stable_across_calls():
+def test_former_demo_order_ids_are_not_answered_for_everyone():
     tool = OrderSupportTool()
-    a = tool.track_order("ORD-1102", "guest_x")
-    assert a.status == "Out for Delivery"
-    assert a.tracking_number == tool.track_order("ORD-1102", "guest_y").tracking_number
+    for order_id in ("ORD-9842", "ORD-1102", "ORD-5541"):
+        assert tool.track_order(order_id, "guest_x").status == "Not Found"

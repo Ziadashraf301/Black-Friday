@@ -164,7 +164,20 @@ class SynthesisService:
     def _is_cacheable(cls, state: AgentState, intent: str) -> bool:
         """True when the answer depends only on the query and the shared catalog, not on the shopper's own data."""
         intents = {intent, *(state.get("target_intents") or [])}
-        return not (intents & cls.PERSONAL_INTENTS) and not state.get("cart") and not state.get("order_status")
+        personal = state.get("cart") or state.get("order_status")
+        return not (intents & cls.PERSONAL_INTENTS) and not personal and not state.get("clarification")
+
+    @staticmethod
+    def _clarification_only(question: str, intent: str, ui_payload: Dict[str, Any]) -> Dict[str, Any]:
+        """Final update when the only thing to say is a question to the shopper (never cached)."""
+        return {
+            "messages": [AIMessage(content=question, additional_kwargs={"intent": intent, "ui_type": "clarification"})],
+            "final_response": question,
+            "ui_payload": {**ui_payload, "type": "clarification", "data": {}},
+            "is_cache_hit": False,
+            "cache_tier": "NONE",
+            "current_node": "response_synthesis_node",
+        }
 
     def synthesize(self, state: AgentState) -> Dict[str, Any]:
         """Main synthesis orchestrator generating response text and unified UI payload."""
@@ -292,6 +305,12 @@ class SynthesisService:
             policy=policy,
         )
 
+        clarification = state.get("clarification")
+        has_content = bool(retrieved or details or bundles or cart or order_status or policy)
+        if clarification and not has_content:
+            # Nothing to ground an answer in: ask the question instead of calling the LLM
+            return self._clarification_only(clarification, intent, final_ui_payload)
+
         llm_text = self.generate_llm_rag(context_block, query)
         final_text = (
             llm_text
@@ -307,6 +326,9 @@ class SynthesisService:
                 policy=policy,
             )
         )
+
+        if clarification:
+            final_text = f"{final_text}\n\n{clarification}"
 
         ai_msg = AIMessage(
             content=final_text,

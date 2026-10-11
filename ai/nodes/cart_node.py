@@ -6,9 +6,10 @@ Executes stateful cart actions (add, remove, change size, clear, view subtotal).
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
-from ai.schemas.identity import GUEST_USER_ID
+from ai.schemas.identity import ASK_WHICH_PRODUCT, GUEST_USER_ID, unknown_product_message
 from ai.schemas.state import AgentState
 from ai.tools.cart_tools import cart_tool
+from core.exceptions import DomainError
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -54,15 +55,23 @@ def cart_agent_node(state: AgentState) -> Dict[str, Any]:
 
     logger.info(f"[GRAPH: CART-NODE] Executing cart action={action}, pid={target_pid}, size={target_size}")
 
-    updated_cart = cart_tool.modify_cart(
-        user_id=user_id,
-        session_id=session_id,
-        action=action,
-        product_id=target_pid,
-        size=old_size if action == "update_size" else target_size,
-        new_size=new_size if action == "update_size" else None,
-        quantity=1,
-    )
+    if action == "add" and not target_pid:
+        logger.info("[GRAPH: CART-NODE] Add requested without a resolvable product; asking the shopper")
+        return {"clarification": ASK_WHICH_PRODUCT, "current_node": "cart_agent_node"}
+
+    try:
+        updated_cart = cart_tool.modify_cart(
+            user_id=user_id,
+            session_id=session_id,
+            action=action,
+            product_id=target_pid,
+            size=old_size if action == "update_size" else target_size,
+            new_size=new_size if action == "update_size" else None,
+            quantity=1,
+        )
+    except DomainError as e:
+        logger.info(f"[GRAPH: CART-NODE] Cart change rejected: {e}")
+        return {"clarification": unknown_product_message(target_pid or "that item"), "current_node": "cart_agent_node"}
 
     return {
         "cart": updated_cart.model_dump(),
