@@ -75,9 +75,11 @@ class StrikeTracker:
         if self._cache.is_available and self._cache.client is not None:
             try:
                 raw_client = self._cache.client
-                strikes = raw_client.incr(strike_key)
-                if strikes == 1:
-                    raw_client.expire(strike_key, ttl)
+                # One transaction, so a crash between INCR and EXPIRE cannot leave a counter that never expires
+                pipe = raw_client.pipeline(transaction=True)
+                pipe.incr(strike_key)
+                pipe.expire(strike_key, ttl, nx=True)
+                strikes = int(pipe.execute()[0])
                 if strikes >= self.MAX_STRIKES:
                     raw_client.setex(ban_key, ttl, "BANNED_FOR_24H")
                     logger.warning(
