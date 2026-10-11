@@ -103,8 +103,28 @@ Result: **299 passed, 1 failed, 1 deselected (the hang)**, 301 tests, ~8 min. Co
 | PIPE-12 | ML pipelines | `make train` always promotes the best model of that run to champion, even if it is worse than the current champion (e.g. `MODEL=decision_tree`), and picks it on the same test split it reports. Decision: `make train` promotes only if the best model beats the current champion scored on the same current test split (`score_local_champion`, shared with retrain); with no scorable champion it promotes. Otherwise the champion is kept and a warning is logged. | `ml/pipelines/train.py` | medium | fixed | 050d394 |
 | PIPE-13 | ML features | `frequency` in the customer features is the number of distinct products, not the number of purchases. Changing it alters the clusters and personas. Decision: no behaviour change; documented in the docstring and a log line, and a test pins it. Deferred to round 2. | `ml/features/customer_features.py` | low | deferred | 9b01263 |
 | PIPE-14 | ML pipelines | Report directories are relative to the cwd in preprocess/train/retrain/monitor but use `BASE_DIR` in segmentation/market basket. Decision: a `reports_dir()` helper anchors every report path at `BASE_DIR`. | `ml/pipelines/*.py` | low | fixed | 5c330bc |
+| ANL-1 | ML analytics | The VIP rule in `resolve_cluster_persona` ignored gender, so a high-spending female cluster got the male-only persona 9/10. Now only non-female clusters can be VIP; females fall through to personas 1-8. Live data is unaffected (its VIP clusters are male). | `ml/segmentation/clustering.py` | medium | fixed | 4465b99 |
+| ANL-2 | ML analytics | Several raw clusters can resolve to the same persona and are silently reported as one, so fewer than 10 personas result. A warning now names the collapsed persona ids. Live run still gives all 10. | `ml/segmentation/clustering.py` | low | fixed | 22a1a5e |
+| ANL-3 | ML analytics | VIP thresholds (2.5M LTV, 300 products) were hard-coded. Now `SEGMENT_VIP_MIN_LTV` / `SEGMENT_VIP_MIN_FREQUENCY`, same defaults. | `core/config.py`, `ml/segmentation/clustering.py` | low | fixed | 1fc9c2b |
+| ANL-4 | ML analytics | `k_clusters=settings.K_CLUSTERS` was bound at import time; fewer than 2 customers crashed inside scipy. Default is read at construction and a clear `ValueError` is raised. | `ml/segmentation/clustering.py` | low | fixed | 4a9e2ed |
+| ANL-5 | ML analytics | Rules with lift below 1 were labelled `1-2`. They now get `<1`. Nothing in the code reads `lift_level`. | `ml/market_basket/apriori_engine.py` | low | fixed | 8707620 |
+| ANL-6 | ML analytics | `mine_rules` left the previous run's rules in `self.rules` when a later run found nothing. Reset at the start. | `ml/market_basket/apriori_engine.py` | low | fixed | 831af3d |
+| ANL-7 | ML analytics | Item2Vec trained with 4 workers, so runs were not reproducible. Now one worker and `RANDOM_SEED`. The test does not fail on the old code with tiny data; the gensim default seed was already fixed, so the guarantee comes from `workers=1`. | `ml/market_basket/item2vec.py` | low | fixed | 18adeef |
+| ANL-8 | ML analytics | Class defaults (`min_count=5`) differed from settings (2); `get_all_similar_products` swallowed every exception. Defaults follow settings and the try/except is gone. | `ml/market_basket/item2vec.py` | low | fixed | 64e9846 |
+| ANL-9 | ML analytics | Item2Vec uses `window=5` on baskets listed in first-appearance order, which has no meaning, so which products count as co-bought depends on row order. The Item2Vec paper uses the whole basket as the window (slower, changes every embedding, the recommendations and the graph). Modelling decision. | `ml/market_basket/item2vec.py`, `ml/features/basket_encoder.py` | medium | deferred | |
+| ANL-10 | ML analytics | HITS ignores edge weights (undocumented) and the fallback caught every exception. Documented; only `PowerIterationFailedConvergence` falls back. | `ml/market_basket/network_graph.py` | low | fixed | 87e1747 |
+| ANL-11 | ML analytics | `SEGMENTATION_LINKAGE` was a setting nobody read (linkage was hard-coded `complete`). Now used, same default. `SEGMENTATION_METRIC` is still unused (Gower is the only metric implemented). | `ml/segmentation/clustering.py` | low | fixed | bf7bfa7 |
 
 - Housekeeping: 4145d34 untracked the 12 committed `.pyc` files and added `*.py[cod]` to `.gitignore` (`__pycache__/` was already listed).
+
+## Refactors (step 6, behaviour-preserving)
+
+- persona lookup as one table, one column-mapping loop, black/isort (line length 127) on `ml/segmentation`
+- lift buckets as a table, single best-edge lookup, black/isort on `ml/market_basket`
+
+Skipped from /simplify: a shared similarity-map helper between `Item2VecRecommender` and `ProductNetworkGraph._extract_similarity_map` (the fallback serves raw gensim models and changes error handling), vectorising the `iterrows` loops (not hot).
+
+Related tests (each file run separately): tests/test_anl_step6, test_segmentation, test_pipe_step5, test_architecture, test_phase4_bundles.
 
 ## Refactors (step 5, behaviour-preserving)
 

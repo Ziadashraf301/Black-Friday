@@ -31,7 +31,7 @@
 - [x] **3. Core:** `core` (config, db + repositories, cache, tracking, embeddings).
 - [x] **4. ML serving:** `ml/serving`, `ml/models` (ONNX loading, input schema mismatches, metrics).
 - [x] **5. ML pipelines:** `ml/pipelines`, `ml/features` (data leakage, champion/challenger promotion, drift thresholds, cron cache flush).
-- [ ] **6. ML analytics:** `ml/segmentation`, `ml/market_basket`.
+- [x] **6. ML analytics:** `ml/segmentation`, `ml/market_basket`.
 - [ ] **7. AI assistant:** `ai` (guardrails, prompt injection, LangGraph workflow, tool errors).
 - [ ] **8. Frontend:** `apps/reflex_app`, level `low`.
 - [ ] **9. Infra:** `docker-compose.yml`, `docker/`, `.github/workflows/`, `Makefile`, `requirements.txt` (misconfigurations, secrets, unpinned versions, CI gaps).
