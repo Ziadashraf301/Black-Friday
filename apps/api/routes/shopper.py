@@ -2,7 +2,7 @@
 Shopper routes — catalog browsing, recommendations, tailored pricing, and purchase history.
 """
 from typing import List, Dict, Any, Optional
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from apps.api.schemas import (
     CatalogProductItem, BrowseProductResponse,
@@ -13,7 +13,7 @@ from apps.api.schemas import (
     PurchaseHistoryResponse
 )
 from apps.api.dependencies import get_repository
-from apps.api.auth import get_current_user, get_optional_user
+from apps.api.auth import get_current_user
 from apps.api.rate_limiting.rate_limiter import rate_limit_dependency
 from apps.api.services.shopper_service import shopper_service
 from core.db.repository import BlackFridayRepository
@@ -29,7 +29,7 @@ def get_curated_catalog():
 
 @router.get("/catalog", response_model=List[CatalogProductItem])
 def get_product_catalog(
-    limit: int = 100,
+    limit: int = Query(100, ge=1, le=500),
     repo: BlackFridayRepository = Depends(get_repository),
 ):
     """Returns top products for catalog browsing."""
@@ -50,18 +50,16 @@ def browse_product(
 @router.post("/predict-price-batch", response_model=ShopperBatchPredictResponse)
 def predict_price_batch(
     request: ShopperBatchPredictRequest,
-    current_user: Optional[Dict[str, Any]] = Depends(get_optional_user),
+    current_user: Dict[str, Any] = Depends(rate_limit_dependency),
     repo: BlackFridayRepository = Depends(get_repository),
 ):
     """Calculates personalized batch quotes for high-concurrency cart processing."""
-    user_id = current_user.get("user_id") if current_user else None
+    user_id = current_user.get("user_id")
     user_demo = {
-        "gender": current_user.get("gender") if current_user else None,
-        "age": current_user.get("age") if current_user else None,
-        "city_category": current_user.get("city_category") if current_user else None,
-        "marital_status": current_user.get("marital_status") if current_user else None,
-        "occupation": current_user.get("occupation") if current_user else None,
-        "stay_in_current_city_years": current_user.get("stay_in_current_city_years") if current_user else None,
+        key: current_user.get(key)
+        for key in (
+            "gender", "age", "city_category", "marital_status", "occupation", "stay_in_current_city_years",
+        )
     }
     quotes = shopper_service.estimate_price_batch(
         items=[item.model_dump() for item in request.items],

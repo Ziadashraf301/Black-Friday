@@ -6,7 +6,7 @@ from apps.api.routes import shopper
 from core.security import create_access_token
 
 
-def test_shopper_predict_price_batch_unauthenticated(monkeypatch):
+def test_shopper_predict_price_batch_requires_auth(monkeypatch):
     mock_quotes = [
         {
             "product_id": "P000001",
@@ -30,8 +30,11 @@ def test_shopper_predict_price_batch_unauthenticated(monkeypatch):
         ],
     }
 
-    # Should succeed without Authorization header (guest caller)
-    resp = client.post("/shopper/predict-price-batch", json=payload)
+    # Guests are rejected (API-3); the Reflex UI only calls this endpoint with a token
+    assert client.post("/shopper/predict-price-batch", json=payload).status_code in (401, 403)
+
+    token = create_access_token({"sub": "778", "email": "shopper@test.com"})
+    resp = client.post("/shopper/predict-price-batch", json=payload, headers={"Authorization": f"Bearer {token}"})
     assert resp.status_code == 200
     data = resp.json()
     assert "quotes" in data
