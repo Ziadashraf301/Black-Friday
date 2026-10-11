@@ -122,22 +122,27 @@ class DecisionTreeModel(AbstractBaseModel):
 
 
 def _parse_max_features(val: Any) -> Any:
+    """Normalises RF_MAX_FEATURES with sklearn semantics: int = feature count, float in (0, 1] = fraction."""
     if val is None or str(val).lower() in ("none", "null"):
         return 1.0
+    if isinstance(val, str):
+        text = val.strip().lower()
+        if text in ("sqrt", "log2"):
+            return text
+        try:
+            val = int(text)
+        except ValueError:
+            try:
+                val = float(text)
+            except ValueError:
+                return 1.0
     if isinstance(val, int):
-        return val
+        return val if val >= 1 else 1.0
     if isinstance(val, float):
-        return int(val) if val.is_integer() and val >= 1 else val
-    try:
-        f_val = float(val)
-        if 0.0 < f_val <= 1.0:
-            return f_val
-        if f_val.is_integer() and f_val >= 1:
-            return int(f_val)
-    except (ValueError, TypeError):
-        pass
-    if str(val).lower() in ("sqrt", "log2"):
-        return str(val).lower()
+        if 0.0 < val <= 1.0:
+            return val
+        if val.is_integer() and val > 1:
+            return int(val)
     return 1.0
 
 
