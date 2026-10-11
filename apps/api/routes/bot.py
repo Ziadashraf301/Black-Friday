@@ -283,6 +283,9 @@ async def bot_live_websocket(websocket: WebSocket):
                 try:
                     data = json.loads(message["text"])
                 except Exception:
+                    data = None
+                if not isinstance(data, dict):
+                    # Plain text or a non-object JSON frame (list/number/string) is treated as a raw query
                     data = {"type": "text", "query": message["text"]}
             elif "bytes" in message:
                 data = {"type": "audio", "bytes": message["bytes"]}
@@ -360,9 +363,9 @@ async def bot_live_websocket(websocket: WebSocket):
     except WebSocketDisconnect:
         logger.info(f"[WS: LIVE] Client disconnected: {client_ip}")
     except Exception as e:
-        logger.error(f"[WS: LIVE] Error in live voice session: {e}")
+        logger.error(f"[WS: LIVE] Error in live voice session: {e}", exc_info=True)
         try:
-            await websocket.send_json({"type": "error", "message": str(e)})
+            await websocket.send_json({"type": "error", "message": "Live session failed. Please try again."})
         except Exception:
             pass
 
