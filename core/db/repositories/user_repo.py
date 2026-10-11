@@ -41,7 +41,7 @@ class UserRepository(BaseRepository):
 
             CREATE TABLE IF NOT EXISTS user_purchases (
                 id                   SERIAL PRIMARY KEY,
-                user_id              INTEGER REFERENCES app_users(user_id) ON DELETE CASCADE,
+                user_id              INTEGER NOT NULL REFERENCES app_users(user_id) ON DELETE CASCADE,
                 product_id           TEXT NOT NULL,
                 product_category_1   INTEGER,
                 product_category_2   INTEGER,
@@ -53,7 +53,16 @@ class UserRepository(BaseRepository):
         """
         with self.engine.begin() as conn:
             conn.execute(text(ddl))
+        self._require_purchase_user_id()
         logger.info("App tables (app_users, user_purchases) ensured.")
+
+    def _require_purchase_user_id(self):
+        """Brings a table created by an older DDL (nullable user_id) in line with the ORM model and init_schema.sql."""
+        try:
+            with self.engine.begin() as conn:
+                conn.execute(text("ALTER TABLE user_purchases ALTER COLUMN user_id SET NOT NULL"))
+        except Exception as err:
+            logger.warning(f"Could not make user_purchases.user_id NOT NULL (existing rows without a user?): {err}")
 
     def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
         query = text("SELECT * FROM app_users WHERE email = :email")
