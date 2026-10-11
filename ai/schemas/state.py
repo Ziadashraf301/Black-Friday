@@ -138,6 +138,8 @@ class AgentState(TypedDict, total=False):
     query: str
     user_id: str
     session_id: str
+    # Set by callers that must not be answered from the response caches
+    bypass_cache: bool
 
     # Guardrail & System-1 Routing Outputs
     intent: Optional[str]
