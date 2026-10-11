@@ -109,6 +109,9 @@ class Settings(BaseSettings):
     K_CLUSTERS: int = Field(default=10)
     SEGMENTATION_METRIC: str = Field(default="gower")
     SEGMENTATION_LINKAGE: str = Field(default="complete")
+    # A cluster is a VIP persona (9/10) when its mean lifetime value or mean distinct-product count exceeds these
+    SEGMENT_VIP_MIN_LTV: float = Field(default=2_500_000.0)
+    SEGMENT_VIP_MIN_FREQUENCY: float = Field(default=300.0)
 
     # Market Basket & Item2Vec Hyperparameters
     APRIORI_MIN_SUPPORT: float = Field(default=0.05)

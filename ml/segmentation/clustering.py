@@ -69,7 +69,7 @@ class CustomerSegmentationEngine:
     ) -> tuple[int, str, str]:
         """Dynamically matches a cluster's empirical demographic and spending profile to its true R persona."""
         # Check for ultra-high spending VIP clusters (clusters 9 and 10 in R)
-        if mean_ltv > 2_500_000 or mean_freq > 300:
+        if mean_ltv > settings.SEGMENT_VIP_MIN_LTV or mean_freq > settings.SEGMENT_VIP_MIN_FREQUENCY:
             if marital_status == "Married":
                 return (
                     10,
