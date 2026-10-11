@@ -25,8 +25,8 @@ def support_agent_node(state: AgentState) -> Dict[str, Any]:
     policy_payload = None
 
     if order_m or "track" in query.lower() or "where is my" in query.lower():
-        order_id = order_m.group(1).upper() if order_m else "ORD-9842"
-        logger.info(f"[GRAPH: SUPPORT-NODE] Tracking order={order_id}")
+        order_id = order_m.group(1).upper() if order_m else None
+        logger.info(f"[GRAPH: SUPPORT-NODE] Tracking order={order_id or 'latest'}")
         order_status = order_tool.track_order(order_id=order_id, user_id=user_id)
         order_status_payload = order_status.model_dump()
     else:

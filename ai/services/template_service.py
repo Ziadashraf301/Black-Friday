@@ -76,6 +76,11 @@ class ResponseTemplateService:
                 response_lines.append(f"**Total**: **${cart.get('final_total', 0.0):.2f}**\n")
             else:
                 response_lines.append("Your shopping cart is currently empty.")
+        elif order_status and order_status.get("status") == "Not Found":
+            response_lines.append(
+                "I couldn't find that order on your account. Please check the order number "
+                "(for example ORD-1234) and make sure you are signed in."
+            )
         elif order_status:
             response_lines.append(f"### Order Status: **{order_status.get('order_id')}**\n")
             response_lines.append(f"- **Status**: **{order_status.get('status')}**")
