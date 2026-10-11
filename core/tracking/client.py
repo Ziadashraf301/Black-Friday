@@ -8,7 +8,6 @@ from typing import Optional, Dict, Any, List, Callable
 
 try:
     import mlflow
-    import mlflow.langchain
     from mlflow.tracking import MlflowClient
     from mlflow.entities import SpanType
     HAS_MLFLOW = True

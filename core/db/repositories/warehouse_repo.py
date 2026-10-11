@@ -588,5 +588,5 @@ class WarehouseRepository(BaseRepository):
                 })
             return True
         except Exception as e:
-            logger.debug(f"[CACHE: SEMANTIC] Failed to insert semantic cache entry: {e}")
+            logger.warning(f"[CACHE: SEMANTIC] Failed to insert semantic cache entry: {e}")
             return False
