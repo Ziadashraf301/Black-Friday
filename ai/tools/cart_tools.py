@@ -183,11 +183,10 @@ class CartManagementTool:
             available_sizes = prod_info["sizes"] if prod_info else ["M"]
             chosen_size = (size or available_sizes[0]).upper()
 
-            # Stock availability validation (Phase 4 - Task P4-06)
+            # Catalog size validation (Phase 4 - Task P4-06); there is no inventory, only listed sizes
             if self.repo:
-                has_stock = self.repo.check_product_stock(product_id=target_pid, size=chosen_size, quantity=quantity)
-                if not has_stock:
-                    logger.warning(f"[TOOL: CART] Size {chosen_size} out of stock for {target_pid}. Defaulting to in-stock size.")
+                if not self.repo.is_size_offered(product_id=target_pid, size=chosen_size):
+                    logger.warning(f"[TOOL: CART] Size {chosen_size} not offered for {target_pid}. Defaulting to first listed size.")
                     if available_sizes:
                         chosen_size = available_sizes[0].upper()
 

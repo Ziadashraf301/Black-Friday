@@ -23,10 +23,10 @@ class TestCartDurabilityAndStock:
 
     def test_stock_validation(self):
         # Product P00025442 exists with sizes ['S', 'M', 'L', 'XL']
-        assert self.repo.check_product_stock("P00025442", "M") is True
-        assert self.repo.check_product_stock("P00025442", "S") is True
+        assert self.repo.is_size_offered("P00025442", "M") is True
+        assert self.repo.is_size_offered("P00025442", "S") is True
         # Size that does NOT exist
-        assert self.repo.check_product_stock("P00025442", "XXXXL") is False
+        assert self.repo.is_size_offered("P00025442", "XXXXL") is False
 
     def test_dual_tier_save_and_cold_hydration(self):
         # 1. Clear cart

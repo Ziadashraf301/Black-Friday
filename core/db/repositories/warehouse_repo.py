@@ -528,8 +528,12 @@ class WarehouseRepository(BaseRepository):
                 return row[0] if isinstance(row[0], dict) else json.loads(row[0])
         return None
 
-    def check_product_stock(self, product_id: str, size: Optional[str] = None, quantity: int = 1) -> bool:
-        """Validates inventory and catalog sizing availability for a product."""
+    def is_size_offered(self, product_id: str, size: Optional[str] = None) -> bool:
+        """Returns True if the product exists in the curated catalog and, when given, offers the size.
+
+        There is no inventory table: every catalogued product is treated as always available in any quantity,
+        so this checks catalog membership and listed sizes only.
+        """
         clean_id = product_id.strip().upper()
         query = text(
             """

@@ -141,7 +141,7 @@ def test_bundle_pricing_and_stock_validation(repo):
     from ai.tools.bundle_tools import bundle_tool
 
     # Stock check
-    in_stock = repo.check_product_stock("P00025442")
+    in_stock = repo.is_size_offered("P00025442")
     assert isinstance(in_stock, bool)
 
     # Curate bundle for sample product
