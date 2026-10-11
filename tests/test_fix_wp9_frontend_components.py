@@ -141,6 +141,7 @@ def test_product_card_single_on_click():
         "name": "Vintage Denim Jacket",
         "category_name": "Jackets",
         "discounted_price": 59.90,
+        "price_display": "$59.90",
         "image_url": "/products/P00099.jpg",
     }
     comp = product_card(sample_prod)

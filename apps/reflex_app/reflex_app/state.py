@@ -168,8 +168,8 @@ class RecProduct(BaseModel):
     product_id: str = ""
     name: str = ""
     image_url: str = ""
-    price: float = 0.0
-    price_display: str = "$0.00"
+    price: Optional[float] = None
+    price_display: str = PRICE_UNAVAILABLE
     badge_label: str = ""
 
 
@@ -230,7 +230,7 @@ class ShoppingState(rx.State):
 
     # --- ONNX pricing ---
     cached_price_estimates: Dict[str, float] = {}
-    estimated_price_usd: float = 0.0
+    estimated_price_usd: Optional[float] = None
     price_prediction_model: str = ""
     is_predicting_price: bool = False
 
@@ -369,7 +369,7 @@ class ShoppingState(rx.State):
                 continue
             if self.selected_season != "All" and p.get("season") != self.selected_season:
                 continue
-            result.append(p)
+            result.append({**p, "price_display": _format_price(p.get("discounted_price"), missing="")})
         return result
 
     @rx.var
@@ -437,12 +437,12 @@ class ShoppingState(rx.State):
         return f"{self.active_product_orders:,} orders"
 
     @rx.var
-    def active_product_original_price(self) -> float:
-        return _price_or_none(self.active_product.get("original_price")) or 0.0
+    def active_product_original_price(self) -> Optional[float]:
+        return _price_or_none(self.active_product.get("original_price"))
 
     @rx.var
-    def active_product_sale_price(self) -> float:
-        return _price_or_none(self.active_product.get("discounted_price")) or 0.0
+    def active_product_sale_price(self) -> Optional[float]:
+        return _price_or_none(self.active_product.get("discounted_price"))
 
     @rx.var
     def active_sale_price_display(self) -> str:
@@ -480,7 +480,7 @@ class ShoppingState(rx.State):
                 product_id=pid,
                 name=str(item.get("name", default_name)),
                 image_url=str(item.get("image_url", f"/products/{pid}.jpg")),
-                price=p or 0.0,
+                price=p,
                 price_display=_format_price(p),
                 badge_label=badge,
             ))
@@ -771,51 +771,16 @@ class ShoppingState(rx.State):
         target = next((p for p in self.products if p.get("product_id") == product_id), None)
         if not target and self.hero_product.get("product_id") == product_id:
             target = self.hero_product
-        if not target:
-            target = self._fetch_product_from_api(product_id)
+        # A product outside the loaded catalog is skipped: nothing is made up for it
         if target:
             self.active_product = target
             self.active_selected_size = "M"
             self.is_quick_view_open = True
             base_price = _price_or_none(target.get("discounted_price"))
-            self.estimated_price_usd = base_price or 0.0
+            self.estimated_price_usd = base_price
             self.price_prediction_model = "Catalog Price" if base_price else PRICE_UNAVAILABLE
             if self.is_authenticated:
                 self.fetch_ai_price_estimate(target)
-
-    def _fetch_product_from_api(self, product_id: str) -> Optional[Dict[str, Any]]:
-        try:
-            with httpx.Client(timeout=3.0) as client:
-                resp = client.get(f"{API_BASE_URL}/shopper/browse/{product_id}")
-                if resp.status_code == 200:
-                    d = resp.json()
-                    return {
-                        "product_id": product_id,
-                        "name": f"Product {product_id}",
-                        "tagline": "Curated Archive Piece",
-                        "description": f"Archival collection item with {d.get('order_count', 0):,} verified purchases.",
-                        "category_name": "Archive",
-                        "product_category_1": 1,
-                        "image_url": f"/products/{product_id}.jpg",
-                        "order_count": d.get("order_count", 0),
-                        "sizes": ["S", "M", "L", "XL"],
-                        "badge": "Vintage",
-                        "gender": "Unisex",
-                        "brand": "Archive",
-                        "style": "Vintage",
-                        "season": "All-Season",
-                        "apriori_bundles": [
-                            {"product_id": pid, "name": f"Archive {pid}", "image_url": f"/products/{pid}.jpg"}
-                            for pid in d.get("apriori_bundles", [])[:3]
-                        ],
-                        "item2vec_similars": [
-                            {"product_id": pid, "name": f"Similar {pid}", "image_url": f"/products/{pid}.jpg"}
-                            for pid in d.get("item2vec_similar", [])[:3]
-                        ],
-                    }
-        except Exception:
-            pass
-        return None
 
     def navigate_to_rec(self, product_id: str):
         """Switch quick-view directly to a recommendation product without modal flicker."""
@@ -916,7 +881,7 @@ class ShoppingState(rx.State):
         except Exception:
             pass
         catalog_price = _price_or_none(product.get("discounted_price"))
-        self.estimated_price_usd = catalog_price or 0.0
+        self.estimated_price_usd = catalog_price
         self.price_prediction_model = "Catalog Price" if catalog_price else PRICE_UNAVAILABLE
         self.is_predicting_price = False
 
@@ -946,7 +911,7 @@ class ShoppingState(rx.State):
             if product_id in self.cached_price_estimates and self.cached_price_estimates[product_id] > 0:
                 pers_price = self.cached_price_estimates[product_id]
                 has_pers = True
-            elif self.active_product.get("product_id") == product_id and self.estimated_price_usd > 0:
+            elif self.active_product.get("product_id") == product_id and self.estimated_price_usd:
                 pers_price = self.estimated_price_usd
                 has_pers = True
 

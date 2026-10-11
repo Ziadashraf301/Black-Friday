@@ -63,20 +63,6 @@ def test_recommendation_without_a_price_has_no_invented_one():
     assert recs["P3"].price_display == "$12.50"
 
 
-def test_api_fetched_product_carries_no_invented_prices():
-    state = ShoppingState(_reflex_internal_init=True)
-    response = MagicMock(status_code=200)
-    response.json.return_value = {"order_count": 3, "apriori_bundles": ["P2"], "item2vec_similar": ["P3"]}
-    client = MagicMock()
-    client.__enter__.return_value.get.return_value = response
-
-    with patch("reflex_app.state.httpx.Client", return_value=client):
-        product = state._fetch_product_from_api("P9")
-
-    assert "original_price" not in product and "discounted_price" not in product
-    assert all("price" not in r for r in product["apriori_bundles"] + product["item2vec_similars"])
-
-
 def test_reprice_keeps_catalog_price_for_items_without_a_quote():
     state = ShoppingState(_reflex_internal_init=True)
     state.auth_token = "token"

@@ -67,11 +67,7 @@ def product_card(product: Dict[str, Any]) -> rx.Component:
                         ),
                         rx.text("•", font_size="0.75rem", color="#b0beb6"),
                         rx.text(
-                            product["discounted_price"].to_string()
-                            if hasattr(product["discounted_price"], "to_string")
-                            else f"${float(product['discounted_price']):.2f}"
-                            if isinstance(product.get("discounted_price"), (int, float))
-                            else str(product.get("discounted_price", "")),
+                            product["price_display"],
                             font_size="0.88rem",
                             font_weight="700",
                             color="#07281e",
