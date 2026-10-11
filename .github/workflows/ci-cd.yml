@@ -6,10 +6,18 @@ on:
   pull_request:
     branches: [ main, master ]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     name: Run Pytest Suite
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     services:
       postgres:
@@ -45,6 +53,9 @@ jobs:
         with:
           python-version: "3.11"
           cache: "pip"
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
 
       - name: Install Dependencies
         run: |
@@ -62,6 +73,6 @@ jobs:
           REDIS_HOST: localhost
           REDIS_PORT: 6379
         run: |
-          python -m pytest tests/ -v
+          python -m pytest tests/ -v --timeout=60
 
 
