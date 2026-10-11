@@ -1,5 +1,12 @@
+import json
+from types import SimpleNamespace
+
+import numpy as np
 import pandas as pd
 import pytest
+from sklearn.experimental import enable_iterative_imputer  # noqa: F401
+from sklearn.impute import IterativeImputer
+from sklearn.tree import DecisionTreeRegressor
 
 from ml.models.onnx_exporter import ONNXExporter
 from ml.models.regression import DecisionTreeModel, RandomForestModel, _parse_max_features
@@ -63,3 +70,17 @@ def test_export_accepts_bare_filename(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     assert ONNXExporter.export_regression_pipeline(model.pipeline, model.features, "bare.onnx") == "bare.onnx"
     assert (tmp_path / "bare.onnx").exists()
+
+
+def test_export_imputer_keeps_one_step_per_column(tmp_path):
+    cols = ["a", "b", "product_category_2", "product_category_3"]
+    rng = np.random.RandomState(0)
+    X = rng.randint(1, 10, size=(60, 4)).astype(float)
+    X[::5, 2] = np.nan
+    X[::7, 3] = np.nan
+    inner = IterativeImputer(estimator=DecisionTreeRegressor(max_depth=3), max_iter=3, random_state=0).fit(X)
+    assert len(inner.imputation_sequence_) > 2  # several iterations recorded
+
+    out = ONNXExporter.export_imputer(SimpleNamespace(imputer=inner, cols=cols), output_dir=str(tmp_path))
+    meta = json.loads(open(out["metadata"], encoding="utf-8").read())
+    assert sorted(s["target_col"] for s in meta["steps"]) == ["product_category_2", "product_category_3"]

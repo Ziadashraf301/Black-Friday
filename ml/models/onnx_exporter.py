@@ -168,33 +168,38 @@ class ONNXExporter:
         }
         saved_files = {}
 
+        # imputation_sequence_ holds one entry per feature per iteration; serving only needs the last fit of each.
+        last_step = {}
         for i, seq in enumerate(inner.imputation_sequence_):
-            feat_idx = int(seq.feat_idx)
-            col_name = cols[feat_idx]
+            col_name = cols[int(seq.feat_idx)]
             if col_name in ["product_category_2", "product_category_3"]:
-                onnx_filename = f"imputer_{col_name}.onnx"
-                onnx_filepath = os.path.join(output_dir, onnx_filename)
-                neighbor_indices = [int(idx) for idx in seq.neighbor_feat_idx]
+                last_step[col_name] = (i, seq)
 
-                initial_type = [("float_input", FloatTensorType([None, len(neighbor_indices)]))]
-                cls._save_onnx(
-                    model=seq.estimator,
-                    initial_types=initial_type,
-                    output_filepath=onnx_filepath,
-                    target_opset=target_opset
-                )
+        for col_name, (i, seq) in last_step.items():
+            feat_idx = int(seq.feat_idx)
+            onnx_filename = f"imputer_{col_name}.onnx"
+            onnx_filepath = os.path.join(output_dir, onnx_filename)
+            neighbor_indices = [int(idx) for idx in seq.neighbor_feat_idx]
 
-                step_info = {
-                    "step_index": i,
-                    "target_col": col_name,
-                    "target_idx": feat_idx,
-                    "neighbor_cols": [cols[idx] for idx in neighbor_indices],
-                    "neighbor_indices": neighbor_indices,
-                    "onnx_file": onnx_filename
-                }
-                metadata["steps"].append(step_info)
-                saved_files[col_name] = onnx_filepath
-                logger.info(f"Exported ONNX imputer model for '{col_name}' to: {onnx_filepath} ({os.path.getsize(onnx_filepath)/1024/1024:.2f} MB)")
+            initial_type = [("float_input", FloatTensorType([None, len(neighbor_indices)]))]
+            cls._save_onnx(
+                model=seq.estimator,
+                initial_types=initial_type,
+                output_filepath=onnx_filepath,
+                target_opset=target_opset
+            )
+
+            step_info = {
+                "step_index": i,
+                "target_col": col_name,
+                "target_idx": feat_idx,
+                "neighbor_cols": [cols[idx] for idx in neighbor_indices],
+                "neighbor_indices": neighbor_indices,
+                "onnx_file": onnx_filename
+            }
+            metadata["steps"].append(step_info)
+            saved_files[col_name] = onnx_filepath
+            logger.info(f"Exported ONNX imputer model for '{col_name}' to: {onnx_filepath} ({os.path.getsize(onnx_filepath)/1024/1024:.2f} MB)")
 
         meta_path = os.path.join(output_dir, "imputer_metadata.json")
         with open(meta_path, "w", encoding="utf-8") as f:
