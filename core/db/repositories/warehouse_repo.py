@@ -191,7 +191,6 @@ class WarehouseRepository(BaseRepository):
 
     def update_product_embedding(self, product_id: str, embedding: list, search_text: str = None) -> None:
         """Updates embedding vector and tsvector search text for a product."""
-        from sqlalchemy import text
         from core.db.session import get_db_session
         with get_db_session() as session:
             stmt = text("""
@@ -205,7 +204,6 @@ class WarehouseRepository(BaseRepository):
                 "stext": search_text or "",
                 "pid": product_id,
             })
-            session.commit()
 
     def _execute_rrf_query(
         self,
@@ -320,52 +318,32 @@ class WarehouseRepository(BaseRepository):
         """
         vec_str = "[" + ",".join(str(x) for x in query_vec) + "]"
 
-        # Tier 1: Strict search
-        results = self._execute_rrf_query(
-            query_vec_str=vec_str,
-            query_text=query_text,
-            target_categories=target_categories,
-            max_price=max_price,
-            size=size,
-            top_k=top_k,
-        )
-        if results:
-            for r in results:
-                r["relaxation_level"] = "TIER_1_STRICT"
-            return results, "TIER_1_STRICT"
-
-        # Tier 2: Relax size
+        tiers = [("TIER_1_STRICT", size, max_price)]
         if size is not None:
-            logger.info(f"[SEARCH: LADDER] Tier 1 yielded 0 results. Relaxing size='{size}' -> Tier 2")
-            results = self._execute_rrf_query(
-                query_vec_str=vec_str,
-                query_text=query_text,
-                target_categories=target_categories,
-                max_price=max_price,
-                size=None,
-                top_k=top_k,
-            )
-            if results:
-                for r in results:
-                    r["relaxation_level"] = "TIER_2_RELAX_SIZE"
-                return results, "TIER_2_RELAX_SIZE"
-
-        # Tier 3: Relax budget (+25%)
+            tiers.append(("TIER_2_RELAX_SIZE", None, max_price))
         if max_price is not None:
-            expanded_budget = round(max_price * 1.25, 2)
-            logger.info(f"[SEARCH: LADDER] Tier 2 yielded 0 results. Expanding budget ${max_price:.2f} -> ${expanded_budget:.2f} (+25%) -> Tier 3")
+            tiers.append(("TIER_3_RELAX_BUDGET", None, round(max_price * 1.25, 2)))
+
+        for level, tier_size, tier_budget in tiers:
+            if level == "TIER_2_RELAX_SIZE":
+                logger.info(f"[SEARCH: LADDER] Tier 1 yielded 0 results. Relaxing size='{size}' -> Tier 2")
+            elif level == "TIER_3_RELAX_BUDGET":
+                logger.info(
+                    f"[SEARCH: LADDER] Tier 2 yielded 0 results. Expanding budget ${max_price:.2f} -> "
+                    f"${tier_budget:.2f} (+25%) -> Tier 3"
+                )
             results = self._execute_rrf_query(
                 query_vec_str=vec_str,
                 query_text=query_text,
                 target_categories=target_categories,
-                max_price=expanded_budget,
-                size=None,
+                max_price=tier_budget,
+                size=tier_size,
                 top_k=top_k,
             )
             if results:
                 for r in results:
-                    r["relaxation_level"] = "TIER_3_RELAX_BUDGET"
-                return results, "TIER_3_RELAX_BUDGET"
+                    r["relaxation_level"] = level
+                return results, level
 
         # Tier 4: Guaranteed Doorbuster Deals Fallback
         logger.info("[SEARCH: LADDER] All constraints yielded 0 results. Activating Tier 4 Zero-Data Deals fallback.")
@@ -474,7 +452,6 @@ class WarehouseRepository(BaseRepository):
 
     def save_user_cart_snapshot(self, user_id: str, session_id: str, cart_dict: Dict[str, Any]) -> bool:
         """Upserts cart snapshot to PostgreSQL user_carts table."""
-        import json
         from datetime import datetime, timezone
         query = text("""
             INSERT INTO user_carts (user_id, session_id, cart_data, item_count, total_amount, updated_at)
@@ -499,7 +476,6 @@ class WarehouseRepository(BaseRepository):
 
     def load_user_cart_snapshot(self, user_id: str) -> Optional[Dict[str, Any]]:
         """Retrieves cold-tier cart snapshot from PostgreSQL."""
-        import json
         query = text("""
             SELECT cart_data FROM user_carts WHERE user_id = :uid LIMIT 1;
         """)
