@@ -41,7 +41,6 @@ def run_cron_cycle():
     """Executes a full 6-hour batch cycle for offline ML pipelines and catalog seeding."""
     now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     logger.info(f"=== Starting 6-Hour Scheduled ML Pipeline Cycle [{now_str}] ===")
-    repo = BlackFridayRepository()
 
     try:
         # 1. Customer Segmentation Pipeline
@@ -60,7 +59,7 @@ def run_cron_cycle():
     try:
         # 3. Production Drift Monitor (monitors recent batch against training baseline)
         logger.info("Executing Evidently AI Production Drift Monitor...")
-        batch_df = _load_drift_batch(repo)
+        batch_df = _load_drift_batch(BlackFridayRepository())
         if not batch_df.empty:
             run_production_drift_monitor(current_batch_df=batch_df, auto_trigger_retrain=False)
     except Exception as e:
@@ -83,10 +82,20 @@ def start_daemon_scheduler():
     """Runs continuous daemon loop triggering execution every 6 hours."""
     logger.info(f"Starting 6-Hour Daemon Cron Scheduler (interval = {CRON_INTERVAL_SECONDS}s)...")
     while True:
-        run_cron_cycle()
-        logger.info(f"Cron Scheduler sleeping for 6 hours until next cycle...")
+        try:
+            run_cron_cycle()
+        except Exception as e:
+            logger.error(f"Cron cycle aborted: {e}", exc_info=True)
+        logger.info("Cron Scheduler sleeping for 6 hours until next cycle...")
         time.sleep(CRON_INTERVAL_SECONDS)
 
 
 if __name__ == "__main__":
-    run_cron_cycle()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="6-hour ML pipeline scheduler")
+    parser.add_argument("--once", action="store_true", help="Run a single cycle and exit instead of looping")
+    if parser.parse_args().once:
+        run_cron_cycle()
+    else:
+        start_daemon_scheduler()

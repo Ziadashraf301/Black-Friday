@@ -182,3 +182,35 @@ def test_cron_drift_batch_excludes_outliers_and_is_a_seeded_sample():
     repo.get_cleaned_records_df.assert_called_with(split="test", exclude_outliers=True)
     assert len(first) == cron_scheduler.DRIFT_BATCH_SIZE
     assert first.equals(second)
+
+
+def test_cron_cycle_survives_repository_construction_failure(monkeypatch):
+    from ml.pipelines import cron_scheduler
+
+    for name in ("run_customer_segmentation", "run_market_basket_pipeline", "run_seed_curated_catalog"):
+        monkeypatch.setattr(cron_scheduler, name, MagicMock())
+    monkeypatch.setattr(cron_scheduler, "BlackFridayRepository", MagicMock(side_effect=RuntimeError("db down")))
+    monkeypatch.setattr(cron_scheduler, "invalidate_caches", MagicMock())
+
+    cron_scheduler.run_cron_cycle()
+
+    cron_scheduler.run_seed_curated_catalog.assert_called_once()
+
+
+def test_daemon_keeps_looping_after_a_failed_cycle(monkeypatch):
+    from ml.pipelines import cron_scheduler
+
+    monkeypatch.setattr(cron_scheduler, "run_cron_cycle", MagicMock(side_effect=[RuntimeError("boom"), None]))
+    sleeps = []
+
+    def fake_sleep(seconds):
+        sleeps.append(seconds)
+        if len(sleeps) == 2:
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr(cron_scheduler.time, "sleep", fake_sleep)
+
+    with pytest.raises(KeyboardInterrupt):
+        cron_scheduler.start_daemon_scheduler()
+
+    assert cron_scheduler.run_cron_cycle.call_count == 2
