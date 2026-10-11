@@ -1,8 +1,11 @@
 from typing import Optional, Any
 from pathlib import Path
 import urllib.parse
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+DEFAULT_SECRET_KEY = "blackfriday-super-secret-key-change-in-production-2024"
+DEV_ENVIRONMENTS = {"development", "dev", "local", "test", "testing"}
 
 
 class Settings(BaseSettings):
@@ -177,9 +180,15 @@ class Settings(BaseSettings):
     RATE_LIMIT_DAY: int = Field(default=1000)
 
     # JWT Authentication
-    SECRET_KEY: str = Field(default="blackfriday-super-secret-key-change-in-production-2024")
+    SECRET_KEY: str = Field(default=DEFAULT_SECRET_KEY)
     JWT_ALGORITHM: str = Field(default="HS256")
     JWT_EXPIRY_HOURS: int = Field(default=24)
+
+    @model_validator(mode="after")
+    def reject_default_secret_outside_dev(self):
+        if self.ENVIRONMENT.strip().lower() not in DEV_ENVIRONMENTS and self.SECRET_KEY == DEFAULT_SECRET_KEY:
+            raise ValueError("SECRET_KEY must be set to a non-default value when ENVIRONMENT is not a dev environment.")
+        return self
 
     GEMINI_API_KEY: Optional[str] = Field(default=None)
     TYPESAFE_API_KEY: Optional[str] = Field(default=None)
