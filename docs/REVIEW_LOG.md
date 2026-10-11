@@ -34,6 +34,17 @@ Passing but noisy: `test_phase3`, `test_phase4_*` and `test_phase2` log MLflow w
 
 The lint baseline is effectively "never enforced". Treat lint as a per-file check on touched files for the rest of the review. A repo-wide `black`/`isort` pass would be a separate round-2 item.
 
+### Addendum: full-suite run with pytest-timeout (2026-10-11)
+
+Whole-suite run: `pytest tests/ --timeout=30 -q --deselect tests/test_api.py::test_shopper_predict_and_purchase_flow`.
+Result: **299 passed, 1 failed, 1 deselected (the hang)**, 301 tests, ~8 min. Collection alone takes ~97s (shap, mlflow, evidently imports). `pytest-timeout` was installed locally and is not in `requirements.txt`. With `--timeout-method=thread` the timeout kills the whole process, so the hanging test has to be deselected to get a summary.
+
+- **Hang:** same cause as CORE-1. The dump shows the worker thread inside `json.dumps` → `_json_serializer` → `MagicMock.item()` → `_increment_mock_call`.
+- **`test_redis_rate_limit_5_min_20_day`** is a stale test, not leftover Redis state. In this run the limiter was reset first, the first 5 calls passed and the 6th was correctly blocked. The failure is at `tests/test_phase1_infra_frontend.py:173`: the test expects `HTTPException` from `RedisRateLimiter.enforce()`, but `apps/api/rate_limiting/rate_limiter.py:237` raises `core.exceptions.RateLimitExceededError`. The test needs updating to the new exception.
+- **`test_fix_wp7_logging.py`** collected fine in the whole-suite run, so the circular import (AI-1) depends on import order. The earlier per-file run hit it.
+- **Slowest tests**, probably real LLM calls or connection timeouts rather than mocks (not confirmed): `test_phase3_langgraph_agent` (support 25.8s, multi-turn 23.7s, cart 20.9s, search 11.0s), `test_phase4_e2e_production::test_multi_intent_fan_out_and_aggregation` 20.5s, `test_phase4_caching_and_fanout` fan-out 20.4s, `test_fix_7_2_shopper_performance` setup 16.4s, `test_fix_wp11_imputer` ONNX imputer 15.5s, `test_drift_retrain` monitor 14.3s, `test_frontend_bot_auth_check` 11.5s.
+- **`make lint` stops at flake8** (exit 2), so black and isort never run through it. The counts above come from running each tool with the Makefile's arguments. There is no `pyproject.toml`, `setup.cfg` or `.flake8`, so black runs at line length 88 and isort without `profile=black`, against flake8's 127. That explains why nearly every file fails both. CI runs only pytest, not lint.
+
 ## Findings
 
 | ID | Area | Finding | File:line | Severity | Status | Commit |
@@ -52,10 +63,10 @@ The lint baseline is effectively "never enforced". Treat lint as a per-file chec
 | API-2 | API | `GET /shopper/catalog?limit=` is unbounded and each value gets its own Redis key (`shopper:catalog:{limit}`). Negative or huge values hit the DB, and unique values pollute the cache. | `apps/api/routes/shopper.py:31`, `apps/api/services/shopper_service.py:54` | fixed | 5724579 | |
 | API-3 | API | `/shopper/predict-price-batch` is open to guests with no rate limit, unlike `/predict-price`. Each call runs ONNX inference and DB lookups. Fixed: now `rate_limit_dependency` (auth + rate limit). Reflex only calls it with a token. | `apps/api/routes/shopper.py:50` | fixed | 5724579 | |
 | API-4 | API | `process_batch_purchase` keys quotes by `product_id` only. Two cart lines for the same product with different demographic overrides get the same (last) quote. | `apps/api/services/shopper_service.py:420` | fixed | b4f6dfb | |
-| API-5 | API | Purchase price depends on demographics taken from the request body (`gender`, `age`, ...), so a shopper can pick the demographic that gives the lowest member price. Design question rather than a bug. Product decision: whether quotes should use only the account's stored demographics (breaking for clients that send overrides) or keep accepting overrides. Needs an owner call. | `apps/api/routes/shopper.py:112`, `apps/api/schemas.py:133` | deferred |  | |
+| API-5 | API | Purchase price depends on demographics taken from the request body (`gender`, `age`, ...), so a shopper can pick the demographic that gives the lowest member price. Design question rather than a bug. Decision: logged-in users are priced from their account demographics (body overrides ignored); no guest pricing endpoint exists, so guest-supplied demographics are not needed yet. | `apps/api/routes/shopper.py:112`, `apps/api/schemas.py:133` | fixed | 260aaa5 | |
 | API-6 | API | Signup does not normalise the email (case) and has a check-then-insert race, so a duplicate surfaces as a 500 (`IntegrityError`) and `A@x.com` / `a@x.com` can both register. `email` is a plain `str`, not validated. Fixed: emails are trimmed/lower-cased; duplicate-insert race maps to 409; login falls back to the submitted spelling for legacy mixed-case accounts. | `apps/api/services/auth_service.py:32`, `apps/api/schemas.py:93` | fixed | 8791fa0 | |
 | API-7 | API | The WebSocket error path sends `str(e)` to the client, which can leak internals. A non-object JSON frame (list/number) raises `AttributeError` on `data.get` and ends the session. | `apps/api/routes/bot.py:359,288` | fixed | 304eb6d | |
-| API-8 | API | The global `ValueError` handler returns `str(exc)` for any uncaught `ValueError` in the app, which can expose internals. Product decision: `test_value_error_exception_handler` asserts the handler exposes the ValueError message, and `model_service` raises user-facing ValueErrors. Needs a call on a generic message vs. typed domain errors. | `apps/api/handlers.py:20` | deferred |  | |
+| API-8 | API | The global `ValueError` handler returns `str(exc)` for any uncaught `ValueError` in the app, which can expose internals. Decision: added core.exceptions.DomainError for user-safe messages; bare ValueError and RuntimeError now return generic text (details are logged). | `apps/api/handlers.py:20` | fixed | 316bdb2 | |
 | AI-1 | AI | Circular import: `ai.nodes.router_node` → `ai.workflow.state` → `ai/workflow/__init__` → `ai.workflow.graph` → `ai.nodes.router_node` (partially initialised). It breaks collection of `tests/test_fix_wp7_logging.py` when it imports `ai.nodes` first. | `ai/workflow/__init__.py:6`, `ai/workflow/graph.py:9`, `ai/nodes/router_node.py:8` | medium | open | |
 
 ## Refactors (step 2, behaviour-preserving)
@@ -64,3 +75,5 @@ The lint baseline is effectively "never enforced". Treat lint as a per-file chec
 - 770ab4d auth service token/response building shared
 - 7bf6440 bot SSE frame emission and StreamingResponse deduplicated
 - a16db80 black/isort applied to apps/api, flake8 clean
+
+- 0769606 Locust: signup/login retried on 429 (all simulated users share one IP and /auth/* is limited per IP), so every user holds a token for authenticated tasks. Note: per-user limits (RATE_LIMIT_MINUTE=60) still make heavy load runs return 429s on predict endpoints; raise them via env for load tests.
