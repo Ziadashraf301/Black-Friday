@@ -56,3 +56,10 @@ def test_predictor_reports_missing_input_columns(tmp_path):
     predictor = ONNXPredictor(path)
     with pytest.raises(ValueError, match="product_category_3"):
         predictor.predict(df.drop(columns=["product_category_3"]))
+
+
+def test_export_accepts_bare_filename(tmp_path, monkeypatch):
+    model, _ = _tiny_dt()
+    monkeypatch.chdir(tmp_path)
+    assert ONNXExporter.export_regression_pipeline(model.pipeline, model.features, "bare.onnx") == "bare.onnx"
+    assert (tmp_path / "bare.onnx").exists()

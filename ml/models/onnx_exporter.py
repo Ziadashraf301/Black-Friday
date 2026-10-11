@@ -42,7 +42,7 @@ class ONNXExporter:
         target_opset: Union[int, Dict[str, int]] = 15
     ) -> str:
         """Helper to convert model to ONNX graph and serialize to disk (DRY)."""
-        os.makedirs(os.path.dirname(output_filepath), exist_ok=True)
+        os.makedirs(os.path.dirname(output_filepath) or ".", exist_ok=True)
 
         # Ensure compatibility with LightGBM and tree ensemble operators
         if isinstance(target_opset, int):
