@@ -68,8 +68,9 @@ class CustomerSegmentationEngine:
         gender: str, marital_status: str, age_binned: str, mean_ltv: float, mean_freq: float
     ) -> tuple[int, str, str]:
         """Dynamically matches a cluster's empirical demographic and spending profile to its true R persona."""
-        # Check for ultra-high spending VIP clusters (clusters 9 and 10 in R)
-        if mean_ltv > settings.SEGMENT_VIP_MIN_LTV or mean_freq > settings.SEGMENT_VIP_MIN_FREQUENCY:
+        # Check for ultra-high spending VIP clusters (clusters 9 and 10 in R). Both personas are male-only, so a
+        # high-spending female cluster falls through to its demographic persona instead of being labelled male.
+        if gender != "F" and (mean_ltv > settings.SEGMENT_VIP_MIN_LTV or mean_freq > settings.SEGMENT_VIP_MIN_FREQUENCY):
             if marital_status == "Married":
                 return (
                     10,
