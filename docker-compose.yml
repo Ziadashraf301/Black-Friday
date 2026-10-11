@@ -81,6 +81,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
+      minio-init:
+        condition: service_completed_successfully
     ports:
       - "${BIND_HOST:-127.0.0.1}:${MLFLOW_PORT:-5000}:5000"
     environment:
