@@ -4,16 +4,17 @@ Model service — local ONNX model management and inference.
 Loads the champion ONNX regressor and MissForest imputer strictly from the local
 `models/onnx/` directory once on startup. Zero remote MLflow network calls.
 """
-import os
-import pandas as pd
-from typing import Optional, Dict, Any
-import numpy as np
 
-from ml.serving.predictor import ONNXPredictor
-from ml.serving.imputer import ONNXMissForestImputer
+import os
+from typing import Any, Dict, Optional
+
+import numpy as np
+import pandas as pd
+
 from core.config import settings
 from core.logging import get_logger
-
+from ml.serving.imputer import ONNXMissForestImputer
+from ml.serving.predictor import ONNXPredictor
 
 logger = get_logger(__name__)
 
@@ -43,12 +44,12 @@ class ModelService:
 
     def _load_local_regression(self) -> None:
         onnx_dir = os.path.join(settings.BASE_DIR, "models", "onnx")
-        
+
         # Priority order for Production Champion:
         # 1. champion_model.onnx (direct export from MLflow champion promotion)
         # 2. lightgbm.onnx (current top benchmark model)
         candidates = ["champion_model.onnx", "lightgbm.onnx", "lgbm.onnx"]
-        
+
         for candidate in candidates:
             model_path = os.path.join(onnx_dir, candidate)
             if os.path.exists(model_path):
@@ -114,7 +115,7 @@ class ModelService:
             "stay_in_current_city_years": stay_in_current_city_years,
             "marital_status": marital_status,
         }
-        
+
         missing = [feat for feat, val in required_features.items() if val is None or str(val).strip() == ""]
         if missing:
             raise ValueError(
@@ -196,14 +197,15 @@ class ModelService:
         usd_preds = np.round(raw_inr / settings.INR_TO_USD, 2)
         norm_preds_rounded = np.round(norm_preds, 5)
 
-        result_df = pd.DataFrame({
-            "usd": usd_preds,
-            "normalized": norm_preds_rounded,
-            "model_used": self.model_name,
-        })
+        result_df = pd.DataFrame(
+            {
+                "usd": usd_preds,
+                "normalized": norm_preds_rounded,
+                "model_used": self.model_name,
+            }
+        )
         return result_df
 
 
 # Global singleton instance
 model_service = ModelService()
-

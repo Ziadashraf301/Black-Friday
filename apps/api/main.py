@@ -1,14 +1,15 @@
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
-from apps.api.routes import analytics
-from apps.api.routes import auth as auth_router
-from apps.api.routes import shopper as shopper_router
-from apps.api.routes import bot as bot_router
 from apps.api.handlers import register_exception_handlers
 from apps.api.middleware.security_ban_middleware import SecurityBanMiddleware
+from apps.api.routes import analytics
+from apps.api.routes import auth as auth_router
+from apps.api.routes import bot as bot_router
+from apps.api.routes import shopper as shopper_router
 from apps.api.services.model_service import model_service
 from core.config import settings
 from core.logging import get_logger
@@ -27,6 +28,7 @@ async def lifespan(app: FastAPI):
     # 2. Ensure application database tables exist
     try:
         from core.db.repository import BlackFridayRepository
+
         BlackFridayRepository().create_app_tables()
     except Exception as e:
         logger.warning(f"App table initialization check (non-fatal): {e}")
@@ -55,9 +57,7 @@ default_origins = [
     "http://localhost:8001",
     "http://127.0.0.1:8001",
 ]
-configured_origins = [
-    o.strip() for o in (getattr(settings, "CORS_ORIGINS", "") or "").split(",") if o.strip()
-]
+configured_origins = [o.strip() for o in (getattr(settings, "CORS_ORIGINS", "") or "").split(",") if o.strip()]
 cors_origins = sorted(list(set(default_origins + configured_origins)))
 
 app.add_middleware(
@@ -98,4 +98,5 @@ def health_check():
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("apps.api.main:app", host=settings.API_HOST, port=settings.API_PORT, reload=True)

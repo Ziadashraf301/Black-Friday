@@ -6,19 +6,21 @@ Enforces:
 Uses atomic Redis Lua script evaluation for strict concurrency safety.
 Thread-safe, bounded memory fallback when Redis is offline.
 """
+
+import threading
 import time
 import uuid
-import threading
-from typing import Dict, Any, Optional, Tuple, List
-from fastapi import Request, Depends
-import redis
+from typing import Any, Dict, List, Optional, Tuple
 
-from core.exceptions import RateLimitExceededError
-from core.cache import cache_manager
-from core.config import settings
-from core.logging import get_logger
+import redis
+from fastapi import Depends, Request
+
 from apps.api.auth import get_current_user
 from apps.api.client_identity import client_ip, resolve_client_identity
+from core.cache import cache_manager
+from core.config import settings
+from core.exceptions import RateLimitExceededError
+from core.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -113,7 +115,7 @@ class RedisRateLimiter:
             # Evict keys with the oldest timestamps
             sorted_keys = sorted(
                 self._in_memory_windows.keys(),
-                key=lambda k: self._in_memory_windows[k][-1] if self._in_memory_windows[k] else 0.0
+                key=lambda k: self._in_memory_windows[k][-1] if self._in_memory_windows[k] else 0.0,
             )
             for k in sorted_keys[:excess]:
                 self._in_memory_windows.pop(k, None)

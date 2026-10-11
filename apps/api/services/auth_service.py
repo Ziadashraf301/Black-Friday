@@ -1,20 +1,21 @@
 """
 Authentication service — user registration, credential validation, and JWT sessions.
 """
-from typing import Dict, Any
+
+from typing import Any, Dict
 
 from sqlalchemy.exc import IntegrityError
 
+from core.db.repository import BlackFridayRepository
 from core.exceptions import ConflictError, UnauthorizedError
+from core.logging import get_logger
 from core.security import (
+    create_access_token,
+    decode_access_token,
     hash_password,
     verify_password,
     verify_password_with_upgrade,
-    create_access_token,
-    decode_access_token,
 )
-from core.logging import get_logger
-from core.db.repository import BlackFridayRepository
 
 logger = get_logger(__name__)
 
@@ -35,17 +36,19 @@ class AuthService:
     @classmethod
     def _session_response(cls, user: Dict[str, Any]) -> Dict[str, Any]:
         """Issues a JWT carrying the shopper profile claims and builds the token response."""
-        token = cls.create_access_token({
-            "sub": str(user["user_id"]),
-            "name": user["name"],
-            "email": user["email"],
-            "gender": user.get("gender"),
-            "age": user.get("age"),
-            "city_category": user.get("city_category"),
-            "marital_status": user.get("marital_status"),
-            "occupation": user.get("occupation"),
-            "stay_in_current_city_years": user.get("stay_in_current_city_years"),
-        })
+        token = cls.create_access_token(
+            {
+                "sub": str(user["user_id"]),
+                "name": user["name"],
+                "email": user["email"],
+                "gender": user.get("gender"),
+                "age": user.get("age"),
+                "city_category": user.get("city_category"),
+                "marital_status": user.get("marital_status"),
+                "occupation": user.get("occupation"),
+                "stay_in_current_city_years": user.get("stay_in_current_city_years"),
+            }
+        )
         return {
             "access_token": token,
             "token_type": "bearer",

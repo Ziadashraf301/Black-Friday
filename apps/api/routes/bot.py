@@ -6,19 +6,21 @@ Provides dual-mode interaction:
   2. WebSocket /bot/live-ws: Full-duplex continuous live Gemini Multimodal Voice-to-Voice streaming
      with live audio exchange, synchronized product card pushes, and interruption handling.
 """
-import re
-from typing import Optional, Dict, Any, List, AsyncGenerator, Iterator
-import json
+
 import asyncio
-from pydantic import BaseModel, Field
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, Depends, Request
+import json
+import re
+from typing import Any, AsyncGenerator, Dict, Iterator, List, Optional
+
+from fastapi import APIRouter, Depends, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
 from langchain_core.messages import HumanMessage
+from pydantic import BaseModel, Field
 
+from ai.guardrails.strike_tracker import strike_tracker
+from ai.services.cache_service import cache_service
 from ai.workflow.graph import shopping_graph
 from ai.workflow.state import AgentState
-from ai.services.cache_service import cache_service
-from ai.guardrails.strike_tracker import strike_tracker
 from apps.api.client_identity import DEFAULT_SESSION_ID, bot_user_id, guest_user_id, sanitize_session_id
 from apps.api.rate_limiting.rate_limiter import rate_limit_client_dependency
 from core.logging import get_logger
@@ -58,47 +60,55 @@ def extract_grounding_citations(ui_payload: Dict[str, Any]) -> List[Dict[str, An
         for p in ui_data.get("products", []):
             pid = p.get("product_id")
             if pid:
-                citations.append({
-                    "product_id": pid,
-                    "title": p.get("name", f"Product {pid}"),
-                    "url": f"/shopper/browse/{pid}",
-                    "price": p.get("discounted_price", 0.0),
-                    "badge": p.get("badge", "Deal"),
-                })
+                citations.append(
+                    {
+                        "product_id": pid,
+                        "title": p.get("name", f"Product {pid}"),
+                        "url": f"/shopper/browse/{pid}",
+                        "price": p.get("discounted_price", 0.0),
+                        "badge": p.get("badge", "Deal"),
+                    }
+                )
     elif ui_type == "product_detail_modal":
         prod = ui_data.get("product", {})
         pid = prod.get("product_id")
         if pid:
-            citations.append({
-                "product_id": pid,
-                "title": prod.get("name", f"Product {pid}"),
-                "url": f"/shopper/browse/{pid}",
-                "price": prod.get("discounted_price", 0.0),
-                "badge": prod.get("badge", "Spec"),
-            })
+            citations.append(
+                {
+                    "product_id": pid,
+                    "title": prod.get("name", f"Product {pid}"),
+                    "url": f"/shopper/browse/{pid}",
+                    "price": prod.get("discounted_price", 0.0),
+                    "badge": prod.get("badge", "Spec"),
+                }
+            )
     elif ui_type == "bundle_card":
         for b in ui_data.get("bundles", []):
             pid = b.get("product_id")
             if pid:
-                citations.append({
-                    "product_id": pid,
-                    "title": b.get("name", f"Product {pid}"),
-                    "url": f"/shopper/browse/{pid}",
-                    "price": b.get("price", 0.0),
-                    "badge": f"{b.get('savings_pct', 15.0):.0f}% Off Bundle",
-                })
+                citations.append(
+                    {
+                        "product_id": pid,
+                        "title": b.get("name", f"Product {pid}"),
+                        "url": f"/shopper/browse/{pid}",
+                        "price": b.get("price", 0.0),
+                        "badge": f"{b.get('savings_pct', 15.0):.0f}% Off Bundle",
+                    }
+                )
     elif ui_type == "multi_card" or "cards" in ui_payload:
         cards = ui_payload.get("cards", [])
         for c in cards:
             pid = c.get("product_id")
             if pid:
-                citations.append({
-                    "product_id": pid,
-                    "title": c.get("name", f"Product {pid}"),
-                    "url": f"/shopper/browse/{pid}",
-                    "price": c.get("price", c.get("discounted_price", 0.0)),
-                    "badge": c.get("badge", "Featured"),
-                })
+                citations.append(
+                    {
+                        "product_id": pid,
+                        "title": c.get("name", f"Product {pid}"),
+                        "url": f"/shopper/browse/{pid}",
+                        "price": c.get("price", c.get("discounted_price", 0.0)),
+                        "badge": c.get("badge", "Featured"),
+                    }
+                )
     return citations
 
 
@@ -195,9 +205,7 @@ class BotStreamRequest(BaseModel):
 async def bot_stream_get_endpoint(
     request: Request,
     query: str = Query(..., description="User search or conversational inquiry"),
-    session_id: str = Query(
-        DEFAULT_SESSION_ID, pattern=SESSION_ID_PATTERN, max_length=64, description="Session identifier"
-    ),
+    session_id: str = Query(DEFAULT_SESSION_ID, pattern=SESSION_ID_PATTERN, max_length=64, description="Session identifier"),
 ):
     """
     Server-Sent Events endpoint streaming token-by-token responses,
@@ -219,7 +227,6 @@ async def bot_stream_post_endpoint(request: Request, payload: BotStreamRequest):
     """
     user_id = bot_user_id(request, payload.session_id)
     return _sse_response(payload.query, user_id, payload.session_id)
-
 
 
 # =============================================================================
@@ -248,6 +255,7 @@ async def bot_live_websocket(websocket: WebSocket):
     if token:
         try:
             from core.security import decode_access_token
+
             payload = decode_access_token(token)
             if payload.get("sub"):
                 auth_user_id = str(payload.get("sub"))
@@ -300,11 +308,13 @@ async def bot_live_websocket(websocket: WebSocket):
             user_id = auth_user_id or guest_user_id(client_ip, session_id)
 
             if user_id and strike_tracker.is_banned(str(user_id)):
-                await websocket.send_json({
-                    "type": "error",
-                    "error_code": "SECURITY_STRIKE_LOCKOUT",
-                    "message": "Access revoked due to repeated security policy violations. Lockout expires in 24 hours.",
-                })
+                await websocket.send_json(
+                    {
+                        "type": "error",
+                        "error_code": "SECURITY_STRIKE_LOCKOUT",
+                        "message": "Access revoked due to repeated security policy violations. Lockout expires in 24 hours.",
+                    }
+                )
                 await websocket.close(code=1008)
                 return
 
@@ -335,22 +345,26 @@ async def bot_live_websocket(websocket: WebSocket):
 
             # 1. Push Synchronized UI Card FIRST so shopper's screen updates immediately
             if ui_payload:
-                await websocket.send_json({
-                    "type": "ui_card",
-                    "payload": ui_payload,
-                    "citations": citations,
-                })
+                await websocket.send_json(
+                    {
+                        "type": "ui_card",
+                        "payload": ui_payload,
+                        "citations": citations,
+                    }
+                )
 
             # 2. Stream Voice Audio Chunks / Tokens
             # When Gemini Live is connected, audio bytes stream directly;
             # here we send audio packet metadata and speech text frames
-            await websocket.send_json({
-                "type": "voice_response",
-                "text": final_text,
-                "sample_rate": 24000,
-                "audio_format": "pcm_16bit",
-                "done": True,
-            })
+            await websocket.send_json(
+                {
+                    "type": "voice_response",
+                    "text": final_text,
+                    "sample_rate": 24000,
+                    "audio_format": "pcm_16bit",
+                    "done": True,
+                }
+            )
 
     except WebSocketDisconnect:
         logger.info(f"[WS: LIVE] Client disconnected: {client_ip}")

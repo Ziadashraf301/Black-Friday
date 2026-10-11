@@ -3,9 +3,11 @@ Security Ban & Lockout Gateway Middleware (Phase 4 - Task P4-07, Fix 5.2).
 Intercepts incoming API requests and blocks banned users/IPs with HTTP 403 Forbidden.
 Inspects the verified Bearer JWT subject and the client IP (caller-supplied IDs are ignored).
 """
+
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
+
 from ai.guardrails.strike_tracker import strike_tracker
 from apps.api.client_identity import client_ip, verified_user_id
 from core.logging import get_logger

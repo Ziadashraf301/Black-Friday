@@ -1,14 +1,16 @@
 """
 FastAPI authentication dependency and security exports.
 """
-from typing import Dict, Any, Optional
-from fastapi import Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-from core.exceptions import UnauthorizedError
-from core.security import hash_password, verify_password, create_access_token, decode_access_token
+from typing import Any, Dict, Optional
+
+from fastapi import Depends
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
 from apps.api.services.auth_service import auth_service
+from core.exceptions import UnauthorizedError
 from core.logging import get_logger
+from core.security import create_access_token, decode_access_token, hash_password, verify_password
 
 logger = get_logger(__name__)
 

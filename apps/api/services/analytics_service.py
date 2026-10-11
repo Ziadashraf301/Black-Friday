@@ -2,11 +2,12 @@
 Analytics service — executive KPIs and demographic breakdowns with persistent Redis 6-hour caching.
 Decoupled from web framework exceptions using domain exceptions.
 """
-from typing import Dict, Any, List, Optional
 
-from core.db.repository import BlackFridayRepository
+from typing import Any, Dict, List, Optional
+
 from core.cache import cached_json
 from core.config import settings
+from core.db.repository import BlackFridayRepository
 from core.exceptions import DataUnavailableError, ValidationError
 from core.logging import get_logger
 
@@ -25,9 +26,7 @@ class AnalyticsService:
         target_repo = repo or BlackFridayRepository()
         summary = target_repo.get_eda_summary()
         if not summary or summary.get("total_orders", 0) == 0:
-            raise DataUnavailableError(
-                "Analytics data is not populated. Please ensure database is seeded."
-            )
+            raise DataUnavailableError("Analytics data is not populated. Please ensure database is seeded.")
         return {
             "total_orders": summary["total_orders"],
             "total_users": summary["total_users"],

@@ -1,13 +1,15 @@
 """
 Authentication routes — signup, login, and profile.
 """
-from typing import Dict, Any
+
+from typing import Any, Dict
+
 from fastapi import APIRouter, Depends, status
 
-from apps.api.schemas import SignupRequest, LoginRequest, TokenResponse, UserMeResponse
-from apps.api.dependencies import get_repository
 from apps.api.auth import get_current_user
+from apps.api.dependencies import get_repository
 from apps.api.rate_limiting.rate_limiter import auth_rate_limit_dependency
+from apps.api.schemas import LoginRequest, SignupRequest, TokenResponse, UserMeResponse
 from apps.api.services.auth_service import auth_service
 from core.db.repository import BlackFridayRepository
 from core.exceptions import NotFoundError

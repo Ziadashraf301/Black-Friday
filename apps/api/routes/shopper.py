@@ -1,20 +1,27 @@
 """
 Shopper routes — catalog browsing, recommendations, tailored pricing, and purchase history.
 """
-from typing import List, Dict, Any
+
+from typing import Any, Dict, List
+
 from fastapi import APIRouter, Depends, Query
 
-from apps.api.schemas import (
-    CatalogProductItem, BrowseProductResponse,
-    ShopperPredictRequest, ShopperPredictResponse,
-    ShopperBatchPredictRequest, ShopperBatchPredictResponse,
-    CuratedProductItem,
-    ShopperPurchaseResponse, ShopperBatchPurchaseRequest, ShopperBatchPurchaseResponse,
-    PurchaseHistoryResponse
-)
-from apps.api.dependencies import get_repository
 from apps.api.auth import get_current_user
+from apps.api.dependencies import get_repository
 from apps.api.rate_limiting.rate_limiter import rate_limit_dependency
+from apps.api.schemas import (
+    BrowseProductResponse,
+    CatalogProductItem,
+    CuratedProductItem,
+    PurchaseHistoryResponse,
+    ShopperBatchPredictRequest,
+    ShopperBatchPredictResponse,
+    ShopperBatchPurchaseRequest,
+    ShopperBatchPurchaseResponse,
+    ShopperPredictRequest,
+    ShopperPredictResponse,
+    ShopperPurchaseResponse,
+)
 from apps.api.services.shopper_service import shopper_service
 from core.db.repository import BlackFridayRepository
 
@@ -58,7 +65,12 @@ def predict_price_batch(
     user_demo = {
         key: current_user.get(key)
         for key in (
-            "gender", "age", "city_category", "marital_status", "occupation", "stay_in_current_city_years",
+            "gender",
+            "age",
+            "city_category",
+            "marital_status",
+            "occupation",
+            "stay_in_current_city_years",
         )
     }
     quotes = shopper_service.estimate_price_batch(
@@ -113,7 +125,7 @@ def record_purchase(
         city_category=request.city_category or current_user.get("city_category"),
         stay_in_current_city_years=request.stay_in_current_city_years or current_user.get("stay_in_current_city_years"),
         marital_status=request.marital_status if request.marital_status is not None else current_user.get("marital_status"),
-        repo=repo
+        repo=repo,
     )
     return ShopperPurchaseResponse(**res)
 
@@ -139,7 +151,6 @@ def record_batch_purchase(
         total_items=len(purchases),
         total_amount=total_amount,
     )
-
 
 
 @router.get("/history", response_model=PurchaseHistoryResponse)
