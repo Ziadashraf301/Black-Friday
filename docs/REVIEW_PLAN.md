@@ -28,7 +28,7 @@
 - [x] **0. Baseline:** run `make test` and `make lint`. Record the pre-existing failures in the log's Baseline section. Don't fix anything.
 - [x] **1. Security:** `security-review` on auth, JWT, bcrypt, rate limiting, `SecurityBanMiddleware`, CORS (`apps/api/auth.py`, `apps/api/middleware/`, `apps/api/rate_limiting/`, `core/security/`, `apps/api/main.py`).
 - [x] **2. API:** `apps/api` (routes, services, schemas, dependencies, handlers).
-- [ ] **3. Core:** `core` (config, db + repositories, cache, tracking, embeddings).
+- [x] **3. Core:** `core` (config, db + repositories, cache, tracking, embeddings).
 - [ ] **4. ML serving:** `ml/serving`, `ml/models` (ONNX loading, input schema mismatches, metrics).
 - [ ] **5. ML pipelines:** `ml/pipelines`, `ml/features` (data leakage, champion/challenger promotion, drift thresholds, cron cache flush).
 - [ ] **6. ML analytics:** `ml/segmentation`, `ml/market_basket`.
