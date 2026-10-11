@@ -23,8 +23,16 @@ def verified_user_id(request: Request) -> Optional[str]:
     return str(sub) if sub else None
 
 
+GUEST_USER_ID = "guest_user"
+
+
 def client_ip(request: Request) -> str:
     return request.client.host if request.client else "unknown_ip"
+
+
+def bot_user_id(request: Request) -> str:
+    """Shopper id for the assistant: verified JWT subject, otherwise the shared guest id."""
+    return verified_user_id(request) or GUEST_USER_ID
 
 
 def resolve_client_identity(request: Request) -> str:

@@ -20,6 +20,7 @@ from ai.workflow.graph import shopping_graph
 from ai.workflow.state import AgentState
 from ai.services.cache_service import cache_service
 from ai.guardrails.strike_tracker import strike_tracker
+from apps.api.client_identity import bot_user_id
 from apps.api.rate_limiting.rate_limiter import rate_limit_client_dependency
 from core.config import settings
 from core.logging import get_logger
@@ -169,7 +170,7 @@ async def sse_response_generator(
 
 class BotStreamRequest(BaseModel):
     query: str
-    user_id: str = "guest_user"
+    user_id: Optional[str] = None  # Deprecated and ignored: identity comes from the Bearer JWT
     session_id: str = "default_session"
     mode: str = "text"
 
@@ -181,7 +182,7 @@ class BotStreamRequest(BaseModel):
 )
 async def bot_stream_get_endpoint(
     query: str = Query(..., description="User search or conversational inquiry"),
-    user_id: str = Query("guest_user", description="Shopper identifier"),
+    user_id: str = Depends(bot_user_id),
     session_id: str = Query("default_session", description="Session identifier"),
 ):
     """
@@ -204,13 +205,13 @@ async def bot_stream_get_endpoint(
     summary="Text-to-Text SSE Stream with Product Cards (POST)",
     dependencies=[Depends(rate_limit_client_dependency)],
 )
-async def bot_stream_post_endpoint(payload: BotStreamRequest):
+async def bot_stream_post_endpoint(payload: BotStreamRequest, user_id: str = Depends(bot_user_id)):
     """
     Server-Sent Events endpoint streaming token-by-token responses,
     synchronized product cards, and website catalog citations via POST.
     """
     return StreamingResponse(
-        sse_response_generator(query=payload.query, user_id=payload.user_id, session_id=payload.session_id),
+        sse_response_generator(query=payload.query, user_id=user_id, session_id=payload.session_id),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
@@ -294,7 +295,7 @@ async def bot_live_websocket(websocket: WebSocket):
 
             # Process User Query (from voice transcription or text)
             query_text = data.get("query") or data.get("text") or ""
-            user_id = data.get("user_id", "guest_voice_shopper")
+            user_id = auth_user_id or "guest_voice_shopper"  # client-supplied user_id is ignored
             session_id = data.get("session_id", "live_session")
 
             if user_id and strike_tracker.is_banned(str(user_id)):

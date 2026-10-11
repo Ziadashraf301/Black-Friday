@@ -1278,6 +1278,7 @@ class ShoppingState(rx.State):
                 async with client.stream(
                     "POST",
                     f"{API_BASE_URL}/bot/stream",
+                    headers={"Authorization": f"Bearer {self.auth_token}"} if self.auth_token else None,
                     json={
                         "query": query,
                         "user_id": user_id,
