@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 
 from core.config import settings
+from core.exceptions import DomainError
 from core.logging import get_logger
 from ml.serving.imputer import ONNXMissForestImputer
 from ml.serving.predictor import ONNXPredictor
@@ -118,7 +119,7 @@ class ModelService:
 
         missing = [feat for feat, val in required_features.items() if val is None or str(val).strip() == ""]
         if missing:
-            raise ValueError(
+            raise DomainError(
                 f"Missing required feature(s) for model inference: {missing}. "
                 "Must provide user_id to look up demographics from DB or pass a complete feature vector."
             )

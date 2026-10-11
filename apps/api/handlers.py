@@ -18,9 +18,10 @@ logger = get_logger(__name__)
 
 
 async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse:
+    logger.warning(f"Unhandled ValueError on {request.url.path}: {exc}", exc_info=True)
     return JSONResponse(
         status_code=400,
-        content={"detail": str(exc), "error_type": "ValueError"},
+        content={"detail": "Invalid request.", "error_type": "ValueError"},
     )
 
 

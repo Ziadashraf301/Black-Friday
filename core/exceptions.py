@@ -13,6 +13,16 @@ class AppException(Exception):
         self.code = code
 
 
+class DomainError(AppException):
+    """Raised for failures whose message is written for end users and is safe to return verbatim.
+
+    Any other unexpected exception (including a bare ValueError) is reported to clients with generic text.
+    """
+
+    def __init__(self, message: str, code: str = "DOMAIN_ERROR"):
+        super().__init__(message, code=code)
+
+
 class NotFoundError(AppException):
     """Raised when a requested resource is not found."""
 
@@ -65,6 +75,7 @@ class RateLimitExceededError(AppException):
 
 __all__ = [
     "AppException",
+    "DomainError",
     "NotFoundError",
     "DataUnavailableError",
     "ValidationError",

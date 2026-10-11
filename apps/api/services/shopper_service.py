@@ -17,7 +17,7 @@ from apps.api.services.model_service import model_service
 from core.cache import cache_manager
 from core.config import settings
 from core.db.repository import BlackFridayRepository
-from core.exceptions import AppException, NotFoundError, ValidationError
+from core.exceptions import AppException, DomainError, NotFoundError, ValidationError
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -317,14 +317,21 @@ class ShopperService:
                 stay_in_current_city_years=stay_in_current_city_years,
                 marital_status=marital_status,
             )
-        except ValueError as val_err:
+        except DomainError as domain_err:
             raise ValidationError(
-                message=f"Price Prediction Failed: {val_err}",
+                message=f"Price Prediction Failed: {domain_err.message}",
                 code="PRICE_PREDICTION_FAILED",
             )
-        except RuntimeError as run_err:
+        except ValueError:
+            logger.warning(f"Price prediction rejected input for product '{product_id}'", exc_info=True)
+            raise ValidationError(
+                message="Price Prediction Failed: invalid request features.",
+                code="PRICE_PREDICTION_FAILED",
+            )
+        except RuntimeError:
+            logger.error(f"Inference failure for product '{product_id}'", exc_info=True)
             raise AppException(
-                message=f"Inference Service Failure: {run_err}",
+                message="Inference service is currently unavailable.",
                 code="INFERENCE_FAILURE",
             )
 

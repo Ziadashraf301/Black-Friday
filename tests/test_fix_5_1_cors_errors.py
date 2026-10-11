@@ -27,7 +27,9 @@ def test_value_error_exception_handler(monkeypatch):
     resp = client.get("/test-value-error-endpoint")
     assert resp.status_code == 400
     data = resp.json()
-    assert "Invalid parameter provided" in data["detail"]
+    # A bare ValueError may carry internals, so the client only sees generic text (API-8)
+    assert data["detail"] == "Invalid request."
+    assert "Invalid parameter provided" not in resp.text
 
 
 def test_domain_not_found_exception_handler():
