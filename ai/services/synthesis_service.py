@@ -155,6 +155,15 @@ class SynthesisService:
             policy=policy,
         )
 
+    # Answers built from one shopper's cart or orders must never be replayed to anyone else
+    PERSONAL_INTENTS = frozenset({"CART_ACTIONS"})  # order answers are caught by `order_status`
+
+    @classmethod
+    def _is_cacheable(cls, state: "AgentState", intent: str) -> bool:
+        """True when the answer depends only on the query and the shared catalog, not on the shopper's own data."""
+        intents = {intent, *(state.get("target_intents") or [])}
+        return not (intents & cls.PERSONAL_INTENTS) and not state.get("cart") and not state.get("order_status")
+
     def synthesize(self, state: "AgentState") -> Dict[str, Any]:
         """Main synthesis orchestrator generating response text and unified UI payload."""
         intent = state.get("intent", "PRODUCT_SEARCH")
@@ -298,8 +307,8 @@ class SynthesisService:
         )
 
         # Cache synthesized response in Tier-0 (6h Redis) and Tier-1 (pgvector Semantic Cache)
-        # Stateful mutations (CART_ACTIONS) must never be cached!
-        if not state.get("is_cache_hit") and query and intent != "CART_ACTIONS":
+        # Personal answers (cart, order tracking) must never be cached!
+        if not state.get("is_cache_hit") and query and self._is_cacheable(state, intent):
             try:
                 from ai.services.cache_service import cache_service
                 cache_service.store_exact_llm_response(
