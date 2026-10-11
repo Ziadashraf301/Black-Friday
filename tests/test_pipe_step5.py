@@ -45,3 +45,44 @@ def test_monitor_downloads_champion_when_nothing_is_local(onnx_dir):
     tracker.download_champion_onnx.side_effect = lambda **_: (onnx_dir / common.CHAMPION_ONNX_NAME).write_bytes(b"x")
 
     assert monitor._resolve_scoring_onnx("lgbm", tracker) == str(onnx_dir / common.CHAMPION_ONNX_NAME)
+
+
+def test_retrain_scores_local_champion_on_the_candidate_holdout(onnx_dir, monkeypatch):
+    import numpy as np
+    import pandas as pd
+
+    from ml.pipelines import retrain
+
+    (onnx_dir / common.CHAMPION_ONNX_NAME).write_bytes(b"x")
+    monkeypatch.setattr(retrain, "champion_onnx_path", lambda: str(onnx_dir / common.CHAMPION_ONNX_NAME))
+    y = pd.Series([0.1, 0.2, 0.3])
+    perfect = MagicMock()
+    perfect.predict.return_value = y.to_numpy()
+    monkeypatch.setattr(retrain, "ONNXPredictor", lambda path: perfect)
+
+    scored = retrain._score_local_champion(pd.DataFrame({"a": [1, 2, 3]}), y, ["a"])
+
+    assert scored["r2"] == 1.0
+    assert scored["rmse"] == 0.0
+    assert np.isclose(scored["mae"], 0.0)
+
+
+def test_retrain_without_local_champion_keeps_registry_metrics(onnx_dir, monkeypatch):
+    import pandas as pd
+
+    from ml.pipelines import retrain
+
+    monkeypatch.setattr(retrain, "champion_onnx_path", lambda: str(onnx_dir / "missing.onnx"))
+
+    assert retrain._score_local_champion(pd.DataFrame({"a": [1]}), pd.Series([0.1]), ["a"]) is None
+
+
+def test_retrain_ignores_unloadable_local_champion(onnx_dir, monkeypatch):
+    import pandas as pd
+
+    from ml.pipelines import retrain
+
+    (onnx_dir / common.CHAMPION_ONNX_NAME).write_bytes(b"not an onnx file")
+    monkeypatch.setattr(retrain, "champion_onnx_path", lambda: str(onnx_dir / common.CHAMPION_ONNX_NAME))
+
+    assert retrain._score_local_champion(pd.DataFrame({"a": [1]}), pd.Series([0.1]), ["a"]) is None

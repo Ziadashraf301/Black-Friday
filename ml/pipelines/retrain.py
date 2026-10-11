@@ -6,9 +6,10 @@ from typing import Optional, Dict, Any
 from core.db.repository import BlackFridayRepository
 from ml.features.preprocessor import DataPreprocessor
 from ml.models.registry import ModelRegistry
-from ml.pipelines.common import publish_champion_onnx
-from ml.models.metrics import ModelEvaluator
+from ml.pipelines.common import champion_onnx_path, publish_champion_onnx
+from ml.models.metrics import ModelEvaluator, evaluate_holdout
 from ml.models.onnx_exporter import ONNXExporter
+from ml.serving.predictor import ONNXPredictor
 from ml.tracking.mlflow_tracker import MLflowTracker
 from ml.tracking.model_card import ModelCardGenerator
 from ml.tracking.drift_monitor import DriftResult
@@ -81,6 +82,23 @@ class RetrainResult:
             f"R2={self.candidate_r2:.4f} vs champion={self.champion_r2:.4f} "
             f"(delta={self.improvement_delta:+.4f}) | run_id={self.run_id})"
         )
+
+
+def _score_local_champion(test_df: pd.DataFrame, y_test: pd.Series, features: list) -> Optional[Dict[str, float]]:
+    """Scores the published champion ONNX on the candidate's own holdout, or returns None if it is unavailable.
+
+    The registry only holds the champion's metrics on the split it was trained against, which is not comparable to
+    the fresh random holdout drawn from old + new data here.
+    """
+    path = champion_onnx_path()
+    if not os.path.exists(path):
+        return None
+    try:
+        preds = ONNXPredictor(path).predict(test_df[features])
+        return evaluate_holdout(y_test.to_numpy(), preds)
+    except Exception as e:
+        logger.warning(f"Could not score local champion ONNX on the candidate holdout: {e}")
+        return None
 
 
 def run_champion_challenger_retrain(
@@ -178,10 +196,15 @@ def run_champion_challenger_retrain(
     champion_info = tracker.get_champion_metrics(model_name=settings.MLFLOW_MODEL_NAME)
     champion_r2 = float(champion_info.get("r2", 0.0))
     champion_rmse = float(champion_info.get("rmse", float("inf")))
+    champion_source = "mlflow_registry_metrics"
+    same_holdout = _score_local_champion(test_df, y_test, candidate.features)
+    if same_holdout:
+        champion_r2, champion_rmse = same_holdout["r2"], same_holdout["rmse"]
+        champion_source = "local_champion_onnx_same_holdout"
     improvement_delta = candidate_r2 - champion_r2
 
     logger.info(
-        f"Active MLflow Champion -> R2: {champion_r2:.4f}, RMSE: {champion_rmse:.4f} | "
+        f"Active Champion ({champion_source}) -> R2: {champion_r2:.4f}, RMSE: {champion_rmse:.4f} | "
         f"Candidate Delta: {improvement_delta:+.4f} (Required Min Delta: {min_improvement_delta:+.4f}, "
         f"Min Absolute R2: {min_r2_threshold:.4f})"
     )
@@ -221,6 +244,7 @@ def run_champion_challenger_retrain(
         "rejection_reason": rejection_reason,
         "data_summary": data_summary,
         "champion_comparison": {
+            "champion_source": champion_source,
             "active_champion_r2": champion_r2,
             "active_champion_rmse": champion_rmse,
             "candidate_r2": candidate_r2,
@@ -265,6 +289,7 @@ def run_champion_challenger_retrain(
         "trigger_reason": trigger_reason,
         "model_name": model_name,
         "model_architecture": model_name,
+        "champion_metrics_source": champion_source,
         "retrain_dataset_source": data_source,
         "deployment_status": "PROMOTED_TO_PRODUCTION" if is_promoted else "REJECTED",
         "pipeline_stage": "retrain_champion_challenger",
