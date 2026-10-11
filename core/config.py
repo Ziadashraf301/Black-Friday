@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     POSTGRES_PORT: int = Field(default=5432)
     APP_DB_NAME: str = Field(default="fridayblack")
     MLFLOW_DB_NAME: str = Field(default="mlflow")
+    DB_POOL_SIZE: int = Field(default=10)
+    DB_MAX_OVERFLOW: int = Field(default=20)
+    DB_POOL_RECYCLE: int = Field(default=3600)
 
     @property
     def database_url(self) -> str:
