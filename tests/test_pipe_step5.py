@@ -267,3 +267,46 @@ def test_tag_outliers_requires_bounds_fitted_on_training_data():
 
     preprocessor.compute_outlier_bounds(frame["purchase"].iloc[:3])
     assert preprocessor.tag_outliers(frame)["is_outlier"].tolist() == [False, False, False, True]
+
+
+@pytest.fixture
+def basket_run(tmp_path, monkeypatch):
+    """Runs the market basket pipeline with every collaborator mocked; returns (tracker, run)."""
+    import pandas as pd
+
+    from ml.pipelines import market_basket as mb
+
+    tracker = MagicMock()
+    monkeypatch.setattr(mb, "MLflowTracker", lambda: tracker)
+    repo = MagicMock()
+    repo.get_cleaned_records_df.return_value = pd.DataFrame({"user_id": [1], "product_id": ["P1"]})
+    monkeypatch.setattr(mb, "BlackFridayRepository", lambda: repo)
+    monkeypatch.setattr(mb, "TransactionBasketEncoder", MagicMock())
+    engine = MagicMock()
+    engine.return_value.mine_rules.return_value = pd.DataFrame()
+    monkeypatch.setattr(mb, "AprioriAssociationEngine", engine)
+    i2v = MagicMock()
+    i2v.return_value.get_all_similar_products.return_value = {}
+    i2v.return_value.evaluate_embeddings.return_value = {}
+    monkeypatch.setattr(mb, "Item2VecRecommender", i2v)
+    network = MagicMock()
+    network.return_value.build_unified_metrics.return_value = pd.DataFrame()
+    monkeypatch.setattr(mb, "ProductNetworkGraph", network)
+    viz = MagicMock()
+    viz.generate_market_basket_charts.return_value = {}
+    monkeypatch.setattr(mb, "Visualizer", viz)
+    monkeypatch.setattr(mb.settings, "BASE_DIR", tmp_path)
+    return tracker, tmp_path, mb
+
+
+def test_market_basket_run_logs_the_real_graph_source(basket_run):
+    tracker, _, mb = basket_run
+
+    mb.run_market_basket_pipeline()
+
+    kwargs = tracker.log_run.call_args.kwargs
+    assert kwargs["params"]["graph_source"] == "apriori+item2vec"
+    assert kwargs["tags"]["graph_source"] == "apriori+item2vec"
+    with pytest.raises(TypeError):
+        mb.run_market_basket_pipeline(graph_source="item2vec")
+

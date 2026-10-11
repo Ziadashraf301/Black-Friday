@@ -14,11 +14,13 @@ from core.logging import get_logger
 logger = get_logger(__name__)
 
 
-def run_market_basket_pipeline(graph_source: str = "auto"):
+GRAPH_SOURCE = "apriori+item2vec"
+
+
+def run_market_basket_pipeline():
     """Extracts baskets, mines Apriori rules & Item2Vec embeddings, computes graph centrality, logs telemetry to MLflow, and stores metrics.
 
-    Args:
-        graph_source: 'apriori', 'item2vec', or 'auto' (prefers apriori, falls back to item2vec).
+    The product network is always built from both sources (see ProductNetworkGraph.build_unified_metrics).
     """
     repo = BlackFridayRepository()
     tracker = MLflowTracker()
@@ -86,7 +88,7 @@ def run_market_basket_pipeline(graph_source: str = "auto"):
             "window": window,
             "min_count": min_count,
             "epochs": epochs,
-            "graph_source": graph_source
+            "graph_source": GRAPH_SOURCE
         },
         "metrics": {
             "total_baskets": len(baskets),
@@ -121,7 +123,7 @@ def run_market_basket_pipeline(graph_source: str = "auto"):
         tags={
             "pipeline_stage": "market_basket_network",
             "algorithm": "Apriori_Item2Vec_NetworkGraph",
-            "graph_source": graph_source
+            "graph_source": GRAPH_SOURCE
         },
         artifacts=artifacts
     )
