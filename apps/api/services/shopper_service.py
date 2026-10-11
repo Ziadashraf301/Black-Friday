@@ -251,7 +251,8 @@ class ShopperService:
             if new_cache_entries:
                 cache_manager.mset_json(new_cache_entries, ttl=settings.REDIS_DEFAULT_TTL)
 
-        return [q for q in final_quotes if q is not None]
+        # Every slot is filled above (cache hit or fresh prediction), so quotes stay aligned with `items`.
+        return final_quotes
 
     @staticmethod
     def estimate_price(
@@ -417,13 +418,13 @@ class ShopperService:
             user_demographics=user_demographics,
         )
 
-        quote_map = {q["product_id"]: q for q in quotes}
+        if len(quotes) != len(items):
+            raise ValidationError(message="Unable to price all cart items", code="PRICING_UNAVAILABLE")
 
         # 3. Assemble all purchase unit records
         records_to_insert = []
-        for it in items:
+        for it, quote in zip(items, quotes):
             pid = it["product_id"]
-            quote = quote_map.get(pid)
             if not quote:
                 raise ValidationError(
                     message=f"Unable to price product '{pid}'",
