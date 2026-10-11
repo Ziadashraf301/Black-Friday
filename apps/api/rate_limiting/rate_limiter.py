@@ -18,7 +18,7 @@ from core.cache import cache_manager
 from core.config import settings
 from core.logging import get_logger
 from apps.api.auth import get_current_user
-from apps.api.client_identity import resolve_client_identity
+from apps.api.client_identity import client_ip, resolve_client_identity
 
 logger = get_logger(__name__)
 
@@ -256,6 +256,18 @@ rate_limiter = RedisRateLimiter(
     minute_limit=getattr(settings, "RATE_LIMIT_MINUTE", 60),
     day_limit=getattr(settings, "RATE_LIMIT_DAY", 1000),
 )
+
+
+# Dedicated, stricter limiter for unauthenticated credential endpoints (own buckets, keyed by IP)
+auth_rate_limiter = RedisRateLimiter(
+    minute_limit=settings.AUTH_RATE_LIMIT_MINUTE,
+    day_limit=settings.AUTH_RATE_LIMIT_DAY,
+)
+
+
+async def auth_rate_limit_dependency(request: Request):
+    """FastAPI route dependency throttling login/signup attempts per client IP."""
+    auth_rate_limiter.enforce(f"auth:{client_ip(request)}")
 
 
 async def rate_limit_dependency(

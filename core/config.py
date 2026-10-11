@@ -178,6 +178,9 @@ class Settings(BaseSettings):
     # Rate Limiting
     RATE_LIMIT_MINUTE: int = Field(default=60)
     RATE_LIMIT_DAY: int = Field(default=1000)
+    # Stricter per-IP limits for /auth/login and /auth/signup (brute-force protection)
+    AUTH_RATE_LIMIT_MINUTE: int = Field(default=10)
+    AUTH_RATE_LIMIT_DAY: int = Field(default=200)
 
     # JWT Authentication
     SECRET_KEY: str = Field(default=DEFAULT_SECRET_KEY)
