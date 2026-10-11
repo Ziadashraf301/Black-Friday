@@ -271,20 +271,24 @@ class ShoppingState(rx.State):
 
     # ── Hero product computed vars ──────────────────────────────────────
     @rx.var
+    def has_hero(self) -> bool:
+        return bool(self.hero_product.get("product_id"))
+
+    @rx.var
     def hero_id(self) -> str:
-        return str(self.hero_product.get("product_id", "P00025442"))
+        return str(self.hero_product.get("product_id", ""))
 
     @rx.var
     def hero_name(self) -> str:
-        return str(self.hero_product.get("name", "Artisan Paisley Silk Kimono"))
+        return str(self.hero_product.get("name", ""))
 
     @rx.var
     def hero_tagline(self) -> str:
-        return str(self.hero_product.get("tagline", "Heritage 1970s emerald botanical archive robe"))
+        return str(self.hero_product.get("tagline", ""))
 
     @rx.var
     def hero_image_url(self) -> str:
-        return str(self.hero_product.get("image_url", f"/products/{self.hero_id}.jpg"))
+        return str(self.hero_product.get("image_url") or (f"/products/{self.hero_id}.jpg" if self.has_hero else ""))
 
     @rx.var
     def hero_badge_label(self) -> str:
@@ -307,8 +311,8 @@ class ShoppingState(rx.State):
         return f"${p:.2f}"
 
     def open_hero_detail(self):
-        if self.hero_product:
-            self.open_product_detail(str(self.hero_product.get("product_id", "P00025442")))
+        if self.has_hero:
+            self.open_product_detail(self.hero_id)
 
     # ── Dynamic Filter Options ──────────────────────────────────────────
     @rx.var
@@ -1039,8 +1043,8 @@ class ShoppingState(rx.State):
             self.is_cart_open = True
 
     def add_hero_to_cart(self):
-        if self.hero_product:
-            self._add_with_size(self.hero_product.get("product_id", ""), self.hero_selected_size)
+        if self.has_hero:
+            self._add_with_size(self.hero_id, self.hero_selected_size)
             self.is_cart_open = True
 
     def remove_cart_item(self, key: str):

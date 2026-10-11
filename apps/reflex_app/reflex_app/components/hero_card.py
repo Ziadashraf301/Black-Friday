@@ -37,8 +37,11 @@ def size_pill(size: str) -> rx.Component:
 
 
 def hero_card() -> rx.Component:
-    hero = ShoppingState.hero_product
+    """Featured card; renders nothing when the catalog has no hero product."""
+    return rx.cond(ShoppingState.has_hero, _hero_card_body(), rx.fragment())
 
+
+def _hero_card_body() -> rx.Component:
     return rx.box(
         rx.vstack(
             # Top Header / Tags & Floating Circular 'Sale' Badge
@@ -194,7 +197,7 @@ def hero_card() -> rx.Component:
                     align_items="center",
                     justify_content="center",
                     cursor="pointer",
-                    on_click=ShoppingState.open_product_detail("P00025442"),
+                    on_click=ShoppingState.open_hero_detail,
                     _hover={"border_color": "#f59b38", "color": "#f59b38"},
                 ),
                 display="flex",
