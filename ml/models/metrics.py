@@ -32,7 +32,10 @@ def cross_validate(
     n_splits: int = 10,
     random_state: int = settings.RANDOM_SEED
 ) -> Dict[str, Any]:
-    """Runs k-fold cross validation mirroring R rsample/yardstick fit_resamples."""
+    """Runs k-fold cross validation mirroring R rsample/yardstick fit_resamples.
+
+    Refits `model` in place; it is left fitted on the last fold.
+    """
     kf = KFold(n_splits=n_splits, shuffle=True, random_state=random_state)
     fold_rmses: List[float] = []
     fold_r2s: List[float] = []
