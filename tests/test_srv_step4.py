@@ -84,3 +84,15 @@ def test_export_imputer_keeps_one_step_per_column(tmp_path):
     out = ONNXExporter.export_imputer(SimpleNamespace(imputer=inner, cols=cols), output_dir=str(tmp_path))
     meta = json.loads(open(out["metadata"], encoding="utf-8").read())
     assert sorted(s["target_col"] for s in meta["steps"]) == ["product_category_2", "product_category_3"]
+
+
+def test_lightgbm_subsample_freq_defaults_to_no_bagging():
+    from core.config import settings
+    from ml.models.regression import LightGBMModel
+
+    assert settings.LGBM_SUBSAMPLE_FREQ == 0  # champion behaviour unchanged
+    default = LightGBMModel().pipeline.named_steps["regressor"]
+    assert default.subsample_freq == 0
+
+    bagged = LightGBMModel(subsample_freq=1).pipeline.named_steps["regressor"]
+    assert bagged.subsample_freq == 1 and bagged.subsample == settings.LGBM_SUBSAMPLE

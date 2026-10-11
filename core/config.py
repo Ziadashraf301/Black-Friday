@@ -154,7 +154,10 @@ class Settings(BaseSettings):
     LGBM_LEARNING_RATE: float = Field(default=0.05)
     LGBM_NUM_LEAVES: int = Field(default=127)
     LGBM_MAX_DEPTH: int = Field(default=-1)
+    # LightGBM only applies LGBM_SUBSAMPLE (row bagging) when LGBM_SUBSAMPLE_FREQ > 0. The default 0 keeps the
+    # champion model unchanged, i.e. subsample has no effect until a freq is set.
     LGBM_SUBSAMPLE: float = Field(default=0.8)
+    LGBM_SUBSAMPLE_FREQ: int = Field(default=0, ge=0)
     LGBM_COLSAMPLE_BYTREE: float = Field(default=0.8)
     LGBM_N_JOBS: int = Field(default=-1)
 

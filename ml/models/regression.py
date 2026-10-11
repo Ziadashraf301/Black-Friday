@@ -233,6 +233,7 @@ class LightGBMModel(AbstractBaseModel):
         num_leaves: int = settings.LGBM_NUM_LEAVES,
         max_depth: int = settings.LGBM_MAX_DEPTH,
         subsample: float = settings.LGBM_SUBSAMPLE,
+        subsample_freq: int = settings.LGBM_SUBSAMPLE_FREQ,
         colsample_bytree: float = settings.LGBM_COLSAMPLE_BYTREE,
         n_jobs: int = settings.LGBM_N_JOBS,
         random_state: int = settings.RANDOM_SEED,
@@ -243,6 +244,7 @@ class LightGBMModel(AbstractBaseModel):
         self.num_leaves = num_leaves
         self.max_depth = max_depth
         self.subsample = subsample
+        self.subsample_freq = subsample_freq
         self.colsample_bytree = colsample_bytree
         self.n_jobs = n_jobs
         self.random_state = random_state
@@ -261,6 +263,7 @@ class LightGBMModel(AbstractBaseModel):
                             num_leaves=self.num_leaves,
                             max_depth=self.max_depth,
                             subsample=self.subsample,
+                            subsample_freq=self.subsample_freq,
                             colsample_bytree=self.colsample_bytree,
                             random_state=self.random_state,
                             n_jobs=self.n_jobs,
@@ -295,6 +298,7 @@ class LightGBMModel(AbstractBaseModel):
             "num_leaves": self.num_leaves,
             "max_depth": self.max_depth,
             "subsample": self.subsample,
+            "subsample_freq": self.subsample_freq,
             "colsample_bytree": self.colsample_bytree,
             "features": self.features,
             "random_state": self.random_state,
