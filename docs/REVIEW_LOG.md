@@ -38,3 +38,5 @@ The lint baseline is effectively "never enforced". Treat lint as a per-file chec
 
 | ID | Area | Finding | File:line | Severity | Status | Commit |
 |----|------|---------|-----------|----------|--------|--------|
+| CORE-1 | Core | `_json_serializer` calls `.item()` on any object that has an `.item` attribute. For a `MagicMock` (as in `tests/test_api.py::test_shopper_predict_and_purchase_flow`) every `.item()` returns another mock, so `json.dumps` never ends and the test hangs. The serializer should only unwrap numpy scalars and fall back to `str()` otherwise. The test fixture also needs a real return value for `get_curated_products()`. | `core/cache/redis_client.py:20` | medium | open | |
+| AI-1 | AI | Circular import: `ai.nodes.router_node` → `ai.workflow.state` → `ai/workflow/__init__` → `ai.workflow.graph` → `ai.nodes.router_node` (partially initialised). It breaks collection of `tests/test_fix_wp7_logging.py` when it imports `ai.nodes` first. | `ai/workflow/__init__.py:6`, `ai/workflow/graph.py:9`, `ai/nodes/router_node.py:8` | medium | open | |

@@ -11,7 +11,7 @@
 4. Review level: `medium` (use `low` only where noted). Review only the listed paths.
 5. Don't re-report findings already in the log as fixed / deferred / won't fix.
 6. Fix only `high`/`medium` severity bugs unless the user says otherwise; log the rest as `deferred`.
-7. Every fix gets a test where practical. After fixing, run `pytest tests/ -v` (including `tests/test_architecture.py`) and `make lint`, if the test tooks huge time stop and see what is the problem.
+7. Every fix gets a test where practical. After fixing, run only the tests related to the touched files (plus `tests/test_architecture.py`), one file at a time with `--timeout=45`; the full suite hangs on Windows (see the Baseline in the log). Lint only the touched files (flake8, black --check, isort --check). If a test takes a long time, stop and find out why.
 8. Follow all CLAUDE.md rules (layering, no `print()`, config via `settings`, mlflow only in `core/tracking/`).
 
 ## Per-step procedure
