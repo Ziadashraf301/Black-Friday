@@ -91,3 +91,15 @@ def test_anl6_rules_from_a_previous_run_are_cleared():
     engine.min_support = 0.99
     assert engine.mine_rules(_basket_matrix([[1, 0, 0], [0, 1, 0], [0, 0, 1]])).empty
     assert engine.get_top_rules() == []
+
+
+def _baskets():
+    rng = np.random.RandomState(0)
+    items = [f"P{i}" for i in range(20)]
+    return [list(rng.choice(items, size=6, replace=False)) for _ in range(60)]
+
+
+def test_anl7_item2vec_training_is_reproducible():
+    a = Item2VecRecommender(min_count=1, epochs=3).fit(_baskets())
+    b = Item2VecRecommender(min_count=1, epochs=3).fit(_baskets())
+    assert np.array_equal(a.get_embedding("P1"), b.get_embedding("P1"))

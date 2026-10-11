@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from typing import List, Dict, Tuple, Optional, Any
+from core.config import settings
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -36,7 +37,9 @@ class Item2VecRecommender:
             window=self.window,
             min_count=self.min_count,
             sg=1,  # Skip-gram
-            workers=4,
+            # One worker plus a fixed seed makes training reproducible; several workers reorder updates between runs
+            workers=1,
+            seed=settings.RANDOM_SEED,
             epochs=self.epochs
         )
         logger.info(f"Item2Vec training complete. Vocabulary size: {len(self.model.wv):,} products.")
