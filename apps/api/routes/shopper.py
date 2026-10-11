@@ -5,6 +5,7 @@ Shopper routes — catalog browsing, recommendations, tailored pricing, and purc
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel
 
 from apps.api.auth import get_current_user
 from apps.api.dependencies import get_repository
@@ -24,6 +25,21 @@ from apps.api.schemas import (
 )
 from apps.api.services.shopper_service import shopper_service
 from core.db.repository import BlackFridayRepository
+
+DEMOGRAPHIC_FIELDS = (
+    "gender",
+    "age",
+    "occupation",
+    "city_category",
+    "stay_in_current_city_years",
+    "marital_status",
+)
+
+
+def _without_demographics(item: BaseModel) -> Dict[str, Any]:
+    """Item payload minus client-sent demographics: authenticated pricing uses the account's own profile."""
+    return item.model_dump(exclude=set(DEMOGRAPHIC_FIELDS))
+
 
 router = APIRouter(prefix="/shopper", tags=["Shopper Experience"])
 
@@ -74,7 +90,7 @@ def predict_price_batch(
         )
     }
     quotes = shopper_service.estimate_price_batch(
-        items=[item.model_dump() for item in request.items],
+        items=[_without_demographics(item) for item in request.items],
         repo=repo,
         user_id=user_id,
         user_demographics=user_demo,
@@ -119,12 +135,12 @@ def record_purchase(
         cat1=request.product_category_1,
         cat2=request.product_category_2,
         cat3=request.product_category_3,
-        gender=request.gender or current_user.get("gender"),
-        age=request.age or current_user.get("age"),
-        occupation=request.occupation if request.occupation is not None else current_user.get("occupation"),
-        city_category=request.city_category or current_user.get("city_category"),
-        stay_in_current_city_years=request.stay_in_current_city_years or current_user.get("stay_in_current_city_years"),
-        marital_status=request.marital_status if request.marital_status is not None else current_user.get("marital_status"),
+        gender=current_user.get("gender"),
+        age=current_user.get("age"),
+        occupation=current_user.get("occupation"),
+        city_category=current_user.get("city_category"),
+        stay_in_current_city_years=current_user.get("stay_in_current_city_years"),
+        marital_status=current_user.get("marital_status"),
         repo=repo,
     )
     return ShopperPurchaseResponse(**res)
@@ -140,7 +156,7 @@ def record_batch_purchase(
     user_id = current_user["user_id"]
     results = shopper_service.process_batch_purchase(
         user_id=user_id,
-        items=[item.model_dump() for item in request.items],
+        items=[_without_demographics(item) for item in request.items],
         repo=repo,
         user_demographics=current_user,
     )
