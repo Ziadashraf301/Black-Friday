@@ -307,7 +307,7 @@ class ShoppingState(rx.State):
 
     @rx.var
     def hero_image_url(self) -> str:
-        return str(self.hero_product.get("image_url") or (f"/products/{self.hero_id}.jpg" if self.has_hero else ""))
+        return str(self.hero_product.get("image_url") or f"/products/{self.hero_id}.jpg")
 
     @rx.var
     def hero_badge_label(self) -> str:
@@ -450,9 +450,8 @@ class ShoppingState(rx.State):
 
     @rx.var
     def active_original_price_display(self) -> str:
-        if not self.active_product_original_price:
-            return ""
-        return f"Original: ${self.active_product_original_price:.2f}"
+        price = _format_price(self.active_product_original_price, missing="")
+        return f"Original: {price}" if price else ""
 
     @rx.var
     def active_estimated_price_display(self) -> str:
