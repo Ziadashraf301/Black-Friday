@@ -34,7 +34,7 @@ class RedisCacheManager:
         self._db = db
         self._last_failure_time: float = 0.0
         self._cooldown_seconds: float = 15.0
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         self._connect()
 
     def _connect(self):
@@ -79,11 +79,14 @@ class RedisCacheManager:
     def is_available(self) -> bool:
         if self._is_available and self._client is not None:
             return True
-        now = time.monotonic()
-        if now - self._last_failure_time < self._cooldown_seconds:
-            return False
-        self._connect()
-        return self._is_available
+        with self._lock:
+            # Re-check under the lock: another thread may have reconnected (or failed) while we waited.
+            if self._is_available and self._client is not None:
+                return True
+            if time.monotonic() - self._last_failure_time < self._cooldown_seconds:
+                return False
+            self._connect()
+            return self._is_available
 
     @property
     def client(self) -> Optional[redis.Redis]:
