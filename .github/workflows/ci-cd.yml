@@ -55,6 +55,7 @@ jobs:
           cache: "pip"
           cache-dependency-path: |
             requirements.txt
+            requirements-ml.txt
             requirements-dev.txt
 
       - name: Install Dependencies

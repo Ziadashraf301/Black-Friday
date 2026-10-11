@@ -73,7 +73,7 @@ Black Friday/
 ├── .github/workflows/ # CI/CD pipeline (ci-cd.yml)
 ├── docker-compose.yml # Full stack orchestration (6 services)
 ├── Makefile           # Developer & MLOps command suite
-├── requirements.txt   # Runtime dependencies (requirements-dev.txt adds test/lint tools)
+├── requirements.txt   # API runtime only (Docker image); requirements-ml.txt adds pipelines, requirements-dev.txt adds tests/lint
 └── .env               # Environment variables (gitignored)
 ```
 
