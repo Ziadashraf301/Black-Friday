@@ -10,6 +10,8 @@ from core.logging import get_logger
 
 logger = get_logger(__name__)
 
+PRODUCT_ID_RE = re.compile(r"\b[pP][\s\-_#]?([0-9oO]{4,8})\b")
+
 
 def details_agent_node(state: AgentState) -> Dict[str, Any]:
     """
@@ -21,7 +23,7 @@ def details_agent_node(state: AgentState) -> Dict[str, Any]:
 
     # If product ID not in entities, scan query directly
     if not product_ids:
-        p_match = re.search(r"\b[pP][\s\-_#]?([0-9oO]{4,8})\b", query)
+        p_match = PRODUCT_ID_RE.search(query)
         if p_match:
             raw_digits = p_match.group(1).upper().replace("O", "0")
             product_ids = [f"P{raw_digits.zfill(8)}"]
