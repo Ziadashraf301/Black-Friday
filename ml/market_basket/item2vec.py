@@ -17,11 +17,17 @@ except ImportError:
 class Item2VecRecommender:
     """Computes dense 32-dimensional product embedding vectors from customer baskets."""
 
-    def __init__(self, vector_size: int = 32, window: int = 5, min_count: int = 5, epochs: int = 10):
-        self.vector_size = vector_size
-        self.window = window
-        self.min_count = min_count
-        self.epochs = epochs
+    def __init__(
+        self,
+        vector_size: Optional[int] = None,
+        window: Optional[int] = None,
+        min_count: Optional[int] = None,
+        epochs: Optional[int] = None,
+    ):
+        self.vector_size = settings.ITEM2VEC_VECTOR_SIZE if vector_size is None else vector_size
+        self.window = settings.ITEM2VEC_WINDOW if window is None else window
+        self.min_count = settings.ITEM2VEC_MIN_COUNT if min_count is None else min_count
+        self.epochs = settings.ITEM2VEC_EPOCHS if epochs is None else epochs
         self.model = None
 
     def fit(self, baskets: List[List[str]]) -> "Item2VecRecommender":
@@ -64,12 +70,8 @@ class Item2VecRecommender:
 
         results = {}
         for pid in self.model.wv.index_to_key:
-            try:
-                similar = self.model.wv.most_similar(pid, topn=top_n)
-                filtered = [(prod, round(float(sim), 4)) for prod, sim in similar if sim >= min_similarity]
-                results[pid] = filtered
-            except Exception:
-                results[pid] = []
+            similar = self.model.wv.most_similar(pid, topn=top_n)
+            results[pid] = [(prod, round(float(sim), 4)) for prod, sim in similar if sim >= min_similarity]
         return results
 
     @property

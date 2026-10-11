@@ -103,3 +103,18 @@ def test_anl7_item2vec_training_is_reproducible():
     a = Item2VecRecommender(min_count=1, epochs=3).fit(_baskets())
     b = Item2VecRecommender(min_count=1, epochs=3).fit(_baskets())
     assert np.array_equal(a.get_embedding("P1"), b.get_embedding("P1"))
+
+
+def test_anl8_item2vec_defaults_follow_settings(monkeypatch):
+    monkeypatch.setattr(settings, "ITEM2VEC_MIN_COUNT", 3)
+    monkeypatch.setattr(settings, "ITEM2VEC_EPOCHS", 4)
+    model = Item2VecRecommender()
+    assert (model.min_count, model.epochs, model.vector_size, model.window) == (3, 4, 32, 5)
+    assert Item2VecRecommender(min_count=1).min_count == 1
+
+
+def test_anl8_similarity_pass_covers_every_product():
+    model = Item2VecRecommender(min_count=1, epochs=2).fit(_baskets())
+    sims = model.get_all_similar_products(top_n=3)
+    assert set(sims) == set(model.vocabulary)
+    assert all(len(v) == 3 for v in sims.values())
