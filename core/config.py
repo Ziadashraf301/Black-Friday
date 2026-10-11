@@ -6,6 +6,8 @@ from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 DEFAULT_SECRET_KEY = "blackfriday-super-secret-key-change-in-production-2024"
+DEFAULT_POSTGRES_PASSWORD = "postgres_password123"
+DEFAULT_MINIO_ROOT_PASSWORD = "password123"
 DEV_ENVIRONMENTS = {"development", "dev", "local", "test", "testing"}
 
 
@@ -39,7 +41,7 @@ class Settings(BaseSettings):
 
     # PostgreSQL Analytical Warehouse
     POSTGRES_USER: str = Field(default="postgres")
-    POSTGRES_PASSWORD: str = Field(default="postgres_password123")
+    POSTGRES_PASSWORD: str = Field(default=DEFAULT_POSTGRES_PASSWORD)
     POSTGRES_HOST: str = Field(default="localhost")
     POSTGRES_PORT: int = Field(default=5432)
     APP_DB_NAME: str = Field(default="fridayblack")
@@ -63,7 +65,7 @@ class Settings(BaseSettings):
     # MinIO / S3 Storage
     MINIO_HOST: str = Field(default="localhost")
     MINIO_ROOT_USER: str = Field(default="admin")
-    MINIO_ROOT_PASSWORD: str = Field(default="password123")
+    MINIO_ROOT_PASSWORD: str = Field(default=DEFAULT_MINIO_ROOT_PASSWORD)
     MINIO_PORT: int = Field(default=9000)
     MINIO_BUCKET_MLFLOW: str = Field(default="mlflow-artifacts")
     S3_ENDPOINT_URL: Optional[str] = Field(default=None)
@@ -184,9 +186,19 @@ class Settings(BaseSettings):
     JWT_AUDIENCE: str = Field(default="blackfriday-clients")
 
     @model_validator(mode="after")
-    def reject_default_secret_outside_dev(self):
-        if self.ENVIRONMENT.strip().lower() not in DEV_ENVIRONMENTS and self.SECRET_KEY == DEFAULT_SECRET_KEY:
-            raise ValueError("SECRET_KEY must be set to a non-default value when ENVIRONMENT is not a dev environment.")
+    def reject_default_credentials_outside_dev(self):
+        if self.ENVIRONMENT.strip().lower() in DEV_ENVIRONMENTS:
+            return self
+        defaults = {
+            "SECRET_KEY": DEFAULT_SECRET_KEY,
+            "POSTGRES_PASSWORD": DEFAULT_POSTGRES_PASSWORD,
+            "MINIO_ROOT_PASSWORD": DEFAULT_MINIO_ROOT_PASSWORD,
+        }
+        unsafe = [name for name, default in defaults.items() if getattr(self, name) == default]
+        if unsafe:
+            raise ValueError(
+                f"{', '.join(unsafe)} must be set to a non-default value when ENVIRONMENT is not a dev environment."
+            )
         return self
 
     GEMINI_API_KEY: Optional[str] = Field(default=None)
