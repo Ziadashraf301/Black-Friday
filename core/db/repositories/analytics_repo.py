@@ -4,6 +4,7 @@ Analytics repository for executive KPI queries, demographic distributions, and s
 from typing import Dict, Any, List
 from sqlalchemy import text
 from core.db.repositories.base import BaseRepository
+from core.exceptions import ValidationError
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -33,7 +34,7 @@ class AnalyticsRepository(BaseRepository):
         """Distribution of orders across specified demographic column."""
         allowed_columns = {"gender", "age", "marital_status", "city_category", "occupation", "stay_in_current_city_years"}
         if column_name not in allowed_columns:
-            raise ValueError(f"Column '{column_name}' is not an authorized categorical feature.")
+            raise ValidationError(f"Column '{column_name}' is not an authorized categorical feature.")
         query = text(f"""
             SELECT {column_name} as category, COUNT(*) as order_count,
                    ROUND(AVG(purchase), 2) as avg_purchase,
