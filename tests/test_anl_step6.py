@@ -57,3 +57,14 @@ def test_anl4_k_clusters_default_is_read_at_construction(monkeypatch):
 def test_anl4_clustering_needs_two_customers():
     with pytest.raises(ValueError, match="at least 2"):
         CustomerSegmentationEngine().fit_predict(_customers().head(1))
+
+
+def test_anl11_linkage_method_comes_from_settings(monkeypatch):
+    import ml.segmentation.clustering as clustering
+
+    used = []
+    real = clustering.linkage
+    monkeypatch.setattr(clustering, "linkage", lambda d, method: used.append(method) or real(d, method=method))
+    monkeypatch.setattr(settings, "SEGMENTATION_LINKAGE", "average")
+    CustomerSegmentationEngine(k_clusters=2).fit_predict(_customers())
+    assert used == ["average"]

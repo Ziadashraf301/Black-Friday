@@ -120,9 +120,9 @@ class CustomerSegmentationEngine:
         # Compute Gower distance matrix
         gower_matrix = gower.gower_matrix(feature_df)
 
-        logger.info("Performing hierarchical clustering with complete linkage...")
+        logger.info(f"Performing hierarchical clustering with {settings.SEGMENTATION_LINKAGE} linkage...")
         condensed_dist = squareform(gower_matrix, checks=False)
-        linkage_matrix = linkage(condensed_dist, method="complete")
+        linkage_matrix = linkage(condensed_dist, method=settings.SEGMENTATION_LINKAGE)
 
         logger.info(f"Cutting dendrogram into k={self.k_clusters} clusters...")
         raw_cluster_assignments = fcluster(linkage_matrix, t=self.k_clusters, criterion="maxclust")
