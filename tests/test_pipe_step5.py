@@ -129,3 +129,39 @@ def test_failed_replace_load_keeps_previous_rows():
     finally:
         with repo.engine.begin() as conn:
             conn.execute(text(f"DROP TABLE IF EXISTS {table}"))
+
+
+def test_invalidate_caches_deletes_each_pattern(monkeypatch):
+    fake = MagicMock()
+    monkeypatch.setattr("core.cache.cache_manager", fake)
+
+    common.invalidate_caches("price:*", "shopper:*")
+
+    assert [c.args[0] for c in fake.delete_pattern.call_args_list] == ["price:*", "shopper:*"]
+
+
+def test_invalidate_caches_never_raises(monkeypatch):
+    fake = MagicMock()
+    fake.delete_pattern.side_effect = RuntimeError("redis down")
+    monkeypatch.setattr("core.cache.cache_manager", fake)
+
+    common.invalidate_caches("price:*")
+
+
+def test_cron_cycle_flushes_price_shopper_and_analytics_caches(monkeypatch):
+    from ml.pipelines import cron_scheduler
+
+    for name in (
+        "run_customer_segmentation",
+        "run_market_basket_pipeline",
+        "run_production_drift_monitor",
+        "run_seed_curated_catalog",
+        "BlackFridayRepository",
+    ):
+        monkeypatch.setattr(cron_scheduler, name, MagicMock())
+    flushed = MagicMock()
+    monkeypatch.setattr(cron_scheduler, "invalidate_caches", flushed)
+
+    cron_scheduler.run_cron_cycle()
+
+    flushed.assert_called_once_with("price:*", "shopper:*", "analytics:*")

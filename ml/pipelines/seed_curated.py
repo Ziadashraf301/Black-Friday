@@ -11,6 +11,7 @@ from core.config import settings
 from core.db.repository import BlackFridayRepository
 from core.embeddings import embedding_service, EmbeddingService
 from core.logging import get_logger
+from ml.pipelines.common import invalidate_caches
 
 logger = get_logger(__name__)
 
@@ -42,13 +43,7 @@ class CuratedCatalogSeeder:
         self.repo.seed_curated_products(products)
         logger.info(f"Seeded {len(products)} products into warehouse.")
 
-        try:
-            from core.cache import cache_manager
-            cache_manager.delete_pattern("analytics:*")
-            cache_manager.delete_pattern("shopper:*")
-            logger.info("Invalidated analytics and shopper catalog cache entries.")
-        except Exception as e:
-            logger.warning(f"Cache invalidation warning: {e}")
+        invalidate_caches("analytics:*", "shopper:*")
 
         # 2. Incremental vector embedding skip logic
         if force_reembed:

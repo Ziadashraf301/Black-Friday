@@ -6,7 +6,7 @@ from typing import Optional, Dict, Any
 from core.db.repository import BlackFridayRepository
 from ml.features.preprocessor import DataPreprocessor
 from ml.models.registry import ModelRegistry
-from ml.pipelines.common import champion_onnx_path, publish_champion_onnx
+from ml.pipelines.common import MODEL_CACHE_PATTERNS, champion_onnx_path, invalidate_caches, publish_champion_onnx
 from ml.models.metrics import ModelEvaluator, evaluate_holdout
 from ml.models.onnx_exporter import ONNXExporter
 from ml.serving.predictor import ONNXPredictor
@@ -363,6 +363,7 @@ def run_champion_challenger_retrain(
     if is_promoted and run_id:
         tracker.promote_to_champion(run_id=run_id, model_name=settings.MLFLOW_MODEL_NAME)
         tracker.download_champion_onnx(model_name=settings.MLFLOW_MODEL_NAME)
+        invalidate_caches(*MODEL_CACHE_PATTERNS)
         logger.info(f"✅ Champion promotion complete in MLflow for '{model_name}' (Run ID: {run_id}).")
 
     retrain_result = RetrainResult(

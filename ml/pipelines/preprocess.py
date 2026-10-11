@@ -11,6 +11,7 @@ from ml.tracking.mlflow_tracker import MLflowTracker
 from ml.visualization.visualizer import Visualizer
 from ml.models.metrics import ModelEvaluator
 from ml.models.onnx_exporter import ONNXExporter
+from ml.pipelines.common import invalidate_caches
 
 from core.config import settings
 from core.logging import get_logger
@@ -97,12 +98,7 @@ def run_preprocessing():
     logger.info("Persisting cleaned data with train/test split indicator to database...")
     repo.replace_cleaned_batch(cleaned_df)
 
-    try:
-        from core.cache import cache_manager
-        cache_manager.delete_pattern("analytics:*")
-        logger.info("Invalidated analytics cache entries.")
-    except Exception as e:
-        logger.warning(f"Analytics cache invalidation warning: {e}")
+    invalidate_caches("analytics:*")
 
     # 10. Export Fitted MissForest Imputer Model to Lightweight ONNX Format for Production Serving
     imputer_onnx_dir = os.path.join(settings.BASE_DIR, "models", "onnx", "imputer")

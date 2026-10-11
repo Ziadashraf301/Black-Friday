@@ -3,6 +3,7 @@ import pandas as pd
 from core.db.repository import BlackFridayRepository
 from ml.features.data_contract import validate_raw_data
 from core.config import settings
+from ml.pipelines.common import invalidate_caches
 from core.logging import get_logger
 
 from typing import Optional
@@ -32,12 +33,7 @@ def run_ingestion(csv_path: Optional[str] = None):
     repo = BlackFridayRepository()
     repo.replace_raw_batch(raw_df)
 
-    try:
-        from core.cache import cache_manager
-        cache_manager.delete_pattern("analytics:*")
-        logger.info("Invalidated analytics cache entries.")
-    except Exception as e:
-        logger.warning(f"Analytics cache invalidation warning: {e}")
+    invalidate_caches("analytics:*")
 
     logger.info("Raw data ingestion successfully finished.")
 

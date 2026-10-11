@@ -6,7 +6,7 @@ from core.db.repository import BlackFridayRepository
 from ml.models.registry import ModelRegistry
 from ml.models.metrics import ModelEvaluator
 from ml.models.onnx_exporter import ONNXExporter
-from ml.pipelines.common import publish_champion_onnx
+from ml.pipelines.common import MODEL_CACHE_PATTERNS, invalidate_caches, publish_champion_onnx
 from ml.tracking.mlflow_tracker import MLflowTracker
 from ml.tracking.explainability import ModelExplainability
 from ml.visualization.visualizer import Visualizer
@@ -153,6 +153,7 @@ def run_training_pipeline(model_names: list = None):
         tracker.promote_to_champion(run_id=best_run_id, model_name=settings.MLFLOW_MODEL_NAME)
         tracker.download_champion_onnx(model_name=settings.MLFLOW_MODEL_NAME)
         publish_champion_onnx(metadata[best_model_name]["onnx_path"])
+        invalidate_caches(*MODEL_CACHE_PATTERNS)
 
     # Save local metadata cache
     metadata_path = os.path.join(settings.BASE_DIR, "models", "metadata.json")
