@@ -9,8 +9,14 @@ class CustomerFeatureExtractor:
     """Extracts customer-level behavioral and demographic metrics for clustering."""
 
     def extract_features(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Aggregates transactional purchase history into 1 row per unique User_ID."""
+        """Aggregates transactional purchase history into 1 row per unique User_ID.
+
+        Note: ``frequency`` is the number of DISTINCT products a customer bought, not the number of purchase rows,
+        so repeat purchases of one product count once. Switching to a purchase count would change the clusters and
+        personas, so that decision is deferred to round 2 (PIPE-13).
+        """
         logger.info(f"Extracting customer features from {len(df):,} transactions...")
+        logger.info("Customer 'frequency' = number of distinct products bought (not purchase rows).")
 
         # 1. Behavioral KPIs per customer
         agg_funcs = {

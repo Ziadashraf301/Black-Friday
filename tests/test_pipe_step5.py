@@ -344,3 +344,25 @@ def test_train_promotes_only_a_model_that_beats_the_champion_on_the_same_split()
     assert should_promote(0.73, {"r2": 0.72}) is True
     assert should_promote(0.72, {"r2": 0.72}) is False
     assert should_promote(0.40, {"r2": 0.72}) is False
+
+
+def test_customer_frequency_counts_distinct_products_not_purchase_rows():
+    import pandas as pd
+
+    from ml.features.customer_features import CustomerFeatureExtractor
+
+    df = pd.DataFrame(
+        {
+            "user_id": [1, 1, 1],
+            "product_id": ["P1", "P1", "P2"],
+            "gender": ["F"] * 3,
+            "marital_status": [0] * 3,
+            "age": ["26-35"] * 3,
+            "purchase": [10.0, 20.0, 30.0],
+            "product_category_1": [1, 1, 2],
+        }
+    )
+
+    features = CustomerFeatureExtractor().extract_features(df)
+
+    assert features["frequency"].iloc[0] == 2
