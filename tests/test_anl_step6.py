@@ -68,3 +68,17 @@ def test_anl11_linkage_method_comes_from_settings(monkeypatch):
     monkeypatch.setattr(settings, "SEGMENTATION_LINKAGE", "average")
     CustomerSegmentationEngine(k_clusters=2).fit_predict(_customers())
     assert used == ["average"]
+
+
+def _basket_matrix(rows):
+    return pd.DataFrame(rows, columns=["a", "b", "c"]).astype(bool)
+
+
+def test_anl5_negative_association_is_not_labelled_1_2():
+    # P(a)=P(b)=4/6, P(a and b)=2/6 -> lift 0.75
+    m = _basket_matrix([[1, 0, 0], [1, 0, 0], [1, 1, 0], [1, 1, 0], [0, 1, 0], [0, 1, 0]])
+    rules = AprioriAssociationEngine(min_support=0.1, min_confidence=0.1).mine_rules(m)
+    levels = dict(zip(zip(rules["antecedents"].map(sorted).map(tuple), rules["consequents"].map(sorted).map(tuple)),
+                      zip(rules["lift"], rules["lift_level"])))
+    lift, level = levels[(("a",), ("b",))]
+    assert lift < 1 and level == "<1"

@@ -36,7 +36,9 @@ class AprioriAssociationEngine:
 
         # Categorize lift levels matching R methodology
         def assign_lift_level(lift: float) -> str:
-            if lift < 2.0:
+            if lift < 1.0:
+                return "<1"  # negatively associated: bought together less often than chance
+            elif lift < 2.0:
                 return "1-2"
             elif lift < 3.0:
                 return "2-3"
