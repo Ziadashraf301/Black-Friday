@@ -6,6 +6,7 @@ from typing import Optional, Dict, Any
 from core.db.repository import BlackFridayRepository
 from ml.features.preprocessor import DataPreprocessor
 from ml.models.registry import ModelRegistry
+from ml.pipelines.common import publish_champion_onnx
 from ml.models.metrics import ModelEvaluator
 from ml.models.onnx_exporter import ONNXExporter
 from ml.tracking.mlflow_tracker import MLflowTracker
@@ -316,6 +317,7 @@ def run_champion_challenger_retrain(
         onnx_file = os.path.join(onnx_dir, f"{model_name}.onnx")
         ONNXExporter.export_regression_pipeline(candidate.pipeline, candidate.features, onnx_file)
         ONNXExporter.verify_parity(candidate, onnx_file, test_df[candidate.features].head(50))
+        publish_champion_onnx(onnx_file)
         mlflow_tags["promoted_by"] = "automated_ct_pipeline"
     else:
         logger.warning(

@@ -21,6 +21,7 @@ import pandas as pd
 from typing import Optional
 from core.db.repository import BlackFridayRepository
 from ml.models.registry import ModelRegistry
+from ml.pipelines.common import champion_onnx_path, onnx_dir
 from ml.tracking.drift_monitor import DriftMonitor, DriftResult
 from ml.tracking.mlflow_tracker import MLflowTracker
 from ml.serving.predictor import ONNXPredictor
@@ -29,6 +30,21 @@ from core.config import settings
 from core.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+def _resolve_scoring_onnx(model_name: str, tracker: MLflowTracker) -> str:
+    """Prefers the published Production Champion, then the requested architecture's export, then MLflow."""
+    candidates = [champion_onnx_path(), os.path.join(onnx_dir(), f"{model_name}.onnx")]
+    for path in candidates:
+        if os.path.exists(path):
+            return path
+
+    logger.info(f"No local ONNX model for '{model_name}'. Attempting MLflow Champion download...")
+    try:
+        tracker.download_champion_onnx(model_name=settings.MLFLOW_MODEL_NAME)
+    except Exception as e:
+        logger.warning(f"Could not fetch Champion ONNX model from MLflow: {e}")
+    return next((path for path in candidates if os.path.exists(path)), candidates[0])
 
 
 def run_production_drift_monitor(
@@ -93,18 +109,8 @@ def run_production_drift_monitor(
                 curr_eval = imputer.transform(curr_eval)
                 break
 
-    # 3. Score Predictions using Production ONNX Model (Fast Inference, No Re-Fitting)
-    onnx_path = os.path.join(settings.BASE_DIR, "models", "onnx", f"{model_name}.onnx")
-    if not os.path.exists(onnx_path):
-        onnx_path = os.path.join(settings.BASE_DIR, "models", "onnx", "champion.onnx")
-
-    if not os.path.exists(onnx_path):
-        logger.info(f"Local ONNX model '{model_name}.onnx' not found. Attempting MLflow Champion download...")
-        try:
-            tracker.download_champion_onnx(model_name=settings.MLFLOW_MODEL_NAME)
-            onnx_path = os.path.join(settings.BASE_DIR, "models", "onnx", "champion.onnx")
-        except Exception as e:
-            logger.warning(f"Could not fetch Champion ONNX model from MLflow: {e}")
+    # 3. Score Predictions using the Production Champion ONNX (Fast Inference, No Re-Fitting)
+    onnx_path = _resolve_scoring_onnx(model_name, tracker)
 
     if os.path.exists(onnx_path):
         logger.info(f"Scoring predictions with production ONNX Runtime engine: {os.path.basename(onnx_path)}")
