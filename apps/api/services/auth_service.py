@@ -3,6 +3,8 @@ Authentication service — user registration, credential validation, and JWT ses
 """
 from typing import Dict, Any
 
+from sqlalchemy.exc import IntegrityError
+
 from core.exceptions import ConflictError, UnauthorizedError
 from core.security import (
     hash_password,
@@ -17,6 +19,10 @@ from core.db.repository import BlackFridayRepository
 logger = get_logger(__name__)
 
 
+def _normalize_email(email: str) -> str:
+    return email.strip().lower()
+
+
 class AuthService:
     """Enterprise authentication service coordinating user accounts and JWT sessions."""
 
@@ -29,17 +35,18 @@ class AuthService:
     @classmethod
     def register_user(cls, user_data: Dict[str, Any], repo: BlackFridayRepository) -> Dict[str, Any]:
         """Registers a new shopper and generates their session token."""
-        existing = repo.get_user_by_email(user_data["email"])
-        if existing:
-            raise ConflictError(
-                message=f"An account with email '{user_data['email']}' already exists.",
-                code="EMAIL_CONFLICT",
-            )
+        email = _normalize_email(user_data["email"])
+        conflict = ConflictError(
+            message=f"An account with email '{email}' already exists.",
+            code="EMAIL_CONFLICT",
+        )
+        if repo.get_user_by_email(email):
+            raise conflict
 
         pw_hash = cls.hash_password(user_data["password"])
         record = {
             "name": user_data["name"],
-            "email": user_data["email"],
+            "email": email,
             "password_hash": pw_hash,
             "gender": user_data.get("gender", "M"),
             "age": user_data.get("age", "26-35"),
@@ -52,7 +59,11 @@ class AuthService:
             "recommended_action": "Exclusive member promotions",
         }
 
-        user = repo.create_user(record)
+        try:
+            user = repo.create_user(record)
+        except IntegrityError:
+            # Concurrent signup with the same email lost the race against the UNIQUE constraint
+            raise conflict
         token = cls.create_access_token({
             "sub": str(user["user_id"]),
             "name": user["name"],
@@ -76,7 +87,11 @@ class AuthService:
     @classmethod
     def authenticate_user(cls, email: str, password: str, repo: BlackFridayRepository) -> Dict[str, Any]:
         """Validates credentials and returns JWT token."""
-        user = repo.get_user_by_email(email)
+        normalized = _normalize_email(email)
+        # Fall back to the submitted spelling for accounts created before emails were lower-cased
+        user = repo.get_user_by_email(normalized) or (
+            repo.get_user_by_email(email.strip()) if email.strip() != normalized else None
+        )
         if not user:
             raise UnauthorizedError(
                 message="Incorrect email or password.",
