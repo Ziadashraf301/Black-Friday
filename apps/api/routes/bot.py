@@ -10,7 +10,6 @@ import re
 from typing import Optional, Dict, Any, List, AsyncGenerator
 import json
 import asyncio
-import base64
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, Depends, Request
 from fastapi.responses import StreamingResponse
@@ -22,7 +21,6 @@ from ai.services.cache_service import cache_service
 from ai.guardrails.strike_tracker import strike_tracker
 from apps.api.client_identity import DEFAULT_SESSION_ID, bot_user_id, guest_user_id, sanitize_session_id
 from apps.api.rate_limiting.rate_limiter import rate_limit_client_dependency
-from core.config import settings
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -269,9 +267,6 @@ async def bot_live_websocket(websocket: WebSocket):
     logger.info(f"[WS: LIVE] Accepted live voice connection from {client_ip} (user={auth_user_id})")
 
     try:
-        api_key = getattr(settings, "GEMINI_API_KEY", None)
-        live_supported = bool(api_key and api_key != "test_api_key_placeholder")
-
         while True:
             # Receive frame from client (JSON or text or binary)
             message = await websocket.receive()

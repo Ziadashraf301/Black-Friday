@@ -1,7 +1,7 @@
 """
 Shopper routes — catalog browsing, recommendations, tailored pricing, and purchase history.
 """
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from fastapi import APIRouter, Depends, Query
 
 from apps.api.schemas import (

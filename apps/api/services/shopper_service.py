@@ -2,9 +2,7 @@
 Shopper service — product catalog, browsing with smart recommendations, price quotes, and purchase management.
 """
 import json
-import re
 import pandas as pd
-import numpy as np
 from typing import Dict, Any, List, Optional
 
 from core.exceptions import AppException, NotFoundError, ValidationError

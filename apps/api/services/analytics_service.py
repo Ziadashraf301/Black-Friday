@@ -5,7 +5,7 @@ Decoupled from web framework exceptions using domain exceptions.
 from typing import Dict, Any, List, Optional
 
 from core.db.repository import BlackFridayRepository
-from core.cache import cache_manager, cached_json
+from core.cache import cached_json
 from core.config import settings
 from core.exceptions import DataUnavailableError, ValidationError
 from core.logging import get_logger
