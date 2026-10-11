@@ -7,7 +7,7 @@ Provides dual-mode interaction:
      with live audio exchange, synchronized product card pushes, and interruption handling.
 """
 import re
-from typing import Optional, Dict, Any, List, AsyncGenerator
+from typing import Optional, Dict, Any, List, AsyncGenerator, Iterator
 import json
 import asyncio
 from pydantic import BaseModel, Field
@@ -105,6 +105,24 @@ def extract_grounding_citations(ui_payload: Dict[str, Any]) -> List[Dict[str, An
 # =============================================================================
 # Mode 1: Server-Sent Events (SSE) Text-to-Text Streaming
 # =============================================================================
+def _sse_frames(
+    text: str, ui_payload: Dict[str, Any], citations: List[Dict[str, Any]], done_extra: Dict[str, Any]
+) -> Iterator[str]:
+    """Yields SSE frames: text tokens, synchronized UI card, grounding citations, then the done markers."""
+
+    def frame(event: Dict[str, Any]) -> str:
+        return "data: " + json.dumps(event) + "\n\n"
+
+    for token in tokenize_for_stream(text):
+        yield frame({"type": "token", "content": token})
+    if ui_payload:
+        yield frame({"type": "ui_card", "payload": ui_payload})
+    if citations:
+        yield frame({"type": "grounding", "citations": citations})
+    yield frame({"type": "done", **done_extra})
+    yield "data: [DONE]\n\n"
+
+
 async def sse_response_generator(
     query: str,
     user_id: str,
@@ -120,17 +138,8 @@ async def sse_response_generator(
         ui_payload = cached.get("ui_payload", {})
         citations = extract_grounding_citations(ui_payload)
 
-        # Stream cached tokens in fast pulses
-        for token in tokenize_for_stream(response_text):
-            yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
-
-        if ui_payload:
-            yield f"data: {json.dumps({'type': 'ui_card', 'payload': ui_payload})}\n\n"
-        if citations:
-            yield f"data: {json.dumps({'type': 'grounding', 'citations': citations})}\n\n"
-
-        yield f"data: {json.dumps({'type': 'done', 'cache_tier': 'TIER_0_HARD_6H'})}\n\n"
-        yield "data: [DONE]\n\n"
+        for frame in _sse_frames(response_text, ui_payload, citations, {"cache_tier": "TIER_0_HARD_6H"}):
+            yield frame
         return
 
     # 2. Invoke LangGraph Multi-Agent Shopping Graph
@@ -151,20 +160,24 @@ async def sse_response_generator(
     ui_payload = result.get("ui_payload") or {}
     citations = extract_grounding_citations(ui_payload)
 
-    # Stream generated tokens
-    for token in tokenize_for_stream(final_text):
-        yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
+    done_extra = {"cache_tier": "NONE", "relaxation_level": result.get("relaxation_level", "TIER_1_STRICT")}
+    for frame in _sse_frames(final_text, ui_payload, citations, done_extra):
+        yield frame
 
-    # Yield Synchronized UI Card
-    if ui_payload:
-        yield f"data: {json.dumps({'type': 'ui_card', 'payload': ui_payload})}\n\n"
 
-    # Yield Website Grounding Citations
-    if citations:
-        yield f"data: {json.dumps({'type': 'grounding', 'citations': citations})}\n\n"
+SSE_HEADERS = {
+    "Cache-Control": "no-cache",
+    "Connection": "keep-alive",
+    "X-Accel-Buffering": "no",
+}
 
-    yield f"data: {json.dumps({'type': 'done', 'cache_tier': 'NONE', 'relaxation_level': result.get('relaxation_level', 'TIER_1_STRICT')})}\n\n"
-    yield "data: [DONE]\n\n"
+
+def _sse_response(query: str, user_id: str, session_id: str) -> StreamingResponse:
+    return StreamingResponse(
+        sse_response_generator(query=query, user_id=user_id, session_id=session_id),
+        media_type="text/event-stream",
+        headers=SSE_HEADERS,
+    )
 
 
 class BotStreamRequest(BaseModel):
@@ -191,15 +204,7 @@ async def bot_stream_get_endpoint(
     synchronized product cards, and website catalog citations via GET.
     """
     user_id = bot_user_id(request, session_id)
-    return StreamingResponse(
-        sse_response_generator(query=query, user_id=user_id, session_id=session_id),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",
-        },
-    )
+    return _sse_response(query, user_id, session_id)
 
 
 @router.post(
@@ -213,15 +218,7 @@ async def bot_stream_post_endpoint(request: Request, payload: BotStreamRequest):
     synchronized product cards, and website catalog citations via POST.
     """
     user_id = bot_user_id(request, payload.session_id)
-    return StreamingResponse(
-        sse_response_generator(query=payload.query, user_id=user_id, session_id=payload.session_id),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",
-        },
-    )
+    return _sse_response(payload.query, user_id, payload.session_id)
 
 
 
