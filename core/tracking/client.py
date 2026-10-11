@@ -39,8 +39,8 @@ def setup_tracking_environment() -> str:
     Returns the resolved S3 endpoint URL.
     """
     s3_endpoint = (
-        getattr(settings, "MLFLOW_S3_ENDPOINT_URL", None)
-        or getattr(settings, "S3_ENDPOINT_URL", None)
+        settings.MLFLOW_S3_ENDPOINT_URL
+        or settings.S3_ENDPOINT_URL
         or os.getenv("MLFLOW_S3_ENDPOINT_URL")
         or os.getenv("S3_ENDPOINT_URL")
         or settings.s3_endpoint_url
@@ -54,7 +54,7 @@ def setup_tracking_environment() -> str:
 
 def get_tracking_uri() -> str:
     """Returns the configured MLflow tracking URI."""
-    return getattr(settings, "MLFLOW_TRACKING_URI", "http://localhost:5000")
+    return settings.MLFLOW_TRACKING_URI
 
 
 def get_mlflow_client(tracking_uri: Optional[str] = None) -> Optional[MlflowClient]:
@@ -105,7 +105,7 @@ def init_mlflow_tracking(experiment_name: Optional[str] = None) -> None:
         return
     setup_tracking_environment()
     uri = get_tracking_uri()
-    exp_name = experiment_name or getattr(settings, "MLFLOW_EXPERIMENT_NAME", "black-friday-sales-prediction")
+    exp_name = experiment_name or settings.MLFLOW_EXPERIMENT_NAME
     try:
         mlflow.set_tracking_uri(uri)
         get_or_create_experiment(exp_name)

@@ -5,9 +5,6 @@ from logging.handlers import RotatingFileHandler
 from typing import Optional
 from core.config import settings
 
-LOG_FILE_PATH = os.path.join(settings.LOG_DIR, settings.LOG_FILE)
-
-
 def _ensure_log_dir() -> Optional[str]:
     """Lazily creates the log directory with graceful error handling."""
     try:
