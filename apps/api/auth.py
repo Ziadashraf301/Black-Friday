@@ -8,6 +8,9 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from core.exceptions import UnauthorizedError
 from core.security import hash_password, verify_password, create_access_token, decode_access_token
 from apps.api.services.auth_service import auth_service
+from core.logging import get_logger
+
+logger = get_logger(__name__)
 
 _bearer_scheme = HTTPBearer(auto_error=True)
 _optional_bearer_scheme = HTTPBearer(auto_error=False)
@@ -40,8 +43,9 @@ def get_current_user(
         payload = decode_access_token(credentials.credentials)
         return _build_user_dict(payload)
     except Exception as e:
+        logger.debug(f"Token validation failed: {e}")
         raise UnauthorizedError(
-            message=f"Invalid or expired token: {e}",
+            message="Invalid or expired token.",
             code="INVALID_TOKEN",
         )
 
