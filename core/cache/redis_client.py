@@ -4,6 +4,7 @@ import datetime
 import threading
 import time
 from typing import Optional, Any, List, Dict
+import numpy as np
 import redis
 from core.config import settings
 from core.logging import get_logger
@@ -17,8 +18,10 @@ def _json_serializer(obj: Any) -> Any:
         return float(obj)
     if isinstance(obj, (datetime.date, datetime.datetime)):
         return obj.isoformat()
-    if hasattr(obj, "item"):  # handles numpy scalar types
+    if isinstance(obj, np.generic):
         return obj.item()
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
     return str(obj)
 
 

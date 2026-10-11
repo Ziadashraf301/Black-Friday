@@ -55,6 +55,7 @@ def mock_repo():
         "product_category_2": 4,
         "product_category_3": 12
     }
+    repo.get_curated_products.return_value = [{"product_id": "P00110742", "name": "Test Product"}]
     repo.get_user_by_email.return_value = None
     repo.create_user.return_value = {
         "user_id": 1,
