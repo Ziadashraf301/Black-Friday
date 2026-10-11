@@ -134,6 +134,21 @@ Result: **299 passed, 1 failed, 1 deselected (the hang)**, 301 tests, ~8 min. Co
 | ANL-9 | ML analytics | Item2Vec uses `window=5` on baskets listed in first-appearance order, which has no meaning, so which products count as co-bought depends on row order. The Item2Vec paper uses the whole basket as the window (slower, changes every embedding, the recommendations and the graph). Modelling decision. | `ml/market_basket/item2vec.py`, `ml/features/basket_encoder.py` | medium | deferred | |
 | ANL-10 | ML analytics | HITS ignores edge weights (undocumented) and the fallback caught every exception. Documented; only `PowerIterationFailedConvergence` falls back. | `ml/market_basket/network_graph.py` | low | fixed | 87e1747 |
 | ANL-11 | ML analytics | `SEGMENTATION_LINKAGE` was a setting nobody read (linkage was hard-coded `complete`). Now used, same default. `SEGMENTATION_METRIC` is still unused (Gower is the only metric implemented). | `ml/segmentation/clustering.py` | low | fixed | bf7bfa7 |
+| INF-1 | Infra | Postgres, Redis (no password), MinIO and MLflow ports were published on all interfaces. Now bound to `${BIND_HOST:-127.0.0.1}`; the API and UI ports stay public. | `docker-compose.yml` | medium | fixed | 57d9df6 |
+| INF-2 | Infra | The API container got no `SECRET_KEY`, `ENVIRONMENT`, `CORS_ORIGINS`, `GEMINI_API_KEY` or `TYPESAFE_API_KEY`, so it always ran with the public default JWT key and without the LLM keys. `env_file: .env` (optional) added; the explicit container hostnames still override localhost. | `docker-compose.yml` | high | fixed | 6768c4e |
+| INF-3 | Infra | Missing `.env` values (passwords, user and db names) became empty strings. Required variables now abort with a message. | `docker-compose.yml` | low | fixed | 6a22f2c |
+| INF-4 | Infra | `mlflow` waited only for `minio` to start, so it could race the `minio-init` bucket creation. Now waits for `minio-init` to complete. | `docker-compose.yml` | low | fixed | d6728c2 |
+| INF-5 | Infra | `uv:latest` in both Dockerfiles. Pinned to 0.5.11 (tag verified). `minio`/`mc` stay `:latest`: their tags could not be verified offline (see deferred INF-11). | `docker/Dockerfile.api`, `Dockerfile.ui` | low | fixed | d5f72de |
+| INF-6 | Infra | pytest, locust, black, flake8 and isort were installed in the API image. Split into `requirements-dev.txt` (adds `pytest-timeout`); CI installs it; `pgvector` moved to runtime. | `requirements*.txt`, CI | low | fixed | c988a83 |
+| INF-7 | Infra | CI had no token permissions, job timeout or per-test timeout (a hang would run 6h). Added `contents: read`, 30 min job timeout, `--timeout=60`, concurrency cancel. CI still runs only pytest (no lint; see baseline). | `.github/workflows/ci-cd.yml` | medium | fixed | 7130b3b |
+| INF-8 | Infra | Makefile used `docker-compose` (v1), `cron` was missing from `.PHONY`/help and ignored `ARGS` (`--once`), `test` help promised coverage. | `Makefile` | low | fixed | 4c9f050 |
+| INF-9 | Infra | `.env.example` lacked `SECRET_KEY`, `CORS_ORIGINS`, `BIND_HOST`, `TYPESAFE_API_KEY` and listed unused `STREAMLIT_PORT`. | `.env.example` | low | fixed | dda0660 |
+| INF-10 | Infra | Dependencies are all `>=` with no lock, and the MLflow client is unconstrained (local 3.16.1) while the server image is `v2.20.0`. Needs a decision: lock file (uv/pip-tools) and which MLflow major to standardise on. | `requirements.txt`, `docker/mlflow/Dockerfile` | medium | deferred | |
+| INF-11 | Infra | `minio`/`mc` images are `:latest`. Pick a release tag from the registry and pin. | `docker-compose.yml` | low | deferred | |
+| INF-12 | Infra | API and UI containers run as root. Adding `USER` needs a decision on bind-mounted `models/`, `data/`, `logs/` ownership on Linux hosts; not testable here. | `docker/Dockerfile.*` | low | deferred | |
+| INF-13 | Infra | `Dockerfile.api` does `COPY models/` and `COPY data/`, which are gitignored, so an image build from a clean checkout fails. Compose bind-mounts them anyway; decide whether the image should be self-contained. | `docker/Dockerfile.api` | low | deferred | |
+| INF-14 | Infra | Lint is not enforced: no black/isort config (line length 127 is only passed by hand), `make lint` stops at flake8, CI skips lint. A repo-wide reformat is a round-2 item (baseline). | `Makefile`, no `pyproject.toml` | low | deferred | |
+| INF-15 | Infra | `init-multiple-dbs.sh` interpolates the MLflow password into SQL, so a password containing a quote breaks the init. | `docker/postgres/init-multiple-dbs.sh` | low | deferred | |
 
 - Housekeeping: 4145d34 untracked the 12 committed `.pyc` files and added `*.py[cod]` to `.gitignore` (`__pycache__/` was already listed).
 
@@ -200,3 +215,7 @@ Related tests (each file run separately, `--timeout`): tests/test_core1..7, test
 - a16db80 black/isort applied to apps/api, flake8 clean
 
 - 0769606 Locust: signup/login retried on 429 (all simulated users share one IP and /auth/* is limited per IP), so every user holds a token for authenticated tasks. Note: per-user limits (RATE_LIMIT_MINUTE=60) still make heavy load runs return 429s on predict endpoints; raise them via env for load tests.
+
+## Refactors (step 9)
+
+None: infra changes only. Verified with `docker compose config` (with and without the required variables); no rebuild (Dockerfile change is the pinned uv tag, checked with `docker manifest inspect`). Tests on final HEAD: tests/test_architecture, test_core13_schema_alignment, test_sec1 (pass).

@@ -34,5 +34,5 @@
 - [x] **6. ML analytics:** `ml/segmentation`, `ml/market_basket`.
 - [x] **7. AI assistant:** `ai` (guardrails, prompt injection, LangGraph workflow, tool errors).
 - [x] **8. Frontend:** `apps/reflex_app`, level `low`.
-- [ ] **9. Infra:** `docker-compose.yml`, `docker/`, `.github/workflows/`, `Makefile`, `requirements.txt` (misconfigurations, secrets, unpinned versions, CI gaps).
+- [x] **9. Infra:** `docker-compose.yml`, `docker/`, `.github/workflows/`, `Makefile`, `requirements.txt` (misconfigurations, secrets, unpinned versions, CI gaps).
 - [ ] **10. Wrap-up:** rerun tests and lint, compare with the baseline, write a summary at the top of the log, and suggest round-2 items from the `deferred` findings.
