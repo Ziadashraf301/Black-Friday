@@ -19,10 +19,10 @@ RUN uv pip install --system --no-cache -r requirements.txt
 COPY core/ /app/core/
 COPY apps/ /app/apps/
 COPY ml/ /app/ml/
-COPY models/ /app/models/
 COPY ai/ /app/ai/
 COPY evaluation/ /app/evaluation/
-COPY data/ /app/data/
+
+# models/ and data/ are bind-mounted by docker-compose (models/ is gitignored, so it is not in a clean checkout).
 
 EXPOSE 8000
 
