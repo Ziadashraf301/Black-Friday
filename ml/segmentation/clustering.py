@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from typing import Dict, Any, List
+from typing import Any, Dict, List, Optional
 import gower
 from scipy.cluster.hierarchy import linkage, fcluster
 from scipy.spatial.distance import squareform
@@ -57,8 +57,8 @@ PERSONA_PROFILES: Dict[int, Dict[str, str]] = {
 class CustomerSegmentationEngine:
     """Computes Gower distance matrix and hierarchical clustering for customer personas."""
 
-    def __init__(self, k_clusters: int = settings.K_CLUSTERS):
-        self.k_clusters = k_clusters
+    def __init__(self, k_clusters: Optional[int] = None):
+        self.k_clusters = settings.K_CLUSTERS if k_clusters is None else k_clusters
         self.feature_cols = [
             "lifetime_value", "frequency", "gender", "marital_status", "age_binned"
         ]
@@ -106,6 +106,9 @@ class CustomerSegmentationEngine:
 
     def fit_predict(self, customer_df: pd.DataFrame) -> pd.DataFrame:
         """Fits complete-linkage hierarchical clustering over Gower distance matrix with dynamic persona resolution."""
+        if len(customer_df) < 2:
+            raise ValueError(f"Need at least 2 customers to cluster, got {len(customer_df)}.")
+
         logger.info(f"Computing Gower dissimilarity matrix for {len(customer_df):,} customers across features: {self.feature_cols}...")
         
         feature_df = customer_df[self.feature_cols].copy()

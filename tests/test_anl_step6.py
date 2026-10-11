@@ -46,3 +46,14 @@ def test_anl2_warns_when_raw_clusters_collapse_into_one_persona(caplog):
     out = engine.fit_predict(_customers())
     assert out["cluster_id"].nunique() == 2
     assert any("same persona" in r.getMessage() for r in caplog.records)
+
+
+def test_anl4_k_clusters_default_is_read_at_construction(monkeypatch):
+    monkeypatch.setattr(settings, "K_CLUSTERS", 7)
+    assert CustomerSegmentationEngine().k_clusters == 7
+    assert CustomerSegmentationEngine(k_clusters=3).k_clusters == 3
+
+
+def test_anl4_clustering_needs_two_customers():
+    with pytest.raises(ValueError, match="at least 2"):
+        CustomerSegmentationEngine().fit_predict(_customers().head(1))
