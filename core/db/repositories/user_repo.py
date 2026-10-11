@@ -60,19 +60,24 @@ class UserRepository(BaseRepository):
             result = conn.execute(query, {"user_id": user_id}).mappings().first()
             return dict(result) if result else None
 
+    @staticmethod
+    def _demographics_from_row(row: Dict[str, Any]) -> Dict[str, Any]:
+        """Normalises a user / transaction row into the demographic vector used for pricing."""
+        return {
+            "gender": row["gender"],
+            "age": row["age"],
+            "city_category": row["city_category"],
+            "stay_in_current_city_years": str(row["stay_in_current_city_years"]),
+            "marital_status": int(row["marital_status"]) if row["marital_status"] is not None else 0,
+            "occupation": int(row["occupation"]) if row["occupation"] is not None else 0,
+        }
+
     def get_user_demographics(self, user_id: int) -> Optional[Dict[str, Any]]:
         """Retrieves exact demographic vector for user_id from app_users or black_friday_cleaned table."""
         # 1. Check app_users table
         user = self.get_user_by_id(user_id)
         if user and user.get("gender") and user.get("age"):
-            return {
-                "gender": user["gender"],
-                "age": user["age"],
-                "city_category": user["city_category"],
-                "stay_in_current_city_years": str(user["stay_in_current_city_years"]),
-                "marital_status": int(user["marital_status"]) if user["marital_status"] is not None else 0,
-                "occupation": int(user["occupation"]) if user["occupation"] is not None else 0,
-            }
+            return self._demographics_from_row(user)
 
         # 2. Check black_friday_cleaned table
         query = text("""
@@ -83,17 +88,7 @@ class UserRepository(BaseRepository):
         """)
         with self.engine.connect() as conn:
             res = conn.execute(query, {"user_id": user_id}).mappings().first()
-            if res:
-                d = dict(res)
-                return {
-                    "gender": d["gender"],
-                    "age": d["age"],
-                    "city_category": d["city_category"],
-                    "stay_in_current_city_years": str(d["stay_in_current_city_years"]),
-                    "marital_status": int(d["marital_status"]) if d["marital_status"] is not None else 0,
-                    "occupation": int(d["occupation"]) if d["occupation"] is not None else 0,
-                }
-        return None
+            return self._demographics_from_row(dict(res)) if res else None
 
     def create_user(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Insert a new user and return the created record."""
@@ -112,19 +107,20 @@ class UserRepository(BaseRepository):
             result = conn.execute(query, data).mappings().first()
             return dict(result)
 
+    _INSERT_PURCHASE = text("""
+        INSERT INTO user_purchases
+            (user_id, product_id, product_category_1, product_category_2,
+             product_category_3, predicted_usd, model_used)
+        VALUES
+            (:user_id, :product_id, :product_category_1, :product_category_2,
+             :product_category_3, :predicted_usd, :model_used)
+        RETURNING *
+    """)
+
     def record_purchase(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Save a shopper's product prediction/purchase event."""
-        query = text("""
-            INSERT INTO user_purchases
-                (user_id, product_id, product_category_1, product_category_2,
-                 product_category_3, predicted_usd, model_used)
-            VALUES
-                (:user_id, :product_id, :product_category_1, :product_category_2,
-                 :product_category_3, :predicted_usd, :model_used)
-            RETURNING *
-        """)
         with self.engine.begin() as conn:
-            result = conn.execute(query, data).mappings().first()
+            result = conn.execute(self._INSERT_PURCHASE, data).mappings().first()
             return dict(result)
 
     def record_purchases_batch(
@@ -134,30 +130,13 @@ class UserRepository(BaseRepository):
         if not records:
             return []
 
-        query = text("""
-            INSERT INTO user_purchases
-                (user_id, product_id, product_category_1, product_category_2,
-                 product_category_3, predicted_usd, model_used)
-            VALUES
-                (:user_id, :product_id, :product_category_1, :product_category_2,
-                 :product_category_3, :predicted_usd, :model_used)
-            RETURNING *
-        """)
+        def insert_all(conn) -> List[Dict[str, Any]]:
+            return [dict(conn.execute(self._INSERT_PURCHASE, rec).mappings().first()) for rec in records]
 
         if connection is not None:
-            results = []
-            for rec in records:
-                row = connection.execute(query, rec).mappings().first()
-                results.append(dict(row))
-            return results
-
+            return insert_all(connection)
         with self.engine.begin() as conn:
-            results = []
-            for rec in records:
-                row = conn.execute(query, rec).mappings().first()
-                results.append(dict(row))
-            return results
-
+            return insert_all(conn)
 
     def get_user_purchase_history(self, user_id: int) -> List[Dict[str, Any]]:
         query = text("""
