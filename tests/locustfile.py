@@ -1,5 +1,11 @@
 import random
-from locust import HttpUser, task, between
+
+from locust import HttpUser, between, task
+
+try:  # locust runs this file as a script from its own directory
+    from locust_auth import LOCUST_PASSWORD, acquire_token
+except ImportError:  # imported as part of the tests package
+    from tests.locust_auth import LOCUST_PASSWORD, acquire_token
 
 
 class BlackFridayAPIUser(HttpUser):
@@ -11,7 +17,7 @@ class BlackFridayAPIUser(HttpUser):
         signup_payload = {
             "name": "Locust Tester",
             "email": email,
-            "password": "LocustPassword123",
+            "password": LOCUST_PASSWORD,
             "gender": random.choice(["M", "F"]),
             "age": random.choice(["18-25", "26-35", "36-45", "46-50", "51-55"]),
             "city_category": random.choice(["A", "B", "C"]),
@@ -19,16 +25,9 @@ class BlackFridayAPIUser(HttpUser):
             "occupation": random.randint(0, 20),
             "stay_in_current_city_years": "2"
         }
-        resp = self.client.post("/auth/signup", json=signup_payload)
-        if resp.status_code == 201 and "access_token" in resp.json():
-            token = resp.json()["access_token"]
+        token = acquire_token(self.client, signup_payload)
+        if token:
             self.client.headers["Authorization"] = f"Bearer {token}"
-        else:
-            # Fallback to login if already exists
-            login_resp = self.client.post("/auth/login", json={"email": email, "password": "LocustPassword123"})
-            if login_resp.status_code == 200 and "access_token" in login_resp.json():
-                token = login_resp.json()["access_token"]
-                self.client.headers["Authorization"] = f"Bearer {token}"
 
     @task(3)
     def health_check(self):
