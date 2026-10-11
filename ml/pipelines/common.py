@@ -2,11 +2,14 @@
 
 import os
 import shutil
+from typing import Dict, Optional
 
 import pandas as pd
 
 from core.config import settings
 from core.logging import get_logger
+from ml.models.metrics import evaluate_holdout
+from ml.serving.predictor import ONNXPredictor
 
 logger = get_logger(__name__)
 
@@ -70,3 +73,20 @@ def prepare_batch(df: pd.DataFrame) -> pd.DataFrame:
         logger.info("Imputing missing categories using production ONNXMissForestImputer...")
         df = ONNXMissForestImputer(imputer_dir).transform(df)
     return df
+
+
+def score_local_champion(test_df: pd.DataFrame, y_test: pd.Series, features: list) -> Optional[Dict[str, float]]:
+    """Scores the published champion ONNX on the caller's own holdout, or returns None if it is unavailable.
+
+    The registry only holds the champion's metrics on the split it was trained against, which is not comparable to
+    a different holdout, so pipelines that compare against the champion score it on their own test rows.
+    """
+    path = champion_onnx_path()
+    if not os.path.exists(path):
+        return None
+    try:
+        preds = ONNXPredictor(path).predict(test_df[features])
+        return evaluate_holdout(y_test.to_numpy(), preds)
+    except Exception as e:
+        logger.warning(f"Could not score local champion ONNX on the holdout: {e}")
+        return None

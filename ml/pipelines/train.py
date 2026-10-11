@@ -3,6 +3,7 @@ import os
 
 os.environ.setdefault("MPLBACKEND", "Agg")
 import json
+from typing import Dict, Optional
 
 from core.config import settings
 from core.db.repository import BlackFridayRepository
@@ -10,12 +11,23 @@ from core.logging import get_logger
 from ml.models.metrics import ModelEvaluator
 from ml.models.onnx_exporter import ONNXExporter
 from ml.models.registry import ModelRegistry
-from ml.pipelines.common import MODEL_CACHE_PATTERNS, invalidate_caches, onnx_dir, publish_champion_onnx
+from ml.pipelines.common import (
+    MODEL_CACHE_PATTERNS,
+    invalidate_caches,
+    onnx_dir,
+    publish_champion_onnx,
+    score_local_champion,
+)
 from ml.tracking.explainability import ModelExplainability
 from ml.tracking.mlflow_tracker import MLflowTracker
 from ml.visualization.visualizer import Visualizer
 
 logger = get_logger(__name__)
+
+
+def should_promote(candidate_r2: float, champion_metrics: Optional[Dict[str, float]]) -> bool:
+    """A model is promoted if there is no scorable champion yet, or if it beats the champion on the same test split."""
+    return champion_metrics is None or candidate_r2 > champion_metrics["r2"]
 
 
 def run_training_pipeline(model_names: list = None):
@@ -148,7 +160,9 @@ def run_training_pipeline(model_names: list = None):
     best_model_name = max(metadata, key=lambda m: metadata[m]["metrics"].get("test_r2", 0.0))
     best_run_id = metadata[best_model_name].get("run_id")
 
-    if best_run_id:
+    champion_metrics = score_local_champion(test_df, y_test, models[best_model_name].features)
+    best_r2 = metadata[best_model_name]["metrics"]["test_r2"]
+    if best_run_id and should_promote(best_r2, champion_metrics):
         logger.info(
             f"🏆 Promoting best model '{best_model_name}' "
             f"(Test R2: {metadata[best_model_name]['metrics']['test_r2']:.4f}) to Champion in MLflow Model Registry..."
@@ -157,13 +171,18 @@ def run_training_pipeline(model_names: list = None):
         tracker.download_champion_onnx(model_name=settings.MLFLOW_MODEL_NAME)
         publish_champion_onnx(metadata[best_model_name]["onnx_path"])
         invalidate_caches(*MODEL_CACHE_PATTERNS)
+    elif best_run_id:
+        logger.warning(
+            f"Best model '{best_model_name}' (Test R2: {best_r2:.4f}) does not beat the current champion "
+            f"(R2: {champion_metrics['r2']:.4f} on the same test split). Champion retained."
+        )
 
     # Save local metadata cache
     metadata_path = os.path.join(settings.BASE_DIR, "models", "metadata.json")
     with open(metadata_path, "w", encoding="utf-8") as f:
         json.dump(metadata, f, indent=2)
 
-    logger.info(f"Training pipeline complete. Champion registered in MLflow: '{best_model_name}'.")
+    logger.info(f"Training pipeline complete. Best model: '{best_model_name}'.")
 
 
 if __name__ == "__main__":

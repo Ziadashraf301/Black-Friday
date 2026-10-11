@@ -47,45 +47,39 @@ def test_monitor_downloads_champion_when_nothing_is_local(onnx_dir):
     assert monitor._resolve_scoring_onnx("lgbm", tracker) == str(onnx_dir / common.CHAMPION_ONNX_NAME)
 
 
-def test_retrain_scores_local_champion_on_the_candidate_holdout(onnx_dir, monkeypatch):
+def test_score_local_champion_uses_the_given_holdout(onnx_dir, monkeypatch):
     import numpy as np
     import pandas as pd
 
-    from ml.pipelines import retrain
-
     (onnx_dir / common.CHAMPION_ONNX_NAME).write_bytes(b"x")
-    monkeypatch.setattr(retrain, "champion_onnx_path", lambda: str(onnx_dir / common.CHAMPION_ONNX_NAME))
+    monkeypatch.setattr(common, "champion_onnx_path", lambda: str(onnx_dir / common.CHAMPION_ONNX_NAME))
     y = pd.Series([0.1, 0.2, 0.3])
     perfect = MagicMock()
     perfect.predict.return_value = y.to_numpy()
-    monkeypatch.setattr(retrain, "ONNXPredictor", lambda path: perfect)
+    monkeypatch.setattr(common, "ONNXPredictor", lambda path: perfect)
 
-    scored = retrain._score_local_champion(pd.DataFrame({"a": [1, 2, 3]}), y, ["a"])
+    scored = common.score_local_champion(pd.DataFrame({"a": [1, 2, 3]}), y, ["a"])
 
     assert scored["r2"] == 1.0
     assert scored["rmse"] == 0.0
     assert np.isclose(scored["mae"], 0.0)
 
 
-def test_retrain_without_local_champion_keeps_registry_metrics(onnx_dir, monkeypatch):
+def test_score_local_champion_is_none_without_a_local_file(onnx_dir, monkeypatch):
     import pandas as pd
 
-    from ml.pipelines import retrain
+    monkeypatch.setattr(common, "champion_onnx_path", lambda: str(onnx_dir / "missing.onnx"))
 
-    monkeypatch.setattr(retrain, "champion_onnx_path", lambda: str(onnx_dir / "missing.onnx"))
-
-    assert retrain._score_local_champion(pd.DataFrame({"a": [1]}), pd.Series([0.1]), ["a"]) is None
+    assert common.score_local_champion(pd.DataFrame({"a": [1]}), pd.Series([0.1]), ["a"]) is None
 
 
-def test_retrain_ignores_unloadable_local_champion(onnx_dir, monkeypatch):
+def test_score_local_champion_ignores_unloadable_file(onnx_dir, monkeypatch):
     import pandas as pd
-
-    from ml.pipelines import retrain
 
     (onnx_dir / common.CHAMPION_ONNX_NAME).write_bytes(b"not an onnx file")
-    monkeypatch.setattr(retrain, "champion_onnx_path", lambda: str(onnx_dir / common.CHAMPION_ONNX_NAME))
+    monkeypatch.setattr(common, "champion_onnx_path", lambda: str(onnx_dir / common.CHAMPION_ONNX_NAME))
 
-    assert retrain._score_local_champion(pd.DataFrame({"a": [1]}), pd.Series([0.1]), ["a"]) is None
+    assert common.score_local_champion(pd.DataFrame({"a": [1]}), pd.Series([0.1]), ["a"]) is None
 
 
 def test_warehouse_replace_batches_use_a_single_replacing_load():
@@ -336,3 +330,17 @@ def test_prepare_batch_lowercases_derives_target_and_skips_imputer_without_artif
     assert out["normalized_purchase"].iloc[0] == pytest.approx(9000.0 / common.settings.PURCHASE_MAX)
     assert out["product_category_2"].isna().all()
     assert list(df.columns) == ["Purchase", "Product_Category_2"]
+
+
+def test_train_promotes_when_no_champion_can_be_scored():
+    from ml.pipelines.train import should_promote
+
+    assert should_promote(0.01, None) is True
+
+
+def test_train_promotes_only_a_model_that_beats_the_champion_on_the_same_split():
+    from ml.pipelines.train import should_promote
+
+    assert should_promote(0.73, {"r2": 0.72}) is True
+    assert should_promote(0.72, {"r2": 0.72}) is False
+    assert should_promote(0.40, {"r2": 0.72}) is False

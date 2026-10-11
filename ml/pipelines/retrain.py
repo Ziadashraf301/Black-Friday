@@ -9,18 +9,17 @@ from core.config import settings
 from core.db.repository import BlackFridayRepository
 from core.logging import get_logger
 from ml.features.preprocessor import DataPreprocessor
-from ml.models.metrics import ModelEvaluator, evaluate_holdout
+from ml.models.metrics import ModelEvaluator
 from ml.models.onnx_exporter import ONNXExporter
 from ml.models.registry import ModelRegistry
 from ml.pipelines.common import (
     MODEL_CACHE_PATTERNS,
-    champion_onnx_path,
     invalidate_caches,
     onnx_dir,
     prepare_batch,
     publish_champion_onnx,
+    score_local_champion,
 )
-from ml.serving.predictor import ONNXPredictor
 from ml.tracking.drift_monitor import DriftResult
 from ml.tracking.explainability import ModelExplainability
 from ml.tracking.mlflow_tracker import MLflowTracker
@@ -91,23 +90,6 @@ class RetrainResult:
             f"R2={self.candidate_r2:.4f} vs champion={self.champion_r2:.4f} "
             f"(delta={self.improvement_delta:+.4f}) | run_id={self.run_id})"
         )
-
-
-def _score_local_champion(test_df: pd.DataFrame, y_test: pd.Series, features: list) -> Optional[Dict[str, float]]:
-    """Scores the published champion ONNX on the candidate's own holdout, or returns None if it is unavailable.
-
-    The registry only holds the champion's metrics on the split it was trained against, which is not comparable to
-    the fresh random holdout drawn from old + new data here.
-    """
-    path = champion_onnx_path()
-    if not os.path.exists(path):
-        return None
-    try:
-        preds = ONNXPredictor(path).predict(test_df[features])
-        return evaluate_holdout(y_test.to_numpy(), preds)
-    except Exception as e:
-        logger.warning(f"Could not score local champion ONNX on the candidate holdout: {e}")
-        return None
 
 
 def run_champion_challenger_retrain(
@@ -204,7 +186,7 @@ def run_champion_challenger_retrain(
     champion_r2 = float(champion_info.get("r2", 0.0))
     champion_rmse = float(champion_info.get("rmse", float("inf")))
     champion_source = "mlflow_registry_metrics"
-    same_holdout = _score_local_champion(test_df, y_test, candidate.features)
+    same_holdout = score_local_champion(test_df, y_test, candidate.features)
     if same_holdout:
         champion_r2, champion_rmse = same_holdout["r2"], same_holdout["rmse"]
         champion_source = "local_champion_onnx_same_holdout"
