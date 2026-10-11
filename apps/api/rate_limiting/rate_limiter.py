@@ -17,7 +17,8 @@ from core.exceptions import RateLimitExceededError
 from core.cache import cache_manager
 from core.config import settings
 from core.logging import get_logger
-from apps.api.auth import get_current_user, decode_access_token
+from apps.api.auth import get_current_user
+from apps.api.client_identity import resolve_client_identity
 
 logger = get_logger(__name__)
 
@@ -267,21 +268,8 @@ async def rate_limit_dependency(
 
 
 def extract_client_identifier(request: Request) -> str:
-    """Extracts user ID from Bearer JWT, X-User-ID header, query parameter, or client IP."""
-    auth_header = request.headers.get("Authorization")
-    if auth_header and auth_header.startswith("Bearer "):
-        try:
-            token = auth_header.split(" ", 1)[1].strip()
-            payload = decode_access_token(token)
-            if payload.get("sub"):
-                return str(payload.get("sub"))
-        except Exception:
-            pass
-    return (
-        request.headers.get("X-User-ID")
-        or request.query_params.get("user_id")
-        or (request.client.host if request.client else "anonymous")
-    )
+    """Verified JWT subject, falling back to client IP. Caller-supplied IDs are never trusted."""
+    return resolve_client_identity(request)
 
 
 async def rate_limit_client_dependency(request: Request):

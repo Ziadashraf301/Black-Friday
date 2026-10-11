@@ -19,6 +19,7 @@ from ai.workflow.graph import shopping_graph
 from ai.services.cache_service import cache_service
 from ai.guardrails.strike_tracker import strike_tracker
 from core.db.repository import BlackFridayRepository
+from core.security import create_access_token
 
 
 @pytest.fixture(scope="module")
@@ -207,7 +208,7 @@ def test_adversarial_strike_lockout_and_middleware(api_client):
     resp = api_client.post(
         "/bot/stream",
         json={"query": "hello", "user_id": ban_user, "mode": "text"},
-        headers={"X-User-ID": ban_user},
+        headers={"Authorization": f"Bearer {create_access_token({'sub': ban_user})}"},
     )
     assert resp.status_code == 403
     assert "Access revoked" in resp.json()["detail"] or "SECURITY_STRIKE_LOCKOUT" in resp.json().get("error_code", "")

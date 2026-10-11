@@ -11,6 +11,11 @@ from fastapi.testclient import TestClient
 from ai.guardrails.strike_tracker import strike_tracker
 from ai.services.guardrail_service import guardrail_service
 from apps.api.main import app
+from core.security import create_access_token
+
+
+def _bearer(sub: str) -> dict:
+    return {"Authorization": f"Bearer {create_access_token({'sub': sub})}"}
 
 
 class TestSecurityStrikeTracker:
@@ -73,7 +78,7 @@ class TestSecurityStrikeTracker:
         client = TestClient(app)
 
         # 1. Clean user can access shopper endpoint
-        resp_clean = client.get("/shopper/curated-catalog", headers={"X-User-ID": "innocent_shopper"})
+        resp_clean = client.get("/shopper/curated-catalog", headers=_bearer("innocent_shopper"))
         assert resp_clean.status_code == 200
 
         # 2. Ban test attacker
@@ -83,7 +88,7 @@ class TestSecurityStrikeTracker:
         assert strike_tracker.is_banned(self.attacker_id) is True
 
         # 3. Request from banned user must receive HTTP 403 Forbidden immediately
-        resp_banned = client.get("/shopper/curated-catalog", headers={"X-User-ID": self.attacker_id})
+        resp_banned = client.get("/shopper/curated-catalog", headers=_bearer(self.attacker_id))
         assert resp_banned.status_code == 403
         data = resp_banned.json()
         assert data.get("error_code") == "SECURITY_STRIKE_LOCKOUT"
