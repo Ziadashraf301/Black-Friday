@@ -214,3 +214,24 @@ def test_daemon_keeps_looping_after_a_failed_cycle(monkeypatch):
         cron_scheduler.start_daemon_scheduler()
 
     assert cron_scheduler.run_cron_cycle.call_count == 2
+
+
+def test_retrain_resolves_model_aliases_before_naming_artifacts(monkeypatch):
+    import pandas as pd
+
+    from ml.pipelines import retrain
+
+    seen = []
+
+    def stop(name, **_):
+        seen.append(name)
+        raise RuntimeError("stop after model lookup")
+
+    monkeypatch.setattr(retrain.ModelRegistry, "get_model", stop)
+    monkeypatch.setattr(retrain, "MLflowTracker", MagicMock())
+    frame = pd.DataFrame({"normalized_purchase": [0.1] * 20, "is_outlier": [False] * 20})
+
+    with pytest.raises(RuntimeError, match="stop after model lookup"):
+        retrain.run_champion_challenger_retrain(frame, frame, candidate_model_name="lgbm")
+
+    assert seen == ["lightgbm"]

@@ -142,7 +142,7 @@ def run_champion_challenger_retrain(
             f"new_data_df must contain ground-truth '{target_col}' column for supervised retraining."
         )
 
-    model_name = candidate_model_name or settings.DEFAULT_REGRESSION_MODEL
+    model_name = ModelRegistry.resolve_name(candidate_model_name)
     logger.info("=" * 70)
     logger.info(f"CONTINUOUS TRAINING: Evaluating candidate '{model_name}' (trigger='{trigger_reason}')...")
     logger.info("=" * 70)
