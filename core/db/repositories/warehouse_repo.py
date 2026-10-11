@@ -235,7 +235,7 @@ class WarehouseRepository(BaseRepository):
 
         if size is not None:
             where_clauses.append("sizes::jsonb @> CAST(:size_json AS jsonb)")
-            params["size_json"] = f'["{size.strip().upper()}"]'
+            params["size_json"] = json.dumps([size.strip().upper()])
 
         filter_sql = " AND ".join(where_clauses)
 
@@ -246,14 +246,16 @@ class WarehouseRepository(BaseRepository):
                     ROW_NUMBER() OVER (ORDER BY embedding <=> CAST(:query_vec AS vector)) AS dense_rank
                 FROM curated_products
                 WHERE {filter_sql}
+                ORDER BY dense_rank
                 LIMIT :top_k_candidates
             ),
             sparse_ranks AS (
                 SELECT 
                     product_id,
-                    ROW_NUMBER() OVER (ORDER BY ts_rank_cd(search_vector, plainto_tsquery('english', :query_text)) DESC) AS sparse_rank
+                    ROW_NUMBER() OVER (ORDER BY ts_rank_cd(search_vector, plainto_tsquery('english', :query_text)) DESC NULLS LAST) AS sparse_rank
                 FROM curated_products
                 WHERE {filter_sql}
+                ORDER BY sparse_rank
                 LIMIT :top_k_candidates
             ),
             combined_scores AS (
