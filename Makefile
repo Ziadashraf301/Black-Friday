@@ -1,4 +1,4 @@
-.PHONY: help up down restart ps logs ingest preprocess segmentation basket train monitor retrain eval eval-ml eval-ai test lint clean
+.PHONY: help up down restart ps logs ingest preprocess segmentation basket train monitor retrain cron eval eval-ml eval-ai test lint clean
 
 # Default target: display help
 help:
@@ -22,29 +22,30 @@ help:
 	@echo "  make retrain      - Run Champion vs Challenger continuous retraining"
 	@echo "                      Example: make retrain NEW_DATA=path/to/new.csv [MODEL=lgbm]"
 	@echo "                      Example: make retrain DEMO=1 (test with warehouse split)"
+	@echo "  make cron         - Start the 6-hour pipeline scheduler (ARGS=--once for one cycle)"
 	@echo "  make eval         - Run regression and router evaluation suites"
 	@echo "  make eval-ml      - Run standalone ML regression/imputation evaluation"
 	@echo "  make eval-ai      - Run AI System-1 router and extractor benchmarks"
-	@echo "  make test         - Run pytest suite with coverage"
+	@echo "  make test         - Run the pytest suite"
 	@echo "  make lint         - Run flake8 and black code quality checks"
 	@echo "  make clean        - Remove temporary cache files and __pycache__"
 	@echo "======================================================================"
 
 # Docker Container Orchestration
 up:
-	docker-compose up -d --build
+	docker compose up -d --build
 
 down:
-	docker-compose down
+	docker compose down
 
 restart:
-	docker-compose restart
+	docker compose restart
 
 ps:
-	docker-compose ps
+	docker compose ps
 
 logs:
-	docker-compose logs -f
+	docker compose logs -f
 
 # Data & ML Pipelines (Local or Container Execution)
 ingest:
@@ -69,7 +70,7 @@ retrain:
 	python -m ml.pipelines.retrain $(if $(NEW_DATA),--new-data $(NEW_DATA),) $(if $(OLD_DATA),--old-data $(OLD_DATA),) $(if $(MODEL),--model $(MODEL),) $(if $(DEMO),--demo,) $(ARGS)
 
 cron:
-	python -m ml.pipelines.cron_scheduler
+	python -m ml.pipelines.cron_scheduler $(ARGS)
 
 # Model & System Evaluation Suites
 eval-ml:
