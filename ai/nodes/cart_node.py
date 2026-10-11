@@ -3,13 +3,35 @@ Cart mutation specialist node.
 Executes stateful cart actions (add, remove, change size, clear, view subtotal).
 """
 import re
-from typing import Dict, Any
+from typing import Any, Dict, List, Optional, Tuple
 from core.logging import get_logger
 
 from ai.schemas.state import AgentState
 from ai.tools.cart_tools import cart_tool
 
 logger = get_logger(__name__)
+
+
+SIZE_MUTATION_RE = re.compile(r"\bfrom\s+(?:size\s+)?([a-z0-9]+)\s+to\s+(?:size\s+)?([a-z0-9]+)\b")
+SIZE_CHANGE_RE = re.compile(r"\b(?:change|switch|swap)\b.*\bsize\b")
+CART_ACTION_RES = (
+    ("add", re.compile(r"\b(?:add|put|buy|place)\b")),
+    ("remove", re.compile(r"\b(?:remove|delete|drop)\b|\btake\s+out\b")),
+    ("clear", re.compile(r"\b(?:clear|empty)\b")),
+)
+
+
+def detect_cart_action(query: str, sizes: List[str]) -> Tuple[str, Optional[str], Optional[str]]:
+    """Returns (action, old_size, new_size) for a lower-cased cart query; words are matched whole, not as substrings."""
+    mutation_m = SIZE_MUTATION_RE.search(query)
+    if mutation_m:
+        return "update_size", mutation_m.group(1).upper(), mutation_m.group(2).upper()
+    if SIZE_CHANGE_RE.search(query) and len(sizes) >= 2:
+        return "update_size", sizes[0], sizes[1]
+    for action, pattern in CART_ACTION_RES:
+        if pattern.search(query):
+            return action, None, None
+    return "get", None, None
 
 
 def cart_agent_node(state: AgentState) -> Dict[str, Any]:
@@ -24,27 +46,7 @@ def cart_agent_node(state: AgentState) -> Dict[str, Any]:
     sizes = entities.get("sizes") or []
 
     target_pid = product_ids[0] if product_ids else None
-
-    # Detect action
-    action = "get"
-    new_size = None
-    old_size = None
-
-    if "from" in query and "to" in query:
-        action = "update_size"
-        mutation_m = re.search(r"\bfrom\s+(?:size\s+)?([a-z0-9]+)\s+to\s+(?:size\s+)?([a-z0-9]+)\b", query)
-        if mutation_m:
-            old_size = mutation_m.group(1).upper()
-            new_size = mutation_m.group(2).upper()
-        elif len(sizes) >= 2:
-            old_size = sizes[0]
-            new_size = sizes[1]
-    elif any(w in query for w in ["add", "put", "buy", "place"]):
-        action = "add"
-    elif any(w in query for w in ["remove", "delete", "drop", "take out"]):
-        action = "remove"
-    elif any(w in query for w in ["clear", "empty"]):
-        action = "clear"
+    action, old_size, new_size = detect_cart_action(query, sizes)
 
     target_size = new_size or (sizes[0] if sizes else None)
 
