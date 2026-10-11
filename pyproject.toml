@@ -5,3 +5,21 @@ target-version = ["py311"]
 [tool.isort]
 profile = "black"
 line_length = 127
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+norecursedirs = ["mysql_data", ".git", ".venv", "node_modules"]
+timeout = 60
+markers = [
+    "unit: fast tests with mocks only (no network, no live services)",
+    "integration: needs live PostgreSQL / Redis / MLflow",
+    "e2e: full API / graph flows",
+    "slow: takes more than ~10 seconds",
+    "benchmark: performance and latency benchmark tests",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::FutureWarning",
+    "ignore::UserWarning",
+]
