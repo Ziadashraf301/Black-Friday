@@ -3,12 +3,14 @@ Guardrail & Router Root Entry Node for LangGraph (Phase 3).
 Executes Phase 2 GuardrailService (Tier-0 Regex + Jev System-1 API) in single pass.
 Enforces security, extracts shopping constraints, and prepares routing decision.
 """
+
 import re
 from typing import Any, Dict, List
 
 from langchain_core.messages import AIMessage, HumanMessage
-from ai.schemas.state import AgentState
+
 from ai.guardrails.strike_tracker import strike_tracker
+from ai.schemas.state import AgentState
 from ai.services.guardrail_service import guardrail_service
 from core.logging import get_logger
 
@@ -107,6 +109,7 @@ def guardrail_router_node(state: AgentState) -> Dict[str, Any]:
     # 4. Emit MLflow GenAI Trace
     try:
         from ai.observability.tracing import agent_tracer
+
         agent_tracer.trace_guardrail_eval(
             query=query,
             user_id=user_id,

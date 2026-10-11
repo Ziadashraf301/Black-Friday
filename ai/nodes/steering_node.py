@@ -2,8 +2,11 @@
 Terminal Brand Steering Node (Phase 3).
 Politely redirects out-of-domain conversational queries back to the Black Friday shopping catalog.
 """
-from typing import Dict, Any
+
+from typing import Any, Dict
+
 from langchain_core.messages import AIMessage
+
 from ai.schemas.state import AgentState
 from core.logging import get_logger
 
@@ -21,10 +24,7 @@ def steering_node(state: AgentState) -> Dict[str, Any]:
     )
     logger.info("[GRAPH: STEERING-NODE] Redirecting off-topic query.")
 
-    ai_msg = AIMessage(
-        content=steering_text,
-        additional_kwargs={"domain_steering": True, "intent": "OUT_OF_DOMAIN"}
-    )
+    ai_msg = AIMessage(content=steering_text, additional_kwargs={"domain_steering": True, "intent": "OUT_OF_DOMAIN"})
 
     return {
         "messages": [ai_msg],
@@ -36,7 +36,7 @@ def steering_node(state: AgentState) -> Dict[str, Any]:
                 "Show me winter coats under $100",
                 "Do you have silk kimono shirts?",
                 "What are your biggest Black Friday sales?",
-            ]
+            ],
         },
         "current_node": "steering_node",
     }

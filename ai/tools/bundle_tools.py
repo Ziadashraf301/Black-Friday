@@ -4,11 +4,14 @@ Live Database & Redis Caching Subsystem (Phase 4 - Task P4-05).
 Extracts statistical cross-sell pairings and dynamic bundle discounts directly from
 curated_products JSONB with 24-hour Redis caching (TTL 86,400s) and dynamic pricing.
 """
+
 from typing import List, Optional
-from ai.schemas import BundleItem
+
 from ai.extractor.catalog_index import CatalogIndex
+from ai.schemas import BundleItem
+from core.cache.redis_client import RedisCacheManager
+from core.cache.redis_client import cache_manager as default_cache_manager
 from core.db.repository import BlackFridayRepository
-from core.cache.redis_client import RedisCacheManager, cache_manager as default_cache_manager
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -122,6 +125,7 @@ class BundleRecommendationsTool:
 
             try:
                 from ai.observability.tracing import agent_tracer
+
                 agent_tracer.trace_bundle_pricing(
                     target_product_id=clean_id,
                     bundle_items=[b.model_dump() for b in results],

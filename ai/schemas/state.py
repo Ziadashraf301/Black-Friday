@@ -3,10 +3,12 @@ LangGraph StateGraph State Definition (Phase 3).
 Encapsulates message streams, extracted entities, routing decisions,
 shopping cart state, and intermediate specialist tool outputs.
 """
-from typing import TypedDict, Annotated, List, Optional, Dict, Any
+
 import operator
-from langgraph.graph.message import add_messages
+from typing import Annotated, Any, Dict, List, Optional, TypedDict
+
 from langchain_core.messages import BaseMessage
+from langgraph.graph.message import add_messages
 
 
 def merge_dicts(a: Optional[Dict[str, Any]], b: Optional[Dict[str, Any]]) -> Dict[str, Any]:
@@ -23,6 +25,7 @@ def last_str_reducer(a: Optional[str], b: Optional[str]) -> Optional[str]:
 
 class UICard(TypedDict, total=False):
     """Unified UI card schema for catalog, bundle, detail, and promo displays."""
+
     type: str
     product_id: Optional[str]
     name: Optional[str]
@@ -40,6 +43,7 @@ class UICard(TypedDict, total=False):
 
 class GroundingCitation(TypedDict, total=False):
     """Grounding citation link linking assistant claims to verified catalog items."""
+
     product_id: str
     title: str
     url: str
@@ -52,6 +56,7 @@ class UIPayload(TypedDict, total=False):
     Unified UI Payload schema across specialist nodes, aggregator barrier, and synthesis.
     Consolidates interactive cards, user action chips, and verifiable catalog citations.
     """
+
     type: Optional[str]
     data: Optional[Dict[str, Any]]
     cards: List[Dict[str, Any]]
@@ -131,6 +136,7 @@ class AgentState(TypedDict, total=False):
     Central execution state flowing through the LangGraph StateGraph.
     Supports immutable updates and Redis checkpointer serialization.
     """
+
     # Conversational message history with append reducer
     messages: Annotated[List[BaseMessage], add_messages]
 

@@ -3,7 +3,9 @@ Response Synthesis Node for LangGraph (Phase 3).
 Delegates RAG augmentation, model inference, and UI payload assembly
 to the dedicated SynthesisService.
 """
-from typing import Dict, Any
+
+from typing import Any, Dict
+
 from ai.schemas.state import AgentState
 from ai.services.synthesis_service import synthesis_service
 

@@ -2,11 +2,13 @@
 Tier-0 High-Speed Deterministic Regex Pre-Filter (<0.05ms).
 Detects prompt injections, jailbreaks, SQL injections, and script attacks before API calls.
 """
-import time
+
 import re
+import time
 from typing import List, Tuple
+
+from ai.guardrails.base import STANDARD_REFUSAL_MESSAGE, BaseSafetyFilter
 from ai.schemas import SafetyEvaluationResult
-from ai.guardrails.base import BaseSafetyFilter, STANDARD_REFUSAL_MESSAGE
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -20,7 +22,10 @@ class RegexPreFilter(BaseSafetyFilter):
 
     PATTERNS: List[Tuple[str, str]] = [
         # Jailbreak keywords & DAN variants
-        (r"(?i)\b(?:ignore|disregard|forget)\s+(?:all\s+)?(?:previous|prior|above)\s+instructions\b", "JAILBREAK_IGNORE_INSTRUCTIONS"),
+        (
+            r"(?i)\b(?:ignore|disregard|forget)\s+(?:all\s+)?(?:previous|prior|above)\s+instructions\b",
+            "JAILBREAK_IGNORE_INSTRUCTIONS",
+        ),
         (r"(?i)\byou\s+are\s+now\s+dan\b", "JAILBREAK_DAN_TRIGGER"),
         (r"(?i)\bdo\s+anything\s+now\b", "JAILBREAK_DAN_TRIGGER"),
         (r"(?i)\[\s*debug\s+mode\s+(?:active|activated)\s*\]", "JAILBREAK_DEBUG_MODE"),
@@ -30,21 +35,17 @@ class RegexPreFilter(BaseSafetyFilter):
         (r"(?i)\bdisclose\s+(?:the\s+)?(?:developer\s+)?system\s+prompt\b", "LEAK_SYSTEM_PROMPT"),
         (r"(?i)\boutput\s+your\s+secret\s+instructions\b", "LEAK_SECRET_INSTRUCTIONS"),
         (r"(?i)\bappend\s+(?:all\s+)?(?:internal\s+)?api\s+keys\b", "LEAK_CREDENTIALS"),
-
         # SQL Injection attempts
         (r"(?i)(?:drop|alter|truncate)\s+table\b", "SQLI_DDL_ATTACK"),
         (r"(?i)select\s+\*\s+from\s+[a-z0-9_]+\s+where\s+['\"][0-9]['\"]\s*=\s*['\"][0-9]['\"]", "SQLI_TAUTOLOGY"),
         (r"(?i)union\s+(?:all\s+)?select\b", "SQLI_UNION_SELECT"),
-
         # Script / Code Injections
         (r"(?i)<script\b[^>]*>.*?</script>", "XSS_SCRIPT_TAG"),
         (r"(?i)javascript:\s*", "XSS_JAVASCRIPT_PROTOCOL"),
     ]
 
     def __init__(self):
-        self._compiled_patterns = [
-            (re.compile(pattern), rule_name) for pattern, rule_name in self.PATTERNS
-        ]
+        self._compiled_patterns = [(re.compile(pattern), rule_name) for pattern, rule_name in self.PATTERNS]
 
     def evaluate(self, text: str) -> SafetyEvaluationResult:
         start_t = time.perf_counter()

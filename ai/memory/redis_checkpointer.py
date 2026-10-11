@@ -3,8 +3,10 @@ Multi-Tier Memory & Conversation Checkpointing Subsystem (Phase 3).
 Provides state checkpointing for LangGraph multi-turn sessions using Redis,
 with automatic graceful degradation to MemorySaver for testing and offline environments.
 """
-from typing import Optional, Dict, Any, Iterator
+
 import json
+from typing import Any, Dict, Iterator, Optional
+
 import redis
 from langgraph.checkpoint.base import (
     BaseCheckpointSaver,
@@ -13,6 +15,7 @@ from langgraph.checkpoint.base import (
     CheckpointTuple,
 )
 from langgraph.checkpoint.memory import MemorySaver
+
 from core.config import settings
 from core.logging import get_logger
 
@@ -128,11 +131,14 @@ class RedisSessionCheckpointer(BaseCheckpointSaver):
                 data_key = f"checkpoint:{thread_id}:{checkpoint_id}"
                 latest_key = f"checkpoint_latest:{thread_id}"
 
-                payload = json.dumps({
-                    "checkpoint": checkpoint,
-                    "metadata": metadata,
-                    "parent_config": config,
-                }, default=str)
+                payload = json.dumps(
+                    {
+                        "checkpoint": checkpoint,
+                        "metadata": metadata,
+                        "parent_config": config,
+                    },
+                    default=str,
+                )
 
                 # Store checkpoint and update latest pointer
                 self._redis.setex(data_key, self._ttl, payload)

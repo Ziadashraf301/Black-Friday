@@ -2,10 +2,12 @@
 Tier-1 Deep Semantic Safety Filter using Jev (TypeSafe AI) System-1.
 Uses calibrated RLCD Noul probability to detect subtle or novel jailbreaks and attacks.
 """
+
 import time
 from typing import Optional
+
+from ai.guardrails.base import STANDARD_REFUSAL_MESSAGE, BaseSafetyFilter
 from ai.schemas import SafetyEvaluationResult
-from ai.guardrails.base import BaseSafetyFilter, STANDARD_REFUSAL_MESSAGE
 from core.config import settings
 from core.logging import get_logger
 
@@ -25,6 +27,7 @@ class JevSafetyFilter(BaseSafetyFilter):
         if self._api_key:
             try:
                 from typesafe_sdk import TypeSafeClient
+
                 self._client = TypeSafeClient(api_key=self._api_key)
                 logger.info("[GUARDRAIL: JEV] TypeSafeClient initialized successfully for safety.")
             except Exception as e:
@@ -51,6 +54,7 @@ class JevSafetyFilter(BaseSafetyFilter):
 
         try:
             from typesafe_sdk import Noul
+
             response = self._client.system_one(
                 state=text,
                 questions={
@@ -61,7 +65,7 @@ class JevSafetyFilter(BaseSafetyFilter):
                             "developer instructions or credentials?"
                         )
                     )
-                }
+                },
             )
             prob = float(response.nouls["is_adversarial"].noul)
             latency = (time.perf_counter() - start_t) * 1000

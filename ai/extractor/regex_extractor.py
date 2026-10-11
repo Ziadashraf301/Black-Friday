@@ -1,15 +1,17 @@
+# flake8: noqa: E501 (long prompt/regex literals)
 """
 Tier-0 High-Speed Deterministic Lexical & Catalog Extractor (<0.5ms).
 Handles exact & non-exact Product IDs (case variations, delimiters, typos, zero-padding),
 fuzzy catalog title overlap matching, exact budgets, and category-aware sizing.
 """
-from typing import List, Optional, Set, Tuple
-import re
 
-from ai.schemas import ExtractedEntities
+import re
+from typing import List, Optional, Set, Tuple
+
 from ai.extractor.base import BaseEntityExtractor
 from ai.extractor.catalog_index import CatalogIndex
 from ai.extractor.taxonomy import CATEGORY_HIERARCHY
+from ai.schemas import ExtractedEntities
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -105,9 +107,36 @@ class RegexEntityExtractor(BaseEntityExtractor):
         # 3. Non-Exact / Fuzzy Product Name & Keyword Token-Overlap Extraction
         q_lower = query.lower()
         stopwords = {
-            "a", "an", "the", "and", "or", "in", "on", "for", "with", "to", "of", "my",
-            "your", "this", "that", "from", "into", "can", "i", "is", "it", "me", "do",
-            "you", "have", "looking", "how", "much", "what", "made"
+            "a",
+            "an",
+            "the",
+            "and",
+            "or",
+            "in",
+            "on",
+            "for",
+            "with",
+            "to",
+            "of",
+            "my",
+            "your",
+            "this",
+            "that",
+            "from",
+            "into",
+            "can",
+            "i",
+            "is",
+            "it",
+            "me",
+            "do",
+            "you",
+            "have",
+            "looking",
+            "how",
+            "much",
+            "what",
+            "made",
         }
         q_tokens = set(w.lower() for w in re.findall(r"\b[a-zA-Z0-9]+\b", q_lower) if w.lower() not in stopwords)
 
@@ -183,8 +212,17 @@ class RegexEntityExtractor(BaseEntityExtractor):
             if upper_s not in extracted_sizes:
                 extracted_sizes.append(upper_s)
 
-        is_footwear = any("footwear" in c.lower() or "boot" in c.lower() or "shoe" in c.lower() for c in matched_categories) or bool(re.search(r"\b(?:boots?|shoes?|sneakers?|footwear)\b", query, re.I))
-        is_bottoms = any("bottom" in c.lower() or "pant" in c.lower() or "trouser" in c.lower() or "jean" in c.lower() or "denim" in c.lower() for c in matched_categories) or bool(re.search(r"\b(?:jeans?|pants?|trousers?|denim)\b", query, re.I))
+        is_footwear = any(
+            "footwear" in c.lower() or "boot" in c.lower() or "shoe" in c.lower() for c in matched_categories
+        ) or bool(re.search(r"\b(?:boots?|shoes?|sneakers?|footwear)\b", query, re.I))
+        is_bottoms = any(
+            "bottom" in c.lower()
+            or "pant" in c.lower()
+            or "trouser" in c.lower()
+            or "jean" in c.lower()
+            or "denim" in c.lower()
+            for c in matched_categories
+        ) or bool(re.search(r"\b(?:jeans?|pants?|trousers?|denim)\b", query, re.I))
 
         if is_footwear:
             shoe_matches = re.findall(r"\b(?:shoe\s+size\s+|size\s+)?(7|8|9|10|11|12|13)(?:\.5)?\b", query, re.I)
@@ -194,7 +232,9 @@ class RegexEntityExtractor(BaseEntityExtractor):
                         extracted_sizes.append(sm)
 
         if is_bottoms:
-            waist_matches = re.findall(r"\b(?:waist\s+(?:size\s+)?|size\s+)?(28|30|32|34|36|38|40)\b(?:\s*waist)?", query, re.I)
+            waist_matches = re.findall(
+                r"\b(?:waist\s+(?:size\s+)?|size\s+)?(28|30|32|34|36|38|40)\b(?:\s*waist)?", query, re.I
+            )
             for wm in waist_matches:
                 if not re.search(rf"\$\s*{wm}\b", query) and not re.search(rf"P\d*{wm}", query):
                     if wm not in extracted_sizes:

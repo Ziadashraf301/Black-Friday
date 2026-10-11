@@ -2,8 +2,10 @@
 Product Details Specialist Node (Phase 3).
 Fetches comprehensive specifications, materials, and care instructions for catalog products.
 """
-from typing import Dict, Any
+
 import re
+from typing import Any, Dict
+
 from ai.schemas.state import AgentState
 from ai.tools.catalog_tools import catalog_details_tool
 from core.logging import get_logger
@@ -36,18 +38,20 @@ def details_agent_node(state: AgentState) -> Dict[str, Any]:
 
     cards = []
     if details_payload and details_payload.get("product_id"):
-        cards.append({
-            "type": "PRODUCT_DETAIL_CARD",
-            "product_id": details_payload.get("product_id"),
-            "name": details_payload.get("name"),
-            "price": details_payload.get("discounted_price", details_payload.get("price")),
-            "original_price": details_payload.get("original_price"),
-            "image_url": details_payload.get("image_url", f"/products/{details_payload.get('product_id')}.jpg"),
-            "materials": details_payload.get("materials", []),
-            "care_instructions": details_payload.get("care_instructions"),
-            "sizes": details_payload.get("sizes", []),
-            "stock_status": details_payload.get("stock_status", "IN_STOCK"),
-        })
+        cards.append(
+            {
+                "type": "PRODUCT_DETAIL_CARD",
+                "product_id": details_payload.get("product_id"),
+                "name": details_payload.get("name"),
+                "price": details_payload.get("discounted_price", details_payload.get("price")),
+                "original_price": details_payload.get("original_price"),
+                "image_url": details_payload.get("image_url", f"/products/{details_payload.get('product_id')}.jpg"),
+                "materials": details_payload.get("materials", []),
+                "care_instructions": details_payload.get("care_instructions"),
+                "sizes": details_payload.get("sizes", []),
+                "stock_status": details_payload.get("stock_status", "IN_STOCK"),
+            }
+        )
 
     return {
         "product_details": details_payload,

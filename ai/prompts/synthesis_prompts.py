@@ -1,3 +1,4 @@
+# flake8: noqa: E501 (long prompt/regex literals)
 """
 RAG Synthesis Prompts for Black Friday Conversational Concierge.
 Provides system instructions and structured grounding prompts for LLM response generation.

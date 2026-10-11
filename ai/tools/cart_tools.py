@@ -5,14 +5,15 @@ Provides stateful shopping cart operations adhering to SOLID principles:
   - Cache Service: Uses RedisCacheManager (cache_manager) for Redis session caching.
   - Operations: Add items, remove items, mutate sizes, update quantities, calculate subtotals/discounts.
 """
-from typing import Optional, Dict, Any, List
-import json
 
-from ai.schemas import CartState, CartItem
+import json
+from typing import Any, Dict, List, Optional
+
 from ai.extractor.catalog_index import CatalogIndex
-from core.db.repository import BlackFridayRepository
-from core.cache.redis_client import cache_manager, RedisCacheManager
+from ai.schemas import CartItem, CartState
+from core.cache.redis_client import RedisCacheManager, cache_manager
 from core.config import settings
+from core.db.repository import BlackFridayRepository
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -186,7 +187,9 @@ class CartManagementTool:
             # Catalog size validation (Phase 4 - Task P4-06); there is no inventory, only listed sizes
             if self.repo:
                 if not self.repo.is_size_offered(product_id=target_pid, size=chosen_size):
-                    logger.warning(f"[TOOL: CART] Size {chosen_size} not offered for {target_pid}. Defaulting to first listed size.")
+                    logger.warning(
+                        f"[TOOL: CART] Size {chosen_size} not offered for {target_pid}. Defaulting to first listed size."
+                    )
                     if available_sizes:
                         chosen_size = available_sizes[0].upper()
 
@@ -221,7 +224,7 @@ class CartManagementTool:
 
         elif act == "update_size":
             target_new_size = (new_size or size or "M").upper()
-            target_old_size = (size if new_size else None)
+            target_old_size = size if new_size else None
             for item in items:
                 if not clean_id or item.product_id == clean_id:
                     if not target_old_size or item.size == target_old_size.upper():

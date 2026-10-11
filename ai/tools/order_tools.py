@@ -4,10 +4,12 @@ Provides order fulfillment status, return window policies, shipping estimates,
 and price match guarantee information.
 Connected to PostgreSQL (user_purchases, curated_products) and PolicyKnowledgeBase.
 """
-from typing import Optional, Dict, Any
-from datetime import datetime, timedelta, timezone
+
 import re
 import zlib
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, Optional
+
 from sqlalchemy import text
 
 from ai.schemas import OrderStatus
@@ -83,16 +85,14 @@ class OrderSupportTool:
                 return None
             order_num = int(num_match.group(0))
 
-        query = text(
-            """
+        query = text("""
             SELECT up.id, up.product_id, up.predicted_usd, up.purchased_at, cp.name, cp.sizes
             FROM user_purchases up
             LEFT JOIN curated_products cp ON up.product_id = cp.product_id
             WHERE up.user_id = :uid AND (CAST(:oid AS INTEGER) IS NULL OR up.id = :oid)
             ORDER BY up.purchased_at DESC
             LIMIT 1;
-            """
-        )
+            """)
         try:
             with self.repo.engine.connect() as conn:
                 row = conn.execute(query, {"uid": int(user_id), "oid": order_num}).fetchone()

@@ -3,11 +3,13 @@ Hybrid Strategy Entity Extractor.
 Combines deterministic regex extraction (exact continuous budgets, open-ended product IDs)
 with Jev 17-category semantic classification and context-aware size disambiguation.
 """
+
 from typing import Optional
-from ai.schemas import ExtractedEntities
+
 from ai.extractor.base import BaseEntityExtractor
-from ai.extractor.regex_extractor import RegexEntityExtractor
 from ai.extractor.jev_extractor import JevEntityExtractor
+from ai.extractor.regex_extractor import RegexEntityExtractor
+from ai.schemas import ExtractedEntities
 
 
 class HybridEntityExtractor(BaseEntityExtractor):

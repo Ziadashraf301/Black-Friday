@@ -1,17 +1,18 @@
 """
 Deterministic Local Heuristic Router Strategy (Zero-latency CPU fallback).
 """
-from typing import Optional, Dict, Any
-import time
 
-from ai.schemas import RoutingDecision, IntentType, ExtractedEntities
-from ai.router.base import BaseRouterStrategy
+import time
+from typing import Any, Dict, Optional
+
+from ai.classifier.intent_classifier import IntentClassifier
 from ai.extractor.base import BaseEntityExtractor
 from ai.extractor.regex_extractor import RegexEntityExtractor
-from ai.classifier.intent_classifier import IntentClassifier
 from ai.guardrails.base import BaseSafetyFilter
 from ai.guardrails.regex_filter import RegexPreFilter
 from ai.prompts.guardrail_prompts import STANDARD_REFUSAL_MESSAGE
+from ai.router.base import BaseRouterStrategy
+from ai.schemas import ExtractedEntities, IntentType, RoutingDecision
 
 
 class FastRuleRouter(BaseRouterStrategy):
@@ -75,7 +76,7 @@ class FastRuleRouter(BaseRouterStrategy):
 
         # Step 3: Entity extraction
         entities = self._extractor.extract(query)
-        
+
         # Partition entities per intent branch
         decomposed_entities: Dict[str, ExtractedEntities] = {}
         for it in multi_intents:

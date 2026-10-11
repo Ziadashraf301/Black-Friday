@@ -1,8 +1,10 @@
 """
 Abstract Base Strategy for System-1 Routers.
 """
+
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+
 from ai.schemas import RoutingDecision
 
 

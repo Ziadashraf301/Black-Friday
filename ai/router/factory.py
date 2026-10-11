@@ -1,11 +1,13 @@
 """
 System-1 Router Factory with Strategy Pattern instantiation.
 """
+
 from typing import Optional
-from ai.router.base import BaseRouterStrategy
-from ai.router.rule_router import FastRuleRouter
-from ai.router.jev_router import JevApiRouter
+
 from ai.extractor.factory import EntityExtractorFactory
+from ai.router.base import BaseRouterStrategy
+from ai.router.jev_router import JevApiRouter
+from ai.router.rule_router import FastRuleRouter
 from core.config import settings
 from core.logging import get_logger
 

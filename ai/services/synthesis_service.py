@@ -1,13 +1,16 @@
+# flake8: noqa: E501 (long prompt/regex literals)
 """
 RAG Synthesis Service for Black Friday Assistant.
 Manages context augmentation, LLM model invocation from configuration,
 and deterministic fallback generation.
 """
-from typing import Dict, Any, List, Optional
+
+from typing import Any, Dict, List, Optional
+
 from langchain_core.messages import AIMessage
 
-from ai.schemas.state import AgentState
 from ai.prompts.synthesis_prompts import format_rag_prompt
+from ai.schemas.state import AgentState
 from ai.services.template_service import ResponseTemplateService, template_service
 from core.config import settings
 from core.logging import get_logger
@@ -112,6 +115,7 @@ class SynthesisService:
                 return None
             try:
                 from google import genai
+
                 client = genai.Client(api_key=api_key)
             except Exception as e:
                 logger.warning(f"[SYNTHESIS-SERVICE] Could not initialize genai client: {e}")
@@ -206,41 +210,47 @@ class SynthesisService:
                 for p in retrieved:
                     pid = p.get("product_id")
                     if pid:
-                        cards.append({
-                            "type": "PRODUCT_CARD",
-                            "product_id": pid,
-                            "name": p.get("name"),
-                            "price": p.get("discounted_price", p.get("price")),
-                            "original_price": p.get("original_price"),
-                            "image_url": p.get("image_url", f"/products/{pid}.jpg"),
-                            "badge": p.get("badge", "Catalog Item"),
-                        })
+                        cards.append(
+                            {
+                                "type": "PRODUCT_CARD",
+                                "product_id": pid,
+                                "name": p.get("name"),
+                                "price": p.get("discounted_price", p.get("price")),
+                                "original_price": p.get("original_price"),
+                                "image_url": p.get("image_url", f"/products/{pid}.jpg"),
+                                "badge": p.get("badge", "Catalog Item"),
+                            }
+                        )
             elif details and details.get("product_id"):
-                cards.append({
-                    "type": "PRODUCT_DETAIL_CARD",
-                    "product_id": details.get("product_id"),
-                    "name": details.get("name"),
-                    "price": details.get("discounted_price", details.get("price")),
-                    "original_price": details.get("original_price"),
-                    "image_url": details.get("image_url", f"/products/{details.get('product_id')}.jpg"),
-                    "materials": details.get("materials", []),
-                    "care_instructions": details.get("care_instructions"),
-                    "sizes": details.get("sizes", []),
-                    "stock_status": details.get("stock_status", "IN_STOCK"),
-                })
+                cards.append(
+                    {
+                        "type": "PRODUCT_DETAIL_CARD",
+                        "product_id": details.get("product_id"),
+                        "name": details.get("name"),
+                        "price": details.get("discounted_price", details.get("price")),
+                        "original_price": details.get("original_price"),
+                        "image_url": details.get("image_url", f"/products/{details.get('product_id')}.jpg"),
+                        "materials": details.get("materials", []),
+                        "care_instructions": details.get("care_instructions"),
+                        "sizes": details.get("sizes", []),
+                        "stock_status": details.get("stock_status", "IN_STOCK"),
+                    }
+                )
             elif bundles:
                 for b in bundles:
                     pid = b.get("product_id")
                     if pid:
-                        cards.append({
-                            "type": "BUNDLE_CARD",
-                            "product_id": pid,
-                            "name": b.get("name"),
-                            "price": b.get("price"),
-                            "bundle_price": b.get("bundle_price"),
-                            "discount_pct": b.get("discount_pct", "15% OFF"),
-                            "image_url": b.get("image_url", f"/products/{pid}.jpg"),
-                        })
+                        cards.append(
+                            {
+                                "type": "BUNDLE_CARD",
+                                "product_id": pid,
+                                "name": b.get("name"),
+                                "price": b.get("price"),
+                                "bundle_price": b.get("bundle_price"),
+                                "discount_pct": b.get("discount_pct", "15% OFF"),
+                                "image_url": b.get("image_url", f"/products/{pid}.jpg"),
+                            }
+                        )
 
         default_chips = ["View Cart", "Checkout Now", "Top Deals"]
         existing_chips = list(existing_ui.get("action_chips") or [])
@@ -251,13 +261,15 @@ class SynthesisService:
             for c in cards:
                 pid = c.get("product_id")
                 if pid:
-                    citations.append({
-                        "product_id": pid,
-                        "title": c.get("name", f"Product {pid}"),
-                        "url": f"/shopper/browse/{pid}",
-                        "price": float(c.get("discounted_price") or c.get("bundle_price") or c.get("price") or 0.0),
-                        "badge": c.get("badge") or c.get("discount_pct") or "Deal",
-                    })
+                    citations.append(
+                        {
+                            "product_id": pid,
+                            "title": c.get("name", f"Product {pid}"),
+                            "url": f"/shopper/browse/{pid}",
+                            "price": float(c.get("discounted_price") or c.get("bundle_price") or c.get("price") or 0.0),
+                            "badge": c.get("badge") or c.get("discount_pct") or "Deal",
+                        }
+                    )
 
         final_ui_payload: Dict[str, Any] = {
             "type": ui_type,
@@ -310,6 +322,7 @@ class SynthesisService:
         if not state.get("is_cache_hit") and query and user_id and self._is_cacheable(state, intent):
             try:
                 from ai.services.cache_service import cache_service
+
                 cache_service.store_exact_llm_response(
                     raw_query=query,
                     user_id=user_id,

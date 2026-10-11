@@ -2,7 +2,9 @@
 Search Specialist Node (Phase 3).
 Executes hybrid pgvector HNSW + tsvector BM25 search with Reciprocal Rank Fusion.
 """
-from typing import Dict, Any
+
+from typing import Any, Dict
+
 from ai.schemas.state import AgentState
 from ai.tools.search_tools import search_tool
 from core.logging import get_logger

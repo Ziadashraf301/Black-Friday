@@ -1,7 +1,9 @@
 """
 Base Entity Extractor Interface.
 """
+
 from abc import ABC, abstractmethod
+
 from ai.schemas import ExtractedEntities
 
 

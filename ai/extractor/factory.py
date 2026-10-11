@@ -2,10 +2,11 @@
 Entity Extractor Factory.
 Instantiates the requested extraction strategy (Regex, Jev, or Hybrid).
 """
+
 from ai.extractor.base import BaseEntityExtractor
-from ai.extractor.regex_extractor import RegexEntityExtractor
-from ai.extractor.jev_extractor import JevEntityExtractor
 from ai.extractor.hybrid_extractor import HybridEntityExtractor
+from ai.extractor.jev_extractor import JevEntityExtractor
+from ai.extractor.regex_extractor import RegexEntityExtractor
 
 
 class EntityExtractorFactory:

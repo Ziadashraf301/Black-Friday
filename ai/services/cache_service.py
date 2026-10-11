@@ -5,11 +5,12 @@ Provides:
   - Tier 1: True Vector Semantic Cache in PostgreSQL with pgvector HNSW index
     (Cosine similarity >= 0.92, max_distance <= 0.08) on 768-dim embeddings (<5ms).
 """
+
 import hashlib
 import json
 import time
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any, List
+from typing import Any, Dict, List, Optional
 
 from core.cache.redis_client import RedisCacheManager, cache_manager
 from core.db.repository import BlackFridayRepository
@@ -160,7 +161,6 @@ class TwoTierCacheService:
             logger.info(f"[CACHE: TIER-0 STORE] Cached LLM response for query hash={q_hash[:10]} (TTL={ttl_seconds}s)")
         return success
 
-
     # =========================================================================
     # Tier 1: True Vector Semantic Cache (PostgreSQL pgvector HNSW Index)
     # =========================================================================
@@ -243,9 +243,7 @@ class TwoTierCacheService:
         c_hash = self.hash_constraints(intent, constraints)
         return f"{self.SEMANTIC_CACHE_PREFIX}:{self.user_key(user_id)}:{intent.upper()}:{c_hash}"
 
-    def get_semantic_response(
-        self, intent: str, constraints: Dict[str, Any], user_id: str
-    ) -> Optional[Dict[str, Any]]:
+    def get_semantic_response(self, intent: str, constraints: Dict[str, Any], user_id: str) -> Optional[Dict[str, Any]]:
         """Structured constraint cache lookup."""
         if not self._cache.is_available:
             return None

@@ -1,11 +1,14 @@
+# flake8: noqa: E501 (long prompt/regex literals)
 """
 Store Policy Knowledge Base (Phase 3).
 Loads, indexes, and queries verified Black Friday customer policies from
 data/store_policies.json for support and RAG augmentation.
 """
-from typing import Dict, Any, List, Optional
+
 import json
 from pathlib import Path
+from typing import Any, Dict, List, Optional
+
 from core.config import settings
 from core.logging import get_logger
 
@@ -28,7 +31,9 @@ class PolicyKnowledgeBase:
             try:
                 curr_mtime = self.file_path.stat().st_mtime
                 if self._last_mtime is None or curr_mtime > self._last_mtime:
-                    logger.info(f"[POLICY-KB] Detected change on {self.file_path} (mtime {curr_mtime} > {self._last_mtime}). Reloading policies.")
+                    logger.info(
+                        f"[POLICY-KB] Detected change on {self.file_path} (mtime {curr_mtime} > {self._last_mtime}). Reloading policies."
+                    )
                     self._load()
             except Exception as e:
                 logger.warning(f"[POLICY-KB] Error checking mtime for {self.file_path}: {e}")

@@ -3,7 +3,9 @@ Long-Term User Profile & Personalization Store (Phase 3).
 Stores shopper sizing preferences, favorite styles, and past categories
 with GDPR right-to-be-forgotten compliance.
 """
-from typing import Optional, Dict
+
+from typing import Dict, Optional
+
 from ai.schemas import UserProfile
 from core.logging import get_logger
 

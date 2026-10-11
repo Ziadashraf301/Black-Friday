@@ -1,13 +1,16 @@
 """
 System-1 Router & Entity Extraction Domain Schemas.
 """
+
 from enum import Enum
-from typing import Optional, List, Dict, Any
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, Field
 
 
 class IntentType(str, Enum):
     """Canonical 8 e-commerce intents handled by the Black Friday AI system."""
+
     PRODUCT_SEARCH = "PRODUCT_SEARCH"
     PRODUCT_DETAILS = "PRODUCT_DETAILS"
     DEALS_PROMOTIONS = "DEALS_PROMOTIONS"
@@ -20,6 +23,7 @@ class IntentType(str, Enum):
 
 class ExtractedEntities(BaseModel):
     """Sanitized and validated shopping constraints extracted from user input."""
+
     category: Optional[str] = Field(None, description="Standardized apparel category")
     categories: List[str] = Field(default_factory=list, description="Extracted categories list")
     max_price: Optional[float] = Field(None, ge=0.0, description="Upper budget constraint in USD")
@@ -40,14 +44,19 @@ class ExtractedEntities(BaseModel):
 
 class RoutingDecision(BaseModel):
     """Deterministic routing decision packet emitted by System-1 routers."""
+
     query: str
     intent: IntentType
-    target_intents: List[IntentType] = Field(default_factory=list, description="All detected intents for multi-intent dispatch")
+    target_intents: List[IntentType] = Field(
+        default_factory=list, description="All detected intents for multi-intent dispatch"
+    )
     is_safe: bool = True
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
     adversarial_prob: float = Field(default=0.0, ge=0.0, le=1.0)
     entities: ExtractedEntities = Field(default_factory=ExtractedEntities)
-    decomposed_entities: Dict[str, ExtractedEntities] = Field(default_factory=dict, description="Partitioned entity constraints per intent branch")
+    decomposed_entities: Dict[str, ExtractedEntities] = Field(
+        default_factory=dict, description="Partitioned entity constraints per intent branch"
+    )
     steering_response: Optional[str] = None
     strategy_used: str = "JEV"
     prompt_version: str = "v1.0.0"
@@ -57,6 +66,7 @@ class RoutingDecision(BaseModel):
 
 class QuestionSpec(BaseModel):
     """Specification of a System-1 question for TypeSafe AI."""
+
     question_type: str = Field(default="noul", description="noul or choice")
     instructions: str = Field(default="", description="Target instruction / question prompt.")
     criteria: Optional[Dict[str, str]] = Field(default=None, description="Criteria dictionary for choice questions.")
@@ -64,9 +74,9 @@ class QuestionSpec(BaseModel):
 
 class PromptVersion(BaseModel):
     """Immutable specification for a versioned prompt bundle."""
+
     version: str = Field(..., description="Semantic version string, e.g. v1.0.0")
     description: str = Field(..., description="Summary of prompt changes or purpose.")
     author: str = Field(default="MLOps Team", description="Author or system responsible.")
     created_at: str = Field(default="2026-10-05T10:00:00Z")
     questions: Dict[str, QuestionSpec] = Field(..., description="Map of question_id to QuestionSpec.")
-

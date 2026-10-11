@@ -2,12 +2,13 @@
 Order support & policy specialist node.
 Handles delivery tracking inquiries and Black Friday policy details.
 """
+
 import re
-from typing import Dict, Any
-from core.logging import get_logger
+from typing import Any, Dict
 
 from ai.schemas.state import AgentState
 from ai.tools.order_tools import order_tool
+from core.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -53,4 +54,3 @@ def support_agent_node(state: AgentState) -> Dict[str, Any]:
         },
         "current_node": "support_agent_node",
     }
-

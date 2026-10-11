@@ -4,11 +4,13 @@ Coordinates semantic vector embedding, category hierarchy expansion,
 and delegates database retrieval to WarehouseRepository hybrid search.
 Lives in ai.services alongside embedding_service.py to maintain strict Clean Architecture boundaries.
 """
+
 from typing import List, Optional
-from ai.schemas import ProductSearchResult
-from core.embeddings import embedding_service
+
 from ai.extractor.taxonomy import CATEGORY_HIERARCHY
+from ai.schemas import ProductSearchResult
 from core.db.repository import BlackFridayRepository
+from core.embeddings import embedding_service
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -35,8 +37,7 @@ class ProductSearchService:
         Executes hybrid vector + full-text product search with shopping constraint filters.
         """
         logger.info(
-            f"[SEARCH-SERVICE] Query='{query}', category={category}, "
-            f"max_price={max_price}, size={size}, top_k={top_k}"
+            f"[SEARCH-SERVICE] Query='{query}', category={category}, " f"max_price={max_price}, size={size}, top_k={top_k}"
         )
 
         # 1. Expand category hierarchy if supplied (bidirectional fine-grained <-> department)
@@ -70,6 +71,7 @@ class ProductSearchService:
         # 4. Emit MLflow GenAI Trace
         try:
             from ai.observability.tracing import agent_tracer
+
             agent_tracer.trace_search_ladder(
                 query=query,
                 relaxation_level=relaxation_level,
