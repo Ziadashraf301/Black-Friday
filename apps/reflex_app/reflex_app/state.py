@@ -6,6 +6,7 @@ Handles auth, catalog, filters, quick view, ONNX pricing, cart, history, and das
 import json
 import httpx
 import asyncio
+import uuid
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
@@ -158,6 +159,8 @@ class ShoppingState(rx.State):
 
     # --- Auth state ---
     auth_token: str = rx.LocalStorage("", name="bf_access_token")
+    # Random per-browser id sent as the assistant session_id; the API derives guest identity from it
+    session_id: str = rx.LocalStorage("", name="bf_session_id")
     user_name: str = ""
     user_id: int = 0
     user_email: str = ""
@@ -692,7 +695,13 @@ class ShoppingState(rx.State):
         self.show_dashboard = False
 
     # ── Catalog actions ─────────────────────────────────────────────────
+    def _ensure_session_id(self) -> str:
+        if not self.session_id:
+            self.session_id = f"bf_{uuid.uuid4().hex}"
+        return self.session_id
+
     def load_catalog(self):
+        self._ensure_session_id()
         self.is_loading = True
         try:
             with httpx.Client(timeout=4.0) as client:
@@ -1259,8 +1268,7 @@ class ShoppingState(rx.State):
 
     async def _execute_bot_query(self, query: str):
         """Executes query through backend API endpoint (/bot/stream) over async HTTP SSE stream."""
-        user_id = str(self.user_id) if self.user_id else "guest_user"
-        session_id = f"session_{user_id}"
+        session_id = self._ensure_session_id()
 
         self.bot_loading = True
         self.bot_active_cards = []
@@ -1281,7 +1289,6 @@ class ShoppingState(rx.State):
                     headers={"Authorization": f"Bearer {self.auth_token}"} if self.auth_token else None,
                     json={
                         "query": query,
-                        "user_id": user_id,
                         "session_id": session_id,
                         "mode": self.bot_mode,
                     },
