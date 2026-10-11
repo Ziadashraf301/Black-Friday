@@ -1,6 +1,9 @@
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
 
+MAX_BATCH_ITEMS = 100
+MAX_ITEM_QUANTITY = 50
+
 # --- Regression & Serving Schemas ---
 class PurchasePredictionRequest(BaseModel):
     product_category_1: int = Field(..., ge=1, le=20, example=3)
@@ -145,7 +148,7 @@ class ShopperPredictResponse(BaseModel):
     model_used: str
 
 class ShopperBatchPredictRequest(BaseModel):
-    items: List[ShopperPredictRequest]
+    items: List[ShopperPredictRequest] = Field(..., max_length=MAX_BATCH_ITEMS)
 
 class ShopperBatchPredictResponse(BaseModel):
     quotes: List[ShopperPredictResponse]
@@ -211,7 +214,7 @@ class ShopperBatchPurchaseItem(BaseModel):
     product_category_1: Optional[int] = Field(default=None, ge=1, le=20, example=1)
     product_category_2: Optional[int] = Field(default=None, ge=1, le=20, example=6)
     product_category_3: Optional[int] = Field(default=None, ge=1, le=20, example=14)
-    quantity: int = Field(default=1, ge=1, example=1)
+    quantity: int = Field(default=1, ge=1, le=MAX_ITEM_QUANTITY, example=1)
     gender: Optional[str] = Field(default=None, example="M")
     age: Optional[str] = Field(default=None, example="26-35")
     occupation: Optional[int] = Field(default=None, example=4)
@@ -221,7 +224,7 @@ class ShopperBatchPurchaseItem(BaseModel):
 
 
 class ShopperBatchPurchaseRequest(BaseModel):
-    items: List[ShopperBatchPurchaseItem]
+    items: List[ShopperBatchPurchaseItem] = Field(..., max_length=MAX_BATCH_ITEMS)
 
 
 class ShopperBatchPurchaseResponse(BaseModel):
