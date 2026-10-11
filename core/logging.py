@@ -17,6 +17,35 @@ def _ensure_log_dir() -> Optional[str]:
         return None
 
 
+_file_handler: Optional[RotatingFileHandler] = None
+
+
+def _get_file_handler(formatter: logging.Formatter, log_level: int) -> Optional[RotatingFileHandler]:
+    """Returns the process-wide rotating file handler, creating it on first use.
+
+    One handler is shared by every logger: separate handlers on the same file fail to rotate on Windows
+    and interleave writes. Returns None (console-only logging) when the file cannot be opened.
+    """
+    global _file_handler
+    if _file_handler is None:
+        try:
+            log_path = _ensure_log_dir()
+            if log_path:
+                handler = RotatingFileHandler(
+                    log_path,
+                    maxBytes=15 * 1024 * 1024,  # 15 MB per file
+                    backupCount=5,
+                    encoding="utf-8"
+                )
+                handler.setLevel(log_level)
+                handler.setFormatter(formatter)
+                _file_handler = handler
+        except Exception:
+            # Fall back to console only if file permission is restricted
+            pass
+    return _file_handler
+
+
 def get_logger(name: str) -> logging.Logger:
     """Configures and returns a structured logger instance with both console and rotating file output."""
     logger = logging.getLogger(name)
@@ -36,21 +65,9 @@ def get_logger(name: str) -> logging.Logger:
         logger.addHandler(console_handler)
 
         # 2. Rotating File Handler (persists full execution logs to logs/app.log)
-        try:
-            log_path = _ensure_log_dir()
-            if log_path:
-                file_handler = RotatingFileHandler(
-                    log_path,
-                    maxBytes=15 * 1024 * 1024,  # 15 MB per file
-                    backupCount=5,
-                    encoding="utf-8"
-                )
-                file_handler.setLevel(log_level)
-                file_handler.setFormatter(formatter)
-                logger.addHandler(file_handler)
-        except Exception:
-            # Fall back to console only if file permission is restricted
-            pass
+        file_handler = _get_file_handler(formatter, log_level)
+        if file_handler is not None:
+            logger.addHandler(file_handler)
 
         logger.propagate = False
 
