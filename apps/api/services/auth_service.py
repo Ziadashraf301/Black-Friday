@@ -33,6 +33,28 @@ class AuthService:
     decode_token = staticmethod(decode_access_token)
 
     @classmethod
+    def _session_response(cls, user: Dict[str, Any]) -> Dict[str, Any]:
+        """Issues a JWT carrying the shopper profile claims and builds the token response."""
+        token = cls.create_access_token({
+            "sub": str(user["user_id"]),
+            "name": user["name"],
+            "email": user["email"],
+            "gender": user.get("gender"),
+            "age": user.get("age"),
+            "city_category": user.get("city_category"),
+            "marital_status": user.get("marital_status"),
+            "occupation": user.get("occupation"),
+            "stay_in_current_city_years": user.get("stay_in_current_city_years"),
+        })
+        return {
+            "access_token": token,
+            "token_type": "bearer",
+            "user_id": user["user_id"],
+            "name": user["name"],
+            "cluster_persona": user.get("cluster_persona", "Preferred Member"),
+        }
+
+    @classmethod
     def register_user(cls, user_data: Dict[str, Any], repo: BlackFridayRepository) -> Dict[str, Any]:
         """Registers a new shopper and generates their session token."""
         email = _normalize_email(user_data["email"])
@@ -64,25 +86,7 @@ class AuthService:
         except IntegrityError:
             # Concurrent signup with the same email lost the race against the UNIQUE constraint
             raise conflict
-        token = cls.create_access_token({
-            "sub": str(user["user_id"]),
-            "name": user["name"],
-            "email": user["email"],
-            "gender": user.get("gender"),
-            "age": user.get("age"),
-            "city_category": user.get("city_category"),
-            "marital_status": user.get("marital_status"),
-            "occupation": user.get("occupation"),
-            "stay_in_current_city_years": user.get("stay_in_current_city_years"),
-        })
-
-        return {
-            "access_token": token,
-            "token_type": "bearer",
-            "user_id": user["user_id"],
-            "name": user["name"],
-            "cluster_persona": user.get("cluster_persona", "Preferred Member"),
-        }
+        return cls._session_response(user)
 
     @classmethod
     def authenticate_user(cls, email: str, password: str, repo: BlackFridayRepository) -> Dict[str, Any]:
@@ -113,25 +117,7 @@ class AuthService:
             except Exception as e:
                 logger.warning(f"Failed to upgrade password hash for user_id={user['user_id']}: {e}")
 
-        token = cls.create_access_token({
-            "sub": str(user["user_id"]),
-            "name": user["name"],
-            "email": user["email"],
-            "gender": user.get("gender"),
-            "age": user.get("age"),
-            "city_category": user.get("city_category"),
-            "marital_status": user.get("marital_status"),
-            "occupation": user.get("occupation"),
-            "stay_in_current_city_years": user.get("stay_in_current_city_years"),
-        })
-
-        return {
-            "access_token": token,
-            "token_type": "bearer",
-            "user_id": user["user_id"],
-            "name": user["name"],
-            "cluster_persona": user.get("cluster_persona", "Preferred Member"),
-        }
+        return cls._session_response(user)
 
 
 auth_service = AuthService()
