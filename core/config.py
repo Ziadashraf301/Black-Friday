@@ -186,6 +186,8 @@ class Settings(BaseSettings):
     SECRET_KEY: str = Field(default=DEFAULT_SECRET_KEY)
     JWT_ALGORITHM: str = Field(default="HS256")
     JWT_EXPIRY_HOURS: int = Field(default=24)
+    JWT_ISSUER: str = Field(default="blackfriday-api")
+    JWT_AUDIENCE: str = Field(default="blackfriday-clients")
 
     @model_validator(mode="after")
     def reject_default_secret_outside_dev(self):

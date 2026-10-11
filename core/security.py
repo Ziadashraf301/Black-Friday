@@ -96,6 +96,8 @@ def create_access_token(payload: Dict[str, Any], expires_delta: Optional[timedel
     else:
         expire = datetime.now(timezone.utc) + timedelta(hours=settings.JWT_EXPIRY_HOURS)
     data["exp"] = expire
+    data["iss"] = settings.JWT_ISSUER
+    data["aud"] = settings.JWT_AUDIENCE
     return jose_jwt.encode(data, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
@@ -103,7 +105,13 @@ def decode_access_token(token: str) -> Dict[str, Any]:
     """Decodes and validates a JWT access token."""
     if not HAS_JOSE:
         raise RuntimeError("python-jose library is required for JWT verification.")
-    return jose_jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+    return jose_jwt.decode(
+        token,
+        settings.SECRET_KEY,
+        algorithms=[settings.JWT_ALGORITHM],
+        audience=settings.JWT_AUDIENCE,
+        issuer=settings.JWT_ISSUER,
+    )
 
 
 __all__ = [
