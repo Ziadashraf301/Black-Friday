@@ -7,18 +7,14 @@ function create_user_and_database() {
     local user=$2
     local password=$3
     echo "Creating user '$user' and database '$database'..."
-    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
-        DO
-        \$do\$
-        BEGIN
-            IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '$user') THEN
-                CREATE USER $user WITH ENCRYPTED PASSWORD '$password';
-            END IF;
-        END
-        \$do\$;
-        SELECT 'CREATE DATABASE $database OWNER $user'
-        WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$database')\gexec
-        GRANT ALL PRIVILEGES ON DATABASE $database TO $user;
+    # Names and the password go in as psql variables (:'x' = quoted literal) and are quoted by format(%I / %L),
+    # so quotes or other special characters in them cannot break out of the SQL.
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" -v db="$database" -v usr="$user" -v pw="$password" <<-'EOSQL'
+		SELECT format('CREATE USER %I WITH ENCRYPTED PASSWORD %L', :'usr', :'pw')
+		WHERE NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = :'usr')\gexec
+		SELECT format('CREATE DATABASE %I OWNER %I', :'db', :'usr')
+		WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = :'db')\gexec
+		SELECT format('GRANT ALL PRIVILEGES ON DATABASE %I TO %I', :'db', :'usr')\gexec
 EOSQL
 }
 
