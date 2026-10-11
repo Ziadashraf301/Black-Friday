@@ -28,6 +28,7 @@ _OCCUPATION_MAP = {
 
 PRICE_UNAVAILABLE = "Price unavailable"
 BOT_UNAVAILABLE_MESSAGE = "The shopping assistant is unavailable right now. Please try again in a moment."
+CHECKOUT_NETWORK_ERROR = "Checkout could not reach the store. Please check your connection and try again."
 
 
 def _price_or_none(value: Any) -> Optional[float]:
@@ -1134,8 +1135,8 @@ class ShoppingState(rx.State):
                     except Exception:
                         err_detail = f"Checkout failed with status {resp.status_code}."
                     self.checkout_error = str(err_detail)
-        except Exception as e:
-            self.checkout_error = f"Checkout network error: {str(e)}"
+        except Exception:
+            self.checkout_error = CHECKOUT_NETWORK_ERROR
 
         if success:
             self.cart_items = []
