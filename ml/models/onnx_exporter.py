@@ -1,14 +1,16 @@
-import os
 import json
+import os
+import time
+from typing import Any, Dict, Union
+
 import numpy as np
 import pandas as pd
-from typing import Dict, Any, List, Union
 from skl2onnx import convert_sklearn, update_registered_converter
+from skl2onnx.common.data_types import FloatTensorType, Int64TensorType, StringTensorType
 from skl2onnx.common.shape_calculator import calculate_linear_regressor_output_shapes
-from skl2onnx.common.data_types import StringTensorType, Int64TensorType, FloatTensorType
-import onnxruntime as ort
 
 from core.logging import get_logger
+from ml.models.regression import ALL_FEATURES
 from ml.serving.imputer import ONNXMissForestImputer
 from ml.serving.predictor import ONNXPredictor
 
@@ -18,11 +20,9 @@ logger = get_logger(__name__)
 try:
     from lightgbm import LGBMRegressor
     from onnxmltools.convert.lightgbm.operator_converters.LightGbm import convert_lightgbm
+
     update_registered_converter(
-        LGBMRegressor,
-        "LightGbmLGBMRegressor",
-        calculate_linear_regressor_output_shapes,
-        convert_lightgbm
+        LGBMRegressor, "LightGbmLGBMRegressor", calculate_linear_regressor_output_shapes, convert_lightgbm
     )
 except ImportError:
     pass
@@ -35,11 +35,7 @@ class ONNXExporter:
 
     @classmethod
     def _save_onnx(
-        cls,
-        model: Any,
-        initial_types: list,
-        output_filepath: str,
-        target_opset: Union[int, Dict[str, int]] = 15
+        cls, model: Any, initial_types: list, output_filepath: str, target_opset: Union[int, Dict[str, int]] = 15
     ) -> str:
         """Helper to convert model to ONNX graph and serialize to disk (DRY)."""
         os.makedirs(os.path.dirname(output_filepath) or ".", exist_ok=True)
@@ -50,25 +46,17 @@ class ONNXExporter:
         else:
             opset = target_opset
 
-        onnx_model = convert_sklearn(
-            model,
-            initial_types=initial_types,
-            target_opset=opset
-        )
+        onnx_model = convert_sklearn(model, initial_types=initial_types, target_opset=opset)
         with open(output_filepath, "wb") as f:
             f.write(onnx_model.SerializeToString())
         return output_filepath
 
     @classmethod
     def export_regression_pipeline(
-        cls,
-        pipeline,
-        feature_names: list,
-        output_filepath: str,
-        target_opset: Union[int, Dict[str, int]] = 15
+        cls, pipeline, feature_names: list, output_filepath: str, target_opset: Union[int, Dict[str, int]] = 15
     ) -> str:
         """Converts a fitted scikit-learn pipeline into an ONNX graph."""
-        logger.info(f"Converting pipeline to ONNX format...")
+        logger.info("Converting pipeline to ONNX format...")
 
         initial_types = []
         for feature in feature_names:
@@ -77,12 +65,7 @@ class ONNXExporter:
             else:
                 initial_types.append((feature, Int64TensorType([None, 1])))
 
-        cls._save_onnx(
-            model=pipeline,
-            initial_types=initial_types,
-            output_filepath=output_filepath,
-            target_opset=target_opset
-        )
+        cls._save_onnx(model=pipeline, initial_types=initial_types, output_filepath=output_filepath, target_opset=target_opset)
 
         logger.info(f"ONNX model saved successfully to: {output_filepath}")
         return output_filepath
@@ -94,16 +77,9 @@ class ONNXExporter:
         return predictor.predict(df)
 
     @classmethod
-    def verify_parity(
-        cls,
-        sklearn_model,
-        onnx_path: str,
-        sample_df: pd.DataFrame,
-        tolerance: float = 1e-4
-    ) -> bool:
-        """Validates that ONNX Runtime inference matches Scikit-Learn predictions within tolerance and logs latency performance comparison."""
+    def verify_parity(cls, sklearn_model, onnx_path: str, sample_df: pd.DataFrame, tolerance: float = 1e-4) -> bool:
+        """Validates ONNX Runtime predictions against Scikit-Learn within tolerance and logs the latency comparison."""
         logger.info(f"Verifying ONNX inference parity against Scikit-Learn on {len(sample_df)} sample rows...")
-        import time
 
         predictor = ONNXPredictor(onnx_model_path=onnx_path)
 
@@ -140,10 +116,7 @@ class ONNXExporter:
 
     @classmethod
     def export_imputer(
-        cls,
-        missforest_imputer,
-        output_dir: str = "models/onnx/imputer",
-        target_opset: Union[int, Dict[str, int]] = 15
+        cls, missforest_imputer, output_dir: str = "models/onnx/imputer", target_opset: Union[int, Dict[str, int]] = 15
     ) -> Dict[str, str]:
         """Converts fitted MissForest iterative estimators (Category 2 & 3) to compact ONNX graphs.
 
@@ -155,7 +128,7 @@ class ONNXExporter:
         """
         os.makedirs(output_dir, exist_ok=True)
         inner = missforest_imputer.imputer
-        cols = getattr(missforest_imputer, "cols", ["gender", "age", "occupation", "city_category", "stay_in_current_city_years", "marital_status", "product_category_1", "product_category_2", "product_category_3", "product_id"])
+        cols = getattr(missforest_imputer, "cols", ALL_FEATURES)
         category_mappings = getattr(missforest_imputer, "category_mappings", {})
 
         metadata = {
@@ -164,7 +137,7 @@ class ONNXExporter:
             "initial_statistics": inner.initial_imputer_.statistics_.tolist(),
             "min_value": [float(v) for v in inner._min_value],
             "max_value": [float(v) for v in inner._max_value],
-            "steps": []
+            "steps": [],
         }
         saved_files = {}
 
@@ -183,10 +156,7 @@ class ONNXExporter:
 
             initial_type = [("float_input", FloatTensorType([None, len(neighbor_indices)]))]
             cls._save_onnx(
-                model=seq.estimator,
-                initial_types=initial_type,
-                output_filepath=onnx_filepath,
-                target_opset=target_opset
+                model=seq.estimator, initial_types=initial_type, output_filepath=onnx_filepath, target_opset=target_opset
             )
 
             step_info = {
@@ -195,11 +165,12 @@ class ONNXExporter:
                 "target_idx": feat_idx,
                 "neighbor_cols": [cols[idx] for idx in neighbor_indices],
                 "neighbor_indices": neighbor_indices,
-                "onnx_file": onnx_filename
+                "onnx_file": onnx_filename,
             }
             metadata["steps"].append(step_info)
             saved_files[col_name] = onnx_filepath
-            logger.info(f"Exported ONNX imputer model for '{col_name}' to: {onnx_filepath} ({os.path.getsize(onnx_filepath)/1024/1024:.2f} MB)")
+            size_mb = os.path.getsize(onnx_filepath) / 1024 / 1024
+        logger.info(f"Exported ONNX imputer model for '{col_name}' to: {onnx_filepath} ({size_mb:.2f} MB)")
 
         meta_path = os.path.join(output_dir, "imputer_metadata.json")
         with open(meta_path, "w", encoding="utf-8") as f:

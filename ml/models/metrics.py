@@ -1,12 +1,14 @@
+from typing import Any, Dict, List
+
 import numpy as np
 import pandas as pd
-from typing import Dict, Any, List, Optional
 from scipy import stats
-from sklearn.model_selection import KFold
 from sklearn.metrics import mean_squared_error, r2_score
-from ml.models.base import AbstractBaseModel
+from sklearn.model_selection import KFold
+
 from core.config import settings
 from core.logging import get_logger
+from ml.models.base import AbstractBaseModel
 
 logger = get_logger(__name__)
 
@@ -17,20 +19,11 @@ def evaluate_holdout(y_true: np.ndarray, y_pred: np.ndarray) -> Dict[str, float]
     rmse = float(np.sqrt(mse))
     r2 = float(r2_score(y_true, y_pred))
     mae = float(np.mean(np.abs(y_true - y_pred)))
-    return {
-        "rmse": round(rmse, 4),
-        "r2": round(r2, 4),
-        "mae": round(mae, 4),
-        "mse": round(mse, 4)
-    }
+    return {"rmse": round(rmse, 4), "r2": round(r2, 4), "mae": round(mae, 4), "mse": round(mse, 4)}
 
 
 def cross_validate(
-    model: AbstractBaseModel,
-    X: pd.DataFrame,
-    y: pd.Series,
-    n_splits: int = 10,
-    random_state: int = settings.RANDOM_SEED
+    model: AbstractBaseModel, X: pd.DataFrame, y: pd.Series, n_splits: int = 10, random_state: int = settings.RANDOM_SEED
 ) -> Dict[str, Any]:
     """Runs k-fold cross validation mirroring R rsample/yardstick fit_resamples.
 
@@ -65,15 +58,11 @@ def cross_validate(
         "cv_std_rmse": round(std_rmse, 4),
         "cv_mean_r2": round(mean_r2, 4),
         "cv_std_r2": round(std_r2, 4),
-        "folds": n_splits
+        "folds": n_splits,
     }
 
 
-def evaluate_fairness(
-    model: Any,
-    test_df: pd.DataFrame,
-    target_col: str = "normalized_purchase"
-) -> Dict[str, Any]:
+def evaluate_fairness(model: Any, test_df: pd.DataFrame, target_col: str = "normalized_purchase") -> Dict[str, Any]:
     """Calculates RMSE and R2 across demographic slices (Gender & Age) to evaluate demographic parity."""
     fairness_metrics = {}
     y_true = test_df[target_col].values
@@ -86,11 +75,7 @@ def evaluate_fairness(
         if mask.sum() > 0:
             rmse = float(np.sqrt(mean_squared_error(y_true[mask], y_pred[mask])))
             r2 = float(r2_score(y_true[mask], y_pred[mask]))
-            gender_slices[g] = {
-                "sample_size": int(mask.sum()),
-                "rmse": round(rmse, 4),
-                "r2": round(r2, 4)
-            }
+            gender_slices[g] = {"sample_size": int(mask.sum()), "rmse": round(rmse, 4), "r2": round(r2, 4)}
     fairness_metrics["gender_slices"] = gender_slices
 
     # 2. Age Group Disparity
@@ -100,11 +85,7 @@ def evaluate_fairness(
         if mask.sum() > 0:
             rmse = float(np.sqrt(mean_squared_error(y_true[mask], y_pred[mask])))
             r2 = float(r2_score(y_true[mask], y_pred[mask]))
-            age_slices[a] = {
-                "sample_size": int(mask.sum()),
-                "rmse": round(rmse, 4),
-                "r2": round(r2, 4)
-            }
+            age_slices[a] = {"sample_size": int(mask.sum()), "rmse": round(rmse, 4), "r2": round(r2, 4)}
     fairness_metrics["age_slices"] = age_slices
 
     return fairness_metrics
@@ -129,10 +110,7 @@ def evaluate_imputation(y_true: np.ndarray, y_pred: np.ndarray, prefix: str = "t
 
 
 def evaluate_imputation_holdout(
-    imputer: Any,
-    test_df: pd.DataFrame,
-    sample_size: int = 50000,
-    random_state: int = settings.RANDOM_SEED
+    imputer: Any, test_df: pd.DataFrame, sample_size: int = 50000, random_state: int = settings.RANDOM_SEED
 ) -> Dict[str, Any]:
     """Evaluates imputation error on completely observed test holdout records.
 
@@ -196,11 +174,7 @@ def evaluate_imputation_holdout(
     }
 
 
-def evaluate_hypothesis_welch(
-    sample_a: np.ndarray,
-    sample_b: np.ndarray,
-    alpha: float = 0.05
-) -> Dict[str, Any]:
+def evaluate_hypothesis_welch(sample_a: np.ndarray, sample_b: np.ndarray, alpha: float = 0.05) -> Dict[str, Any]:
     """Executes Welch's Two-Sample t-test for unequal variances between two independent groups."""
     res = stats.ttest_ind(sample_a, sample_b, equal_var=False)
     t_stat = float(res.statistic)
@@ -214,7 +188,7 @@ def evaluate_hypothesis_welch(
         "reject_null": reject,
         "mean_a": round(float(np.mean(sample_a)), 4),
         "mean_b": round(float(np.mean(sample_b)), 4),
-        "diff_in_means": round(float(np.mean(sample_a) - np.mean(sample_b)), 4)
+        "diff_in_means": round(float(np.mean(sample_a) - np.mean(sample_b)), 4),
     }
 
 

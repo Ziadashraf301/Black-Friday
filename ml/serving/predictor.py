@@ -1,8 +1,10 @@
 import os
+from typing import Dict
+
 import numpy as np
-import pandas as pd
 import onnxruntime as ort
-from typing import Dict, Any, Optional
+import pandas as pd
+
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -18,11 +20,7 @@ class ONNXPredictor:
         self.onnx_model_path = onnx_model_path
         opts = ort.SessionOptions()
         opts.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
-        self.session = ort.InferenceSession(
-            onnx_model_path,
-            sess_options=opts,
-            providers=["CPUExecutionProvider"]
-        )
+        self.session = ort.InferenceSession(onnx_model_path, sess_options=opts, providers=["CPUExecutionProvider"])
 
     def predict(self, df: pd.DataFrame) -> np.ndarray:
         """Executes fast ONNX runtime inference on input DataFrame."""
