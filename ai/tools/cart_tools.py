@@ -87,44 +87,57 @@ class CartManagementTool:
 
         return CartState(user_id=user_id, session_id=session_id)
 
+    @staticmethod
+    def _product_info(product_id: str, prod: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Cart view of a catalog row, or None when it has no usable sale price (a price is never invented)."""
+        try:
+            price = float(prod.get("discounted_price"))
+        except (TypeError, ValueError):
+            return None
+        if price <= 0:
+            return None
+        return {
+            "product_id": product_id,
+            "name": prod.get("name", f"Product {product_id}"),
+            "discounted_price": price,
+            "original_price": prod.get("original_price"),
+            "sizes": prod.get("sizes", ["S", "M", "L", "XL"]),
+            "image_url": prod.get("image_url", f"/products/{product_id}.jpg"),
+            "category_name": prod.get("category_name", "Apparel"),
+        }
+
     def _lookup_product_info(self, product_id: Optional[str], query_hint: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """
-        Resolves product specifications from BlackFridayRepository,
-        falling back to CatalogIndex.
+        Resolves product specifications from BlackFridayRepository, falling back to CatalogIndex.
+        Returns None for an unknown product; raises DomainError for a known product without a price.
         """
         clean_id = (product_id or "").strip().upper()
         if clean_id and not clean_id.startswith("P"):
             clean_id = f"P{clean_id.zfill(8)}"
+        known_without_price = False
 
         # 1. Query repository layer (WarehouseRepository)
         if self.repo and clean_id:
             try:
                 prod = self.repo.get_curated_product_by_id(clean_id)
                 if prod:
-                    return {
-                        "product_id": prod["product_id"],
-                        "name": prod["name"],
-                        "discounted_price": float(prod.get("discounted_price", 49.99)),
-                        "original_price": float(prod.get("original_price", 99.99)),
-                        "sizes": prod.get("sizes", ["S", "M", "L", "XL"]),
-                        "image_url": prod.get("image_url", f"/products/{clean_id}.jpg"),
-                        "category_name": prod.get("category_name", "Apparel"),
-                    }
+                    info = self._product_info(prod["product_id"], prod)
+                    if info:
+                        return info
+                    known_without_price = True
             except Exception as e:
                 logger.debug(f"[TOOL: CART] Repository product lookup failed: {e}")
 
         # 2. Try CatalogIndex exact match
         if clean_id and clean_id in CatalogIndex._ID_TO_PRODUCT:
-            prod = CatalogIndex._ID_TO_PRODUCT[clean_id]
-            return {
-                "product_id": clean_id,
-                "name": prod.get("name", f"Product {clean_id}"),
-                "discounted_price": float(prod.get("discounted_price", 49.99)),
-                "original_price": float(prod.get("original_price", 99.99)),
-                "sizes": prod.get("sizes", ["S", "M", "L", "XL"]),
-                "image_url": prod.get("image_url", f"/products/{clean_id}.jpg"),
-                "category_name": prod.get("category_name", "Apparel"),
-            }
+            info = self._product_info(clean_id, CatalogIndex._ID_TO_PRODUCT[clean_id])
+            if info:
+                return info
+            known_without_price = True
+
+        if known_without_price:
+            logger.warning(f"[TOOL: CART] {clean_id} has no usable price; not adding it to a cart")
+            raise DomainError(f"Product {clean_id} has no price available right now.", code="PRICE_UNAVAILABLE")
 
         # 3. Fuzzy search in CatalogIndex if product_id was not explicitly given
         if query_hint:
