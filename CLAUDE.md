@@ -73,7 +73,7 @@ Black Friday/
 ├── .github/workflows/ # CI/CD pipeline (ci-cd.yml)
 ├── docker-compose.yml # Full stack orchestration (6 services)
 ├── Makefile           # Developer & MLOps command suite
-├── requirements.txt   # Python dependencies
+├── requirements.txt   # Runtime dependencies (requirements-dev.txt adds test/lint tools)
 └── .env               # Environment variables (gitignored)
 ```
 
@@ -253,7 +253,7 @@ All share the same SQLAlchemy engine via dependency injection.
 GitHub Actions workflow (`.github/workflows/ci-cd.yml`):
 - Triggers on push/PR to `main`/`master`
 - Spins up PostgreSQL 16 + Redis 7 service containers
-- Installs Python 3.11 + `requirements.txt`
+- Installs Python 3.11 + `requirements-dev.txt`
 - Runs `pytest tests/ -v`
 
 ---
