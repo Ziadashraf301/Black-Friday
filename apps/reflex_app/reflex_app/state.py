@@ -27,6 +27,7 @@ _OCCUPATION_MAP = {
 
 
 PRICE_UNAVAILABLE = "Price unavailable"
+BOT_UNAVAILABLE_MESSAGE = "The shopping assistant is unavailable right now. Please try again in a moment."
 
 
 def _price_or_none(value: Any) -> Optional[float]:
@@ -1423,21 +1424,9 @@ class ShoppingState(rx.State):
                             self.bot_messages.append({"role": "assistant", "content": "Here are the top catalog selections:"})
                         yield
 
-        except Exception as e:
-            # Offline fallback if API server is not running locally
-            chip_lower = query.lower()
-            if "deal" in chip_lower:
-                reply = "Here are our top recommended deals today: Check out the Artisan Paisley Silk Kimono Shirt ($49.90, 50% off) and the Midnight Ribbed Merino Wool Duster Coat ($119.90)!"
-            elif "sale" in chip_lower:
-                reply = "We currently have archival discounts across Jackets, Silks, and Knitwear! Explore our Sale badges for member-exclusive pricing."
-            elif "under $50" in chip_lower or "50" in chip_lower:
-                reply = "Top archival finds under $50: Vintage Brushed Flannel Camp Shirt ($44.90), Retro Gum-Sole Court Sneakers ($49.00), and Artisan Paisley Silk Kimono ($49.90)."
-            elif "style" in chip_lower or "advisor" in chip_lower:
-                persona = self.user_cluster_persona or "Modern Vintage"
-                reply = f"Based on your {persona} profile, I recommend pairing tailored high-waist trousers with our hand-knitted cable cardigans and leather footwear."
-            else:
-                reply = f"Assistant offline: Unable to reach assistant service ({str(e)})."
-
+        except Exception:
+            # No canned deals or prices here: say plainly that the assistant is unreachable
+            reply = BOT_UNAVAILABLE_MESSAGE
             if self.bot_messages and self.bot_messages[-1].get("role") == "assistant":
                 self.bot_messages[-1]["content"] = reply
             else:
