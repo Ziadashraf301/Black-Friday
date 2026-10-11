@@ -11,6 +11,10 @@ from core.logging import get_logger
 
 logger = get_logger(__name__)
 
+# The model was trained on "0", "1", "2", "3", "4+" with no missing category; an unseen string such as "None" is
+# ordinal-encoded to -1. "1" is the most common training value (35% of rows) and the batch pricing fallback.
+DEFAULT_STAY_IN_CITY_YEARS = "1"
+
 
 class UserRepository(BaseRepository):
     """Repository managing app_users and user_purchases tables."""
@@ -66,11 +70,12 @@ class UserRepository(BaseRepository):
     @staticmethod
     def _demographics_from_row(row: Dict[str, Any]) -> Dict[str, Any]:
         """Normalises a user / transaction row into the demographic vector used for pricing."""
+        stay = row["stay_in_current_city_years"]
         return {
             "gender": row["gender"],
             "age": row["age"],
             "city_category": row["city_category"],
-            "stay_in_current_city_years": str(row["stay_in_current_city_years"]),
+            "stay_in_current_city_years": str(stay) if stay not in (None, "") else DEFAULT_STAY_IN_CITY_YEARS,
             "marital_status": int(row["marital_status"]) if row["marital_status"] is not None else 0,
             "occupation": int(row["occupation"]) if row["occupation"] is not None else 0,
         }
