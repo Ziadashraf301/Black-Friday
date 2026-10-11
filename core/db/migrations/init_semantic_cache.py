@@ -24,11 +24,16 @@ def init_semantic_cache_table():
                 response_text TEXT NOT NULL,
                 ui_payload JSONB NOT NULL,
                 intent VARCHAR(64) NOT NULL,
+                user_key TEXT,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             );
 
             CREATE INDEX IF NOT EXISTS idx_semantic_cache_hnsw
             ON semantic_query_cache USING hnsw (embedding vector_cosine_ops);
+
+            ALTER TABLE semantic_query_cache ADD COLUMN IF NOT EXISTS user_key TEXT;
+            CREATE INDEX IF NOT EXISTS idx_semantic_cache_user_created
+            ON semantic_query_cache (user_key, created_at);
         """
             )
         )

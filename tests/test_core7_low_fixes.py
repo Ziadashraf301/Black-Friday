@@ -45,5 +45,5 @@ def test_semantic_cache_insert_failure_is_logged_as_warning(caplog):
     failing.begin.side_effect = RuntimeError("boom")
     repo = BlackFridayRepository(engine=failing)
     with caplog.at_level("WARNING"):
-        assert repo.save_semantic_cache_entry("q", [0.0], "r", {}, "intent") is False
+        assert repo.save_semantic_cache_entry("q", [0.0], "r", {}, "intent", "user-key") is False
     assert "Failed to insert semantic cache entry" in caplog.text

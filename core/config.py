@@ -85,6 +85,7 @@ class Settings(BaseSettings):
     REDIS_PASSWORD: Optional[str] = Field(default=None)
     REDIS_DB: int = Field(default=0)
     REDIS_DEFAULT_TTL: int = Field(default=21600)  # 6 hours in seconds
+    SEMANTIC_CACHE_TTL_SECONDS: int = Field(default=21600)  # pgvector semantic answer cache: 6 hours
 
     @property
     def redis_url(self) -> str:

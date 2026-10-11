@@ -41,7 +41,7 @@ def guardrail_router_node(state: AgentState) -> Dict[str, Any]:
     if should_check_cache:
         # 1. Tier-0: 6-Hour Exact LLM Response Cache Check (<1ms)
         from ai.services.cache_service import cache_service
-        cached_response = cache_service.get_exact_llm_response(raw_query=query)
+        cached_response = cache_service.get_exact_llm_response(raw_query=query, user_id=user_id)
         if cached_response:
             logger.info(f"[GRAPH: ROUTER-NODE] Tier-0 6h cache HIT for query='{query[:40]}'")
             cached_intents = cached_response.get("target_intents") or ["PRODUCT_SEARCH"]
@@ -71,7 +71,7 @@ def guardrail_router_node(state: AgentState) -> Dict[str, Any]:
             }
 
         # 2. Tier-1: True Vector Semantic Cache Check (pgvector HNSW Cosine Sim >= 0.92, <5ms)
-        semantic_cached = cache_service.get_vector_semantic_response(raw_query=query)
+        semantic_cached = cache_service.get_vector_semantic_response(raw_query=query, user_id=user_id)
         if semantic_cached:
             sim = semantic_cached.get("cosine_similarity", 0.95)
             logger.info(f"[GRAPH: ROUTER-NODE] Tier-1 Vector Semantic cache HIT for query='{query[:40]}' (sim={sim})")

@@ -180,11 +180,15 @@ CREATE TABLE IF NOT EXISTS semantic_query_cache (
     response_text TEXT NOT NULL,
     ui_payload JSONB NOT NULL,
     intent VARCHAR(64) NOT NULL,
+    user_key TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_semantic_cache_hnsw 
 ON semantic_query_cache USING hnsw (embedding vector_cosine_ops);
+
+CREATE INDEX IF NOT EXISTS idx_semantic_cache_user_created
+ON semantic_query_cache (user_key, created_at);
 
 
 

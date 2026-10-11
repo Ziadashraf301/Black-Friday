@@ -141,7 +141,7 @@ async def sse_response_generator(
     """Generates SSE token stream with synchronized UI card and website grounding."""
 
     # 1. Tier-0: 6-Hour Exact Response Cache Check (<1ms)
-    cached = cache_service.get_exact_llm_response(raw_query=query)
+    cached = cache_service.get_exact_llm_response(raw_query=query, user_id=user_id)
     if cached:
         logger.info(f"[SSE: STREAM] Fast-path Tier-0 cache hit for query='{query[:40]}'")
         response_text = cached.get("response_message", "")

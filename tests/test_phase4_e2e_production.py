@@ -68,13 +68,14 @@ def test_tier0_and_tier1_caching(repo):
     # Pre-populate exact cache
     cache_service.store_exact_llm_response(
         raw_query=query,
+        user_id="e2e_shopper",
         response_message="Cached response for velvet jacket",
         ui_payload={"cards": [{"name": "Velvet Jacket", "price": 120.0}]},
         target_intents=["PRODUCT_SEARCH"],
     )
 
     t0 = time.perf_counter()
-    exact_hit = cache_service.get_exact_llm_response(raw_query=query)
+    exact_hit = cache_service.get_exact_llm_response(raw_query=query, user_id="e2e_shopper")
     lat_ms = (time.perf_counter() - t0) * 1000
 
     assert exact_hit is not None
@@ -91,10 +92,13 @@ def test_tier0_and_tier1_caching(repo):
         response_text="Semantic cached response",
         ui_payload={"source": "semantic_test"},
         intent="PRODUCT_SEARCH",
+        user_key=cache_service.user_key("e2e_shopper"),
     )
 
     # Lookup with identical vector
-    semantic_hit = repo.find_semantic_cached_response(query_vec=mock_vec, max_distance=0.08)
+    semantic_hit = repo.find_semantic_cached_response(
+        query_vec=mock_vec, user_key=cache_service.user_key("e2e_shopper"), max_distance=0.08
+    )
     assert semantic_hit is not None
     assert semantic_hit["is_cache_hit"] is True
     assert semantic_hit["cache_tier"] == "TIER_1_SEMANTIC_VECTOR"

@@ -30,14 +30,15 @@ class TestTwoTierCacheService:
 
     def test_tier0_exact_store_and_hit(self):
         test_query = "unique test query for 6h cache validation 9999"
-        cache_service.invalidate_exact_cache(test_query)
+        cache_service.invalidate_exact_cache(test_query, "t0_shopper")
 
         # 1. Miss initially
-        assert cache_service.get_exact_llm_response(test_query) is None
+        assert cache_service.get_exact_llm_response(test_query, "t0_shopper") is None
 
         # 2. Store response
         stored = cache_service.store_exact_llm_response(
             raw_query=test_query,
+            user_id="t0_shopper",
             response_message="Here are your discounted leather jackets!",
             ui_payload={"type": "product_carousel", "data": {"products": [{"id": "P001"}]}},
             target_intents=["PRODUCT_SEARCH"],
@@ -46,7 +47,7 @@ class TestTwoTierCacheService:
         assert stored is True
 
         # 3. Hit
-        cached = cache_service.get_exact_llm_response(test_query)
+        cached = cache_service.get_exact_llm_response(test_query, "t0_shopper")
         assert cached is not None
         assert cached["is_cache_hit"] is True
         assert cached["cache_tier"] == "TIER_0_HARD_6H"
@@ -54,7 +55,7 @@ class TestTwoTierCacheService:
         assert cached["ui_payload"]["type"] == "product_carousel"
 
         # Cleanup
-        cache_service.invalidate_exact_cache(test_query)
+        cache_service.invalidate_exact_cache(test_query, "t0_shopper")
 
     def test_tier1_semantic_store_and_hit(self):
         intent = "POLICY_FAQ"
@@ -63,13 +64,14 @@ class TestTwoTierCacheService:
         stored = cache_service.store_semantic_response(
             intent=intent,
             constraints=constraints,
+            user_id="t1_shopper",
             answer_text="30-day free returns on Black Friday purchases.",
             ui_payload={"policy": {"topic": "returns", "days": 30}},
             ttl=120,
         )
         assert stored is True
 
-        hit = cache_service.get_semantic_response(intent=intent, constraints=constraints)
+        hit = cache_service.get_semantic_response(intent=intent, constraints=constraints, user_id="t1_shopper")
         assert hit is not None
         assert hit["is_cache_hit"] is True
         assert hit["cache_tier"] == "TIER_1_SEMANTIC"
@@ -83,6 +85,7 @@ class TestGraphCachingIntegration:
         raw_query = "fast tier0 cache bypass test query 12345"
         cache_service.store_exact_llm_response(
             raw_query=raw_query,
+            user_id="test_user_cache",
             response_message="CACHED_IMMEDIATE_RESPONSE",
             ui_payload={"type": "product_carousel", "data": {}},
             target_intents=["PRODUCT_SEARCH"],
@@ -109,12 +112,12 @@ class TestGraphCachingIntegration:
         assert result.get("retrieved_products") == []
 
         # Cleanup
-        cache_service.invalidate_exact_cache(raw_query)
+        cache_service.invalidate_exact_cache(raw_query, "test_user_cache")
 
     def test_multi_intent_fanout_concurrent_execution(self):
         # Query combining details inquiry and policy inquiry
         query = "What materials is P00025442 made of and what is your return policy?"
-        cache_service.invalidate_exact_cache(query)
+        cache_service.invalidate_exact_cache(query, "test_user_multi")
 
         initial_state: AgentState = {
             "query": query,

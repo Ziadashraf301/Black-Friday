@@ -308,11 +308,13 @@ class SynthesisService:
 
         # Cache synthesized response in Tier-0 (6h Redis) and Tier-1 (pgvector Semantic Cache)
         # Personal answers (cart, order tracking) must never be cached!
-        if not state.get("is_cache_hit") and query and self._is_cacheable(state, intent):
+        user_id = state.get("user_id")
+        if not state.get("is_cache_hit") and query and user_id and self._is_cacheable(state, intent):
             try:
                 from ai.services.cache_service import cache_service
                 cache_service.store_exact_llm_response(
                     raw_query=query,
+                    user_id=user_id,
                     response_message=final_text,
                     ui_payload=final_ui_payload,
                     target_intents=state.get("target_intents") or ([intent] if intent else []),
@@ -324,6 +326,7 @@ class SynthesisService:
                 )
                 cache_service.store_vector_semantic_response(
                     query_text=query,
+                    user_id=user_id,
                     response_text=final_text,
                     ui_payload=final_ui_payload,
                     intent=intent,

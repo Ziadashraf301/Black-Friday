@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional
 import pandas as pd
 from sqlalchemy import text
 
+from core.config import settings
 from core.db.repositories.base import BaseRepository
 from core.logging import get_logger
 
@@ -557,16 +558,37 @@ class WarehouseRepository(BaseRepository):
                 return size.upper() in [s.upper() for s in sizes]
             return True
 
+    _semantic_cache_ready = False
+
+    def _ensure_semantic_cache_schema(self) -> None:
+        """Idempotent upgrade: per-user key column (older rows have NULL and never match) and lookup indexes."""
+        if WarehouseRepository._semantic_cache_ready:
+            return
+        with self.engine.begin() as conn:
+            conn.execute(text("ALTER TABLE semantic_query_cache ADD COLUMN IF NOT EXISTS user_key TEXT"))
+            conn.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_semantic_cache_user_created "
+                    "ON semantic_query_cache (user_key, created_at)"
+                )
+            )
+        WarehouseRepository._semantic_cache_ready = True
+
     def find_semantic_cached_response(
         self,
         query_vec: List[float],
+        user_key: str,
         max_distance: float = 0.08,  # Cosine similarity >= 0.92
+        ttl_seconds: Optional[int] = None,
     ) -> Optional[Dict[str, Any]]:
         """
         True Vector Semantic Cache lookup (pgvector HNSW index).
-        Computes cosine distance <=> between incoming query_vec and cached queries.
-        Returns cached response if distance <= max_distance (similarity >= 0.92).
+        Only entries stored for the same `user_key` and younger than `ttl_seconds`
+        (default settings.SEMANTIC_CACHE_TTL_SECONDS) can match, so one shopper's personalised
+        answer is never served to another and prices do not go stale.
+        Returns the closest entry with cosine distance <= max_distance (similarity >= 0.92).
         """
+        self._ensure_semantic_cache_schema()
         vec_str = "[" + ",".join(str(x) for x in query_vec) + "]"
         query = text(
             """
@@ -577,13 +599,21 @@ class WarehouseRepository(BaseRepository):
                 intent,
                 (embedding <=> CAST(:qvec AS vector)) AS distance
             FROM semantic_query_cache
-            WHERE (embedding <=> CAST(:qvec AS vector)) <= :max_dist
+            WHERE user_key = :user_key
+              AND created_at > now() - make_interval(secs => :ttl)
+              AND (embedding <=> CAST(:qvec AS vector)) <= :max_dist
             ORDER BY distance ASC
             LIMIT 1;
         """
         )
+        params = {
+            "qvec": vec_str,
+            "max_dist": max_distance,
+            "user_key": user_key,
+            "ttl": ttl_seconds if ttl_seconds is not None else settings.SEMANTIC_CACHE_TTL_SECONDS,
+        }
         with self.engine.connect() as conn:
-            row = conn.execute(query, {"qvec": vec_str, "max_dist": max_distance}).fetchone()
+            row = conn.execute(query, params).fetchone()
             if not row:
                 return None
             dist = float(row[4])
@@ -605,25 +635,41 @@ class WarehouseRepository(BaseRepository):
         response_text: str,
         ui_payload: Dict[str, Any],
         intent: str,
+        user_key: str,
+        ttl_seconds: Optional[int] = None,
     ) -> bool:
-        """Stores query embedding and response in semantic_query_cache."""
-        vec_str = "[" + ",".join(str(x) for x in query_vec) + "]"
-        query = text(
-            """
-            INSERT INTO semantic_query_cache (query_text, embedding, response_text, ui_payload, intent)
-            VALUES (:qtext, CAST(:qvec AS vector), :resp, CAST(:ui AS jsonb), :intent);
         """
-        )
+        Stores query embedding and response in semantic_query_cache for one user.
+        Replaces that user's earlier answer to the same query and drops expired rows of every user,
+        so the table does not grow without bound.
+        """
+        vec_str = "[" + ",".join(str(x) for x in query_vec) + "]"
+        ttl = ttl_seconds if ttl_seconds is not None else settings.SEMANTIC_CACHE_TTL_SECONDS
         try:
+            self._ensure_semantic_cache_schema()
             with self.engine.begin() as conn:
                 conn.execute(
-                    query,
+                    text(
+                        "DELETE FROM semantic_query_cache "
+                        "WHERE created_at <= now() - make_interval(secs => :ttl) "
+                        "OR (user_key = :user_key AND query_text = :qtext)"
+                    ),
+                    {"ttl": ttl, "user_key": user_key, "qtext": query_text},
+                )
+                conn.execute(
+                    text(
+                        """
+                        INSERT INTO semantic_query_cache (query_text, embedding, response_text, ui_payload, intent, user_key)
+                        VALUES (:qtext, CAST(:qvec AS vector), :resp, CAST(:ui AS jsonb), :intent, :user_key);
+                        """
+                    ),
                     {
                         "qtext": query_text,
                         "qvec": vec_str,
                         "resp": response_text,
                         "ui": json.dumps(ui_payload),
                         "intent": intent,
+                        "user_key": user_key,
                     },
                 )
             return True
