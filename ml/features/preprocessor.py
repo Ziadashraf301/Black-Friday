@@ -29,7 +29,10 @@ class DataPreprocessor:
     def tag_outliers(self, df: pd.DataFrame) -> pd.DataFrame:
         """Flags records outside IQR bounds as outliers (identifying predominantly Category 10 orders)."""
         if not self.outlier_bounds:
-            self.compute_outlier_bounds(df["purchase"])
+            raise RuntimeError(
+                "Outlier bounds are not fitted. Call compute_outlier_bounds() on the training split first; "
+                "deriving them from the frame being tagged would leak test data into the bounds."
+            )
 
         result_df = df.copy()
         is_outlier = (result_df["purchase"] < self.outlier_bounds["lower"]) | (result_df["purchase"] > self.outlier_bounds["upper"])

@@ -252,3 +252,18 @@ def test_preprocess_missing_metrics_report_what_the_imputer_left_behind():
         "missing_product_category_3_imputed": 3.0,
     }
     assert _missing_value_metrics({})["missing_product_category_3_imputed"] == 0.0
+
+
+def test_tag_outliers_requires_bounds_fitted_on_training_data():
+    import pandas as pd
+
+    from ml.features.preprocessor import DataPreprocessor
+
+    preprocessor = DataPreprocessor()
+    frame = pd.DataFrame({"purchase": [1.0, 2.0, 3.0, 1000.0]})
+
+    with pytest.raises(RuntimeError, match="compute_outlier_bounds"):
+        preprocessor.tag_outliers(frame)
+
+    preprocessor.compute_outlier_bounds(frame["purchase"].iloc[:3])
+    assert preprocessor.tag_outliers(frame)["is_outlier"].tolist() == [False, False, False, True]

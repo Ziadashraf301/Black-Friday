@@ -24,6 +24,7 @@ def sample_transactions():
 
 def test_preprocessor_outlier_bounds(sample_transactions):
     preprocessor = DataPreprocessor()
+    preprocessor.compute_outlier_bounds(sample_transactions["purchase"])
     tagged = preprocessor.tag_outliers(sample_transactions)
     assert "is_outlier" in tagged.columns
     assert tagged["is_outlier"].dtype == bool
@@ -52,6 +53,7 @@ def test_customer_feature_extractor(sample_transactions):
 def test_cleaned_data_contract_with_split(sample_transactions):
     from ml.features.data_contract import validate_cleaned_data
     preprocessor = DataPreprocessor()
+    preprocessor.compute_outlier_bounds(sample_transactions["purchase"])
     tagged = preprocessor.tag_outliers(sample_transactions)
     cleaned = preprocessor.normalize_target(tagged)
     cleaned["split"] = "train"
