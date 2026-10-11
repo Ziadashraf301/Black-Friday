@@ -6,7 +6,7 @@ from core.db.repository import BlackFridayRepository
 from ml.models.registry import ModelRegistry
 from ml.models.metrics import ModelEvaluator
 from ml.models.onnx_exporter import ONNXExporter
-from ml.pipelines.common import MODEL_CACHE_PATTERNS, invalidate_caches, publish_champion_onnx
+from ml.pipelines.common import MODEL_CACHE_PATTERNS, invalidate_caches, onnx_dir, publish_champion_onnx
 from ml.tracking.mlflow_tracker import MLflowTracker
 from ml.tracking.explainability import ModelExplainability
 from ml.visualization.visualizer import Visualizer
@@ -50,7 +50,7 @@ def run_training_pipeline(model_names: list = None):
         available_model_names = resolved_names
     models = {name: ModelRegistry.get_model(name) for name in available_model_names}
 
-    os.makedirs(os.path.join(settings.BASE_DIR, "models", "onnx"), exist_ok=True)
+    os.makedirs(onnx_dir(), exist_ok=True)
     metadata = {}
     model_artifacts_map = {}
 
@@ -79,7 +79,7 @@ def run_training_pipeline(model_names: list = None):
         )
 
         # 5. Export to ONNX & Verify Parity
-        onnx_file = os.path.join(settings.BASE_DIR, "models", "onnx", f"{model_name}.onnx")
+        onnx_file = os.path.join(onnx_dir(), f"{model_name}.onnx")
         ONNXExporter.export_regression_pipeline(
             pipeline=model.pipeline,
             feature_names=model.features,

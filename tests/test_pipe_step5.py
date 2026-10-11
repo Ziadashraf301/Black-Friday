@@ -324,3 +324,15 @@ def test_market_basket_does_not_log_csvs_left_over_from_an_earlier_run(basket_ru
     assert "apriori_rules_csv" not in artifacts
     assert "item2vec_recommendations_csv" not in artifacts
     assert "market_basket_summary" in artifacts
+
+
+def test_prepare_batch_lowercases_derives_target_and_skips_imputer_without_artifacts(onnx_dir):
+    import pandas as pd
+
+    df = pd.DataFrame({"Purchase": [9000.0], "Product_Category_2": [None]})
+    out = common.prepare_batch(df.rename(columns=str.lower).rename(columns={"purchase": "PURCHASE"}))
+
+    assert "normalized_purchase" in out.columns
+    assert out["normalized_purchase"].iloc[0] == pytest.approx(9000.0 / common.settings.PURCHASE_MAX)
+    assert out["product_category_2"].isna().all()
+    assert list(df.columns) == ["Purchase", "Product_Category_2"]

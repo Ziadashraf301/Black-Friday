@@ -3,6 +3,8 @@
 import os
 import shutil
 
+import pandas as pd
+
 from core.config import settings
 from core.logging import get_logger
 
@@ -17,6 +19,10 @@ MODEL_CACHE_PATTERNS = ("price:*", "shopper:*")
 
 def onnx_dir() -> str:
     return os.path.join(settings.BASE_DIR, "models", "onnx")
+
+
+def imputer_onnx_dir() -> str:
+    return os.path.join(onnx_dir(), "imputer")
 
 
 def champion_onnx_path() -> str:
@@ -36,7 +42,6 @@ def publish_champion_onnx(onnx_file: str) -> str:
     return target
 
 
-
 def invalidate_caches(*patterns: str) -> None:
     """Deletes cached keys matching each pattern. Cache problems never fail a pipeline."""
     try:
@@ -47,3 +52,21 @@ def invalidate_caches(*patterns: str) -> None:
         logger.info(f"Invalidated cache entries: {', '.join(patterns)}")
     except Exception as e:
         logger.warning(f"Cache invalidation warning: {e}")
+
+
+def prepare_batch(df: pd.DataFrame) -> pd.DataFrame:
+    """Lower-cases columns, derives the normalized target from raw purchase, and fills missing categories with the
+    production ONNX imputer when one is available."""
+    df = df.copy()
+    df.columns = [c.lower() for c in df.columns]
+    if "normalized_purchase" not in df.columns and "purchase" in df.columns:
+        df["normalized_purchase"] = df["purchase"] / settings.PURCHASE_MAX
+
+    imputer_dir = imputer_onnx_dir()
+    needs_imputation = any(c in df.columns and df[c].isna().any() for c in ("product_category_2", "product_category_3"))
+    if needs_imputation and os.path.exists(os.path.join(imputer_dir, "imputer_metadata.json")):
+        from ml.serving.imputer import ONNXMissForestImputer
+
+        logger.info("Imputing missing categories using production ONNXMissForestImputer...")
+        df = ONNXMissForestImputer(imputer_dir).transform(df)
+    return df

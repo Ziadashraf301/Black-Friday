@@ -16,7 +16,7 @@ from core.config import settings
 from core.db.repository import BlackFridayRepository
 from core.logging import get_logger
 
-from ml.pipelines.common import invalidate_caches
+from ml.pipelines.common import MODEL_CACHE_PATTERNS, invalidate_caches
 from ml.pipelines.segmentation import run_customer_segmentation
 from ml.pipelines.market_basket import run_market_basket_pipeline
 from ml.pipelines.monitor import run_production_drift_monitor
@@ -73,9 +73,9 @@ def run_cron_cycle():
         logger.error(f"Cron cycle curated catalog seed error: {e}", exc_info=True)
 
     # Prices, catalog and analytics payloads may all have changed during the cycle.
-    invalidate_caches("price:*", "shopper:*", "analytics:*")
+    invalidate_caches(*MODEL_CACHE_PATTERNS, "analytics:*")
 
-    logger.info(f"=== Finished 6-Hour Scheduled ML Pipeline Cycle ===")
+    logger.info("=== Finished 6-Hour Scheduled ML Pipeline Cycle ===")
 
 
 def start_daemon_scheduler():

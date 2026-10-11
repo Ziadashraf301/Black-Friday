@@ -21,30 +21,33 @@ import pandas as pd
 from typing import Optional
 from core.db.repository import BlackFridayRepository
 from ml.models.registry import ModelRegistry
-from ml.pipelines.common import champion_onnx_path, onnx_dir
+from ml.pipelines.common import champion_onnx_path, onnx_dir, prepare_batch
 from ml.tracking.drift_monitor import DriftMonitor, DriftResult
 from ml.tracking.mlflow_tracker import MLflowTracker
 from ml.serving.predictor import ONNXPredictor
-from ml.serving.imputer import ONNXMissForestImputer
 from core.config import settings
 from core.logging import get_logger
 
 logger = get_logger(__name__)
 
 
+def _first_existing(paths):
+    return next((path for path in paths if os.path.exists(path)), None)
+
+
 def _resolve_scoring_onnx(model_name: str, tracker: MLflowTracker) -> str:
     """Prefers the published Production Champion, then the requested architecture's export, then MLflow."""
     candidates = [champion_onnx_path(), os.path.join(onnx_dir(), f"{model_name}.onnx")]
-    for path in candidates:
-        if os.path.exists(path):
-            return path
+    existing = _first_existing(candidates)
+    if existing:
+        return existing
 
     logger.info(f"No local ONNX model for '{model_name}'. Attempting MLflow Champion download...")
     try:
         tracker.download_champion_onnx(model_name=settings.MLFLOW_MODEL_NAME)
     except Exception as e:
         logger.warning(f"Could not fetch Champion ONNX model from MLflow: {e}")
-    return next((path for path in candidates if os.path.exists(path)), candidates[0])
+    return _first_existing(candidates) or candidates[0]
 
 
 def run_production_drift_monitor(
@@ -93,21 +96,7 @@ def run_production_drift_monitor(
     ref_eval = reference_df.copy()
     ref_eval.columns = [c.lower() for c in ref_eval.columns]
 
-    curr_eval = current_batch_df.copy()
-    curr_eval.columns = [c.lower() for c in curr_eval.columns]
-
-    if "normalized_purchase" not in curr_eval.columns and "purchase" in curr_eval.columns:
-        curr_eval["normalized_purchase"] = curr_eval["purchase"] / settings.PURCHASE_MAX
-
-    # Impute missing categories if present using production ONNX imputer
-    imputer_dir = os.path.join(settings.BASE_DIR, "models", "onnx", "imputer")
-    if os.path.exists(os.path.join(imputer_dir, "imputer_metadata.json")):
-        for cat_col in ["product_category_2", "product_category_3"]:
-            if cat_col in curr_eval.columns and curr_eval[cat_col].isna().any():
-                logger.info("Imputing missing categories using production ONNXMissForestImputer...")
-                imputer = ONNXMissForestImputer(imputer_dir)
-                curr_eval = imputer.transform(curr_eval)
-                break
+    curr_eval = prepare_batch(current_batch_df)
 
     # 3. Score Predictions using the Production Champion ONNX (Fast Inference, No Re-Fitting)
     onnx_path = _resolve_scoring_onnx(model_name, tracker)

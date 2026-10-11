@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from typing import Tuple, Dict, Any
+from typing import Dict, Tuple
 from sklearn.model_selection import train_test_split
 from core.config import settings
 from core.logging import get_logger

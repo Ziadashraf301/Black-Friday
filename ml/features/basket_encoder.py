@@ -1,5 +1,5 @@
 import pandas as pd
-from typing import List, Tuple
+from typing import List
 from mlxtend.preprocessing import TransactionEncoder
 from core.logging import get_logger
 

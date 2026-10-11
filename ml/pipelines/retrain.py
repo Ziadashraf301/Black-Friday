@@ -6,7 +6,7 @@ from typing import Optional, Dict, Any
 from core.db.repository import BlackFridayRepository
 from ml.features.preprocessor import DataPreprocessor
 from ml.models.registry import ModelRegistry
-from ml.pipelines.common import MODEL_CACHE_PATTERNS, champion_onnx_path, invalidate_caches, publish_champion_onnx
+from ml.pipelines.common import MODEL_CACHE_PATTERNS, champion_onnx_path, invalidate_caches, onnx_dir, prepare_batch, publish_champion_onnx
 from ml.models.metrics import ModelEvaluator, evaluate_holdout
 from ml.models.onnx_exporter import ONNXExporter
 from ml.serving.predictor import ONNXPredictor
@@ -337,9 +337,8 @@ def run_champion_challenger_retrain(
     onnx_file = None
     if is_promoted:
         logger.info(f"🏆 PROMOTION GRANTED: Candidate '{model_name}' is NEW CHAMPION! Exporting ONNX...")
-        onnx_dir = os.path.join(settings.BASE_DIR, "models", "onnx")
-        os.makedirs(onnx_dir, exist_ok=True)
-        onnx_file = os.path.join(onnx_dir, f"{model_name}.onnx")
+        os.makedirs(onnx_dir(), exist_ok=True)
+        onnx_file = os.path.join(onnx_dir(), f"{model_name}.onnx")
         ONNXExporter.export_regression_pipeline(candidate.pipeline, candidate.features, onnx_file)
         ONNXExporter.verify_parity(candidate, onnx_file, test_df[candidate.features].head(50))
         publish_champion_onnx(onnx_file)
@@ -461,26 +460,8 @@ if __name__ == "__main__":
         if new_df.empty:
             new_df = repo.get_cleaned_records_df(exclude_outliers=True).tail(3000)
 
-    # Standardize schema and derive normalized_purchase if raw purchase column is passed
-    def _prepare_retrain_batch(df: pd.DataFrame) -> pd.DataFrame:
-        df = df.copy()
-        df.columns = [c.lower() for c in df.columns]
-        if "normalized_purchase" not in df.columns and "purchase" in df.columns:
-            df["normalized_purchase"] = df["purchase"] / settings.PURCHASE_MAX
-
-        imputer_dir = os.path.join(settings.BASE_DIR, "models", "onnx", "imputer")
-        if os.path.exists(os.path.join(imputer_dir, "imputer_metadata.json")):
-            for cat_col in ["product_category_2", "product_category_3"]:
-                if cat_col in df.columns and df[cat_col].isna().any():
-                    logger.info("Imputing missing categories in retrain batch using ONNXMissForestImputer...")
-                    from ml.serving.imputer import ONNXMissForestImputer
-                    imputer = ONNXMissForestImputer(imputer_dir)
-                    df = imputer.transform(df)
-                    break
-        return df
-
-    old_df = _prepare_retrain_batch(old_df)
-    new_df = _prepare_retrain_batch(new_df)
+    old_df = prepare_batch(old_df)
+    new_df = prepare_batch(new_df)
 
     # Verify target persistence in new_df
     target_col = "normalized_purchase"

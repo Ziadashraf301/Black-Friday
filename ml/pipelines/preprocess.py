@@ -11,7 +11,7 @@ from ml.tracking.mlflow_tracker import MLflowTracker
 from ml.visualization.visualizer import Visualizer
 from ml.models.metrics import ModelEvaluator
 from ml.models.onnx_exporter import ONNXExporter
-from ml.pipelines.common import invalidate_caches
+from ml.pipelines.common import imputer_onnx_dir, invalidate_caches
 
 from core.config import settings
 from core.logging import get_logger
@@ -112,10 +112,10 @@ def run_preprocessing():
     invalidate_caches("analytics:*")
 
     # 10. Export Fitted MissForest Imputer Model to Lightweight ONNX Format for Production Serving
-    imputer_onnx_dir = os.path.join(settings.BASE_DIR, "models", "onnx", "imputer")
-    logger.info(f"Exporting MissForest imputer to ONNX format at: {imputer_onnx_dir}...")
-    ONNXExporter.export_imputer(imputer, output_dir=imputer_onnx_dir)
-    logger.info(f"Persisted lightweight ONNX imputer artifacts to: {imputer_onnx_dir}")
+    imputer_dir = imputer_onnx_dir()
+    logger.info(f"Exporting MissForest imputer to ONNX format at: {imputer_dir}...")
+    ONNXExporter.export_imputer(imputer, output_dir=imputer_dir)
+    logger.info(f"Persisted lightweight ONNX imputer artifacts to: {imputer_dir}")
 
     # 11. Assemble Full Audit Parameters and Metrics (Per Train and Test)
     train_outliers = int(train_cleaned["is_outlier"].sum())
@@ -204,7 +204,7 @@ def run_preprocessing():
             "imputer_status": "PROMOTED_TO_PRODUCTION"
         },
         artifacts=artifacts,
-        imputer_model_path=imputer_onnx_dir,
+        imputer_model_path=imputer_dir,
         register_imputer_name=settings.MLFLOW_IMPUTER_MODEL_NAME
     )
 
