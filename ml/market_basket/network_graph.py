@@ -131,11 +131,12 @@ class ProductNetworkGraph:
         logger.info("Computing PageRank scores...")
         pagerank_dict = nx.pagerank(self.graph, weight="weight")
 
-        # Compute HITS (Hubs and Authorities)
+        # Compute HITS (Hubs and Authorities). networkx HITS is unweighted: only the link structure counts, not
+        # the confidence/lift edge weights (PageRank above is the weighted score).
         logger.info("Computing HITS Hubs and Authority scores...")
         try:
             hubs_dict, authorities_dict = nx.hits(self.graph, max_iter=200, normalized=True)
-        except Exception as e:
+        except nx.PowerIterationFailedConvergence as e:
             logger.warning(f"HITS algorithm convergence fallback: {e}")
             hubs_dict = {node: 1.0 / len(self.graph) for node in self.graph.nodes()}
             authorities_dict = {node: 1.0 / len(self.graph) for node in self.graph.nodes()}

@@ -118,3 +118,17 @@ def test_anl8_similarity_pass_covers_every_product():
     sims = model.get_all_similar_products(top_n=3)
     assert set(sims) == set(model.vocabulary)
     assert all(len(v) == 3 for v in sims.values())
+
+
+def test_anl10_hits_non_convergence_falls_back_to_uniform_scores(monkeypatch):
+    import networkx as nx
+
+    from ml.market_basket.network_graph import ProductNetworkGraph
+
+    def boom(*args, **kwargs):
+        raise nx.PowerIterationFailedConvergence(200)
+
+    monkeypatch.setattr(nx, "hits", boom)
+    graph = ProductNetworkGraph()
+    metrics = graph.build_graph_from_similarity_map({"a": [("b", 0.9)], "b": [("a", 0.8)]})
+    assert set(metrics["hub_score"]) == {0.5} and set(metrics["authority_score"]) == {0.5}
