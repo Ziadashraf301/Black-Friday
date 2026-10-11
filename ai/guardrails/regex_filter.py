@@ -44,8 +44,35 @@ class RegexPreFilter(BaseSafetyFilter):
         (r"(?i)javascript:\s*", "XSS_JAVASCRIPT_PROTOCOL"),
     ]
 
-    def __init__(self):
-        self._compiled_patterns = [(re.compile(pattern), rule_name) for pattern, rule_name in self.PATTERNS]
+    # Broader net used only while the Tier-1 Jev API is down (see SafetyEngine and JevApiRouter): it accepts a few
+    # more false positives on odd shopping phrasing in exchange for catching what Jev would normally flag.
+    STRICT_PATTERNS: List[Tuple[str, str]] = [
+        (r"(?i)\bsystem\s+prompt\b", "STRICT_SYSTEM_PROMPT"),
+        (
+            r"(?i)\b(?:developer|hidden|secret|internal)\s+(?:instructions?|messages?|prompts?|rules)\b",
+            "STRICT_HIDDEN_INSTRUCTIONS",
+        ),
+        (r"(?i)\bjail\s?break(?:ing|s)?\b", "STRICT_JAILBREAK_WORD"),
+        (r"(?i)\b(?:pretend|imagine)\s+(?:to\s+be|that\s+you\s+are|you\s+are)\b", "STRICT_ROLE_OVERRIDE"),
+        (r"(?i)\byou\s+are\s+now\b", "STRICT_ROLE_OVERRIDE"),
+        (
+            r"(?i)\b(?:ignore|disregard|forget|override|bypass|circumvent)\s+(?:\w+\s+){0,3}"
+            r"(?:instructions|rules|guidelines|restrictions|safeguards|safety|filters?)\b",
+            "STRICT_BYPASS_RULES",
+        ),
+        (
+            r"(?i)\b(?:reveal|show|print|dump|leak|output|expose|send|tell)\s+(?:me\s+)?(?:\w+\s+){0,3}"
+            r"(?:api\s*keys?|secrets?|credentials|passwords?|tokens?)\b",
+            "STRICT_CREDENTIAL_LEAK",
+        ),
+        (r"(?i)['\"]\s*or\s+['\"]?\d", "STRICT_SQLI_OR"),
+        (r"(?i);\s*(?:drop|delete|insert|update|select)\b", "STRICT_SQLI_STACKED"),
+        (r"(?i)<\s*(?:script|iframe|img|svg)\b", "STRICT_HTML_INJECTION"),
+    ]
+
+    def __init__(self, strict: bool = False):
+        patterns = self.PATTERNS + self.STRICT_PATTERNS if strict else self.PATTERNS
+        self._compiled_patterns = [(re.compile(pattern), rule_name) for pattern, rule_name in patterns]
 
     def evaluate(self, text: str) -> SafetyEvaluationResult:
         start_t = time.perf_counter()

@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 from ai.classifier.intent_classifier import IntentClassifier
 from ai.extractor.base import BaseEntityExtractor
 from ai.extractor.regex_extractor import RegexEntityExtractor
+from ai.guardrails.regex_filter import RegexPreFilter
 from ai.guardrails.safety_engine import safety_engine
 from ai.prompts.guardrail_prompts import STANDARD_REFUSAL_MESSAGE
 from ai.prompts.registry import PromptRegistry
@@ -181,8 +182,12 @@ class JevApiRouter(BaseRouterStrategy):
 
         except Exception as e:
             latency = (time.perf_counter() - start_t) * 1000
-            logger.error(f"[ROUTER: JEV] API call failed: {e}. Falling back to FastRuleRouter.")
-            fallback = FastRuleRouter(entity_extractor=self._extractor).route(query, context)
+            logger.warning(
+                f"[ROUTER: JEV] API call failed ({type(e).__name__}: {e}); falling back to FastRuleRouter with strict rules."
+            )
+            fallback = FastRuleRouter(entity_extractor=self._extractor, safety_filter=RegexPreFilter(strict=True)).route(
+                query, context
+            )
             fallback.strategy_used = "JevApiRouter (Fallback)"
             fallback.latency_ms = round(latency + fallback.latency_ms, 2)
             return fallback

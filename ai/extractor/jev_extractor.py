@@ -84,7 +84,9 @@ class JevEntityExtractor(BaseEntityExtractor):
                 extraction_strategy="jev_v2",
             )
         except Exception as e:
-            logger.error(f"[ENTITY-EXTRACTOR: JEV] Jev extraction failed: {e}. Falling back to empty.")
+            logger.warning(
+                f"[ENTITY-EXTRACTOR: JEV] Jev extraction failed ({type(e).__name__}: {e}); falling back to empty entities."
+            )
             return ExtractedEntities(extraction_strategy="jev_error")
 
 
