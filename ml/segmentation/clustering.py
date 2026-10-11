@@ -146,6 +146,15 @@ class CustomerSegmentationEngine:
                 "recommended_action": action
             }
 
+        merged = pd.Series({raw: m["cluster_id"] for raw, m in cluster_mapping.items()}).value_counts()
+        merged = merged[merged > 1]
+        if not merged.empty:
+            logger.warning(
+                f"Several raw clusters resolved to the same persona and are reported as one: "
+                f"{ {int(pid): int(n) for pid, n in merged.items()} } (persona id -> raw clusters). "
+                f"Only {len(set(m['cluster_id'] for m in cluster_mapping.values()))} personas result."
+            )
+
         result_df["cluster_id"] = result_df["raw_cluster_id"].map(lambda cid: cluster_mapping[cid]["cluster_id"])
         result_df["cluster_persona"] = result_df["raw_cluster_id"].map(lambda cid: cluster_mapping[cid]["cluster_persona"])
         result_df["recommended_action"] = result_df["raw_cluster_id"].map(lambda cid: cluster_mapping[cid]["recommended_action"])
