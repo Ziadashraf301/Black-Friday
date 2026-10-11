@@ -86,3 +86,46 @@ def test_retrain_ignores_unloadable_local_champion(onnx_dir, monkeypatch):
     monkeypatch.setattr(retrain, "champion_onnx_path", lambda: str(onnx_dir / common.CHAMPION_ONNX_NAME))
 
     assert retrain._score_local_champion(pd.DataFrame({"a": [1]}), pd.Series([0.1]), ["a"]) is None
+
+
+def test_warehouse_replace_batches_use_a_single_replacing_load():
+    from unittest.mock import patch
+
+    import pandas as pd
+
+    from core.db.repositories.warehouse_repo import WarehouseRepository
+
+    repo = WarehouseRepository(engine=MagicMock())
+    df = pd.DataFrame({"a": [1]})
+    with patch.object(repo, "insert_dataframe") as insert:
+        repo.replace_raw_batch(df)
+        repo.replace_cleaned_batch(df)
+
+    assert [c.args[0] for c in insert.call_args_list] == ["raw_black_friday", "black_friday_cleaned"]
+    assert all(c.kwargs["if_exists"] == "replace" for c in insert.call_args_list)
+
+
+def test_failed_replace_load_keeps_previous_rows():
+    import pandas as pd
+    from sqlalchemy import text
+
+    from core.db.repositories.base import BaseRepository
+
+    table = "tmp_pipe3_replace"
+    repo = BaseRepository()
+    try:
+        with repo.engine.begin() as conn:
+            conn.execute(text(f"DROP TABLE IF EXISTS {table}"))
+            conn.execute(text(f"CREATE TABLE {table} (id INTEGER)"))
+            conn.execute(text(f"INSERT INTO {table} VALUES (1), (2)"))
+    except Exception as exc:
+        pytest.skip(f"PostgreSQL unavailable: {exc}")
+    repo.VALID_TABLES = repo.VALID_TABLES | {table}
+    try:
+        with pytest.raises(Exception):
+            repo.insert_dataframe(table, pd.DataFrame({"no_such_column": [9]}), if_exists="replace")
+        with repo.engine.connect() as conn:
+            assert conn.execute(text(f"SELECT count(*) FROM {table}")).scalar() == 2
+    finally:
+        with repo.engine.begin() as conn:
+            conn.execute(text(f"DROP TABLE IF EXISTS {table}"))

@@ -95,8 +95,7 @@ def run_preprocessing():
 
     # 9. Persist Cleaned Records with Split Indicator to Warehouse
     logger.info("Persisting cleaned data with train/test split indicator to database...")
-    repo.truncate_cleaned_table()
-    repo.insert_cleaned_batch(cleaned_df)
+    repo.replace_cleaned_batch(cleaned_df)
 
     try:
         from core.cache import cache_manager

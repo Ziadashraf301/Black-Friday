@@ -23,6 +23,14 @@ class WarehouseRepository(BaseRepository):
     def insert_raw_batch(self, df: pd.DataFrame, chunksize: int = 25000):
         self.insert_dataframe("raw_black_friday", df, if_exists="append", chunksize=chunksize)
 
+    def replace_raw_batch(self, df: pd.DataFrame, chunksize: int = 25000):
+        """Swaps the raw table contents in one transaction: a failed load leaves the previous rows in place."""
+        self.insert_dataframe("raw_black_friday", df, if_exists="replace", chunksize=chunksize)
+
+    def replace_cleaned_batch(self, df: pd.DataFrame, chunksize: int = 25000):
+        """Swaps the cleaned table contents in one transaction: a failed load leaves the previous rows in place."""
+        self.insert_dataframe("black_friday_cleaned", df, if_exists="replace", chunksize=chunksize)
+
     def truncate_cleaned_table(self):
         self.truncate_table("black_friday_cleaned", restart_identity=True)
 

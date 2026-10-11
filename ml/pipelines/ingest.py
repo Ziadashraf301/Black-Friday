@@ -30,8 +30,7 @@ def run_ingestion(csv_path: Optional[str] = None):
 
     # Delegate all database execution to repository
     repo = BlackFridayRepository()
-    repo.truncate_raw_table()
-    repo.insert_raw_batch(raw_df)
+    repo.replace_raw_batch(raw_df)
 
     try:
         from core.cache import cache_manager
