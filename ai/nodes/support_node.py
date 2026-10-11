@@ -6,6 +6,7 @@ Handles delivery tracking inquiries and Black Friday policy details.
 import re
 from typing import Any, Dict
 
+from ai.schemas.identity import GUEST_USER_ID
 from ai.schemas.state import AgentState
 from ai.tools.order_tools import order_tool
 from core.logging import get_logger
@@ -21,7 +22,7 @@ def support_agent_node(state: AgentState) -> Dict[str, Any]:
     """
     query = state.get("query", "")
     q = query.lower()
-    user_id = state.get("user_id", "guest_user")
+    user_id = state.get("user_id", GUEST_USER_ID)
 
     # Check for order code
     order_m = ORDER_ID_RE.search(query)

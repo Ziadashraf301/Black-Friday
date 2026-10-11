@@ -7,6 +7,8 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
+from ai.schemas.identity import GUEST_USER_ID
+
 
 class ProductSearchResult(BaseModel):
     """Unified schema for product search hits returned by search specialists."""
@@ -84,7 +86,7 @@ class CartItem(BaseModel):
 class CartState(BaseModel):
     """Aggregated cart state with discount computations."""
 
-    user_id: str = "guest_user"
+    user_id: str = GUEST_USER_ID
     session_id: str = "default_session"
     items: List[CartItem] = Field(default_factory=list)
     subtotal: float = 0.0

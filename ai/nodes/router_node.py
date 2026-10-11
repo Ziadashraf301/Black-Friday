@@ -10,6 +10,7 @@ from typing import Any, Dict, List
 from langchain_core.messages import AIMessage, HumanMessage
 
 from ai.guardrails.strike_tracker import strike_tracker
+from ai.schemas.identity import GUEST_USER_ID
 from ai.schemas.state import AgentState
 from ai.services.guardrail_service import guardrail_service
 from core.logging import get_logger
@@ -61,7 +62,7 @@ def guardrail_router_node(state: AgentState) -> Dict[str, Any]:
                 query = msg.content
                 break
 
-    user_id = state.get("user_id", "guest_user")
+    user_id = state.get("user_id", GUEST_USER_ID)
     session_id = state.get("session_id", "default_session")
 
     logger.info(f"[GRAPH: ROUTER-NODE] Evaluating query: '{query[:60]}...' for user={user_id}")

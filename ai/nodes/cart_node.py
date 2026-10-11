@@ -6,6 +6,7 @@ Executes stateful cart actions (add, remove, change size, clear, view subtotal).
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
+from ai.schemas.identity import GUEST_USER_ID
 from ai.schemas.state import AgentState
 from ai.tools.cart_tools import cart_tool
 from core.logging import get_logger
@@ -40,7 +41,7 @@ def cart_agent_node(state: AgentState) -> Dict[str, Any]:
     Executes stateful cart mutations (add, remove, change size from L to XL, subtotal).
     """
     query = state.get("query", "").lower()
-    user_id = state.get("user_id", "guest_user")
+    user_id = state.get("user_id", GUEST_USER_ID)
     session_id = state.get("session_id", "default_session")
     entities = state.get("entities") or {}
     product_ids = entities.get("product_ids") or []
