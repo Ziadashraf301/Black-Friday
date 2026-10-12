@@ -152,3 +152,30 @@ def test_analytics_fetch_in_reflex():
     assert "M" in state.dashboard_revenue_display or "$" in state.dashboard_revenue_display
     assert state.dashboard_users_display == "5,891"
     assert "gender" in state.dashboard_cache
+
+
+def _run_auth_handler(handler_name, fields, status_code):
+    """Steps a login/signup handler: the spinner must be on at the first yield and off at the end."""
+    state = ShoppingState(_reflex_internal_init=True)
+    for name, value in fields.items():
+        setattr(state, name, value)
+    resp = MagicMock(status_code=status_code)
+    resp.json.return_value = {"detail": "bad"}
+    with patch("httpx.Client.post", return_value=resp), patch.object(ShoppingState, "_apply_auth"):
+        steps = getattr(state, handler_name)()
+        next(steps)
+        assert state.auth_loading is True
+        for _ in steps:
+            pass
+    assert state.auth_loading is False
+    return state
+
+
+def test_login_shows_spinner_before_request():
+    _run_auth_handler("do_login", {"login_email": "a@b.com", "login_password": "secret1"}, 401)
+
+
+def test_signup_shows_spinner_before_request():
+    fields = {"signup_name": "A", "signup_email": "a@b.com", "signup_password": "secret1"}
+    state = _run_auth_handler("do_signup", fields, 201)
+    assert state.show_auth is False

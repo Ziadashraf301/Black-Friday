@@ -616,6 +616,7 @@ class ShoppingState(rx.State):
             return
         self.auth_loading = True
         self.auth_error = ""
+        yield  # send the spinner to the browser before the blocking request
         try:
             with httpx.Client(timeout=8.0) as client:
                 resp = client.post(
@@ -653,6 +654,7 @@ class ShoppingState(rx.State):
             "occupation": self.signup_occupation,
             "stay_in_current_city_years": "2",
         }
+        yield  # send the spinner to the browser before the blocking request
         try:
             with httpx.Client(timeout=10.0) as client:
                 resp = client.post(f"{API_BASE_URL}/auth/signup", json=payload)
