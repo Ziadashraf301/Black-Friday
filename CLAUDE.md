@@ -268,7 +268,7 @@ All share the same SQLAlchemy engine via dependency injection.
 GitHub Actions workflow (`.github/workflows/ci-cd.yml`):
 - Triggers on push/PR to `main`/`master`
 - Installs Python 3.11 + `requirements-dev.txt`
-- Runs `make lint-ci` (flake8, black, isort on `LINT_CLEAN_PATHS` = `ai/ core/` only; the rest of the repo is not yet lint-clean), then the unit tests (`tests/unit`, `tests/load`, 60s timeout) and the architecture tests; integration and e2e run locally
+- Runs `make lint-ci` (flake8, black, isort on `LINT_CLEAN_PATHS`, which equals `LINT_PATHS`: the whole repo is lint-clean), then the unit tests (`tests/unit`, `tests/load`, 60s timeout) and the architecture tests; integration and e2e run locally
 
 ---
 

@@ -104,11 +104,10 @@ test-integration:
 test-e2e:
 	pytest tests/e2e -v
 
-# Everything is checked by `make lint`; most of apps/, evaluation/, ml/ and tests/ predates the black/isort
-# config in pyproject.toml, so CI enforces only the directories that are already clean. Add a directory to
-# LINT_CLEAN_PATHS once it passes.
+# `make lint` checks LINT_PATHS and CI (`make lint-ci`) enforces LINT_CLEAN_PATHS. Every directory is
+# lint-clean now, so the two are the same; keep it that way.
 LINT_PATHS = ai/ apps/ core/ evaluation/ ml/ tests/
-LINT_CLEAN_PATHS = ai/ core/
+LINT_CLEAN_PATHS = $(LINT_PATHS)
 
 lint:
 	@rc=0; flake8 $(LINT_PATHS) || rc=1; black --check $(LINT_PATHS) || rc=1; isort --check $(LINT_PATHS) || rc=1; exit $$rc
