@@ -12,7 +12,7 @@ The database has **10 tables in 4 groups**:
 |---|---|---|---|
 | **Data warehouse** | `raw_black_friday`, `black_friday_cleaned` | `make ingest`, `make preprocess` | 550,069 each |
 | **ML outputs** | `customer_segments`, `product_network_metrics`, `curated_products` | `make segmentation`, `make basket`, `seed_curated` | 5,891 / 133 / 50 |
-| **Application** | `app_users`, `user_purchases`, `user_carts` | The FastAPI backend | 1,632 / 117 / 0 |
+| **Application** | `app_users`, `user_purchases`, `user_carts` | The FastAPI backend | 1,644 / 127 / 0 |
 | **AI cache and system** | `semantic_query_cache`, `alembic_version` | The AI assistant, Alembic | 0 / 1 |
 
 **Enforced vs logical relationships.** Two relationships are enforced by real foreign keys, both on the application tables: `user_purchases.user_id` references `app_users.user_id`, and `user_purchases.product_id` references `curated_products.product_id` (migration `0003`). The others are **logical**: the columns match, but the database does not check them. That is normal for an analytics warehouse loaded in bulk, where foreign keys would slow down the 550k-row loads and block truncate-and-reload.
