@@ -107,8 +107,9 @@ async def test_bot_stream_timeout_leaves_ui_usable():
     assert len(state.bot_messages) >= 2
     last_msg = state.bot_messages[-1]
     assert last_msg["role"] == "assistant"
-    # Should contain fallback reply for deals or error note
-    assert "deal" in last_msg["content"].lower() or "offline" in last_msg["content"].lower()
+    # UI-5: a timeout shows the one fixed unavailable message, never invented deals or the exception text
+    assert last_msg["content"] == BOT_UNAVAILABLE_MESSAGE
+    assert "timed out" not in last_msg["content"].lower()
 
 
 @pytest.mark.asyncio
