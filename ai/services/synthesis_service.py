@@ -27,7 +27,7 @@ class SynthesisService:
         template_service_instance: Optional[ResponseTemplateService] = None,
         llm_client: Optional[Any] = None,
     ):
-        self._configured_model = model_name or getattr(settings, "LLM_MODEL", "gemini-2.0-flash")
+        self._configured_model = model_name or getattr(settings, "LLM_MODEL", "gemini-3-flash-preview")
         self._templates = template_service_instance or template_service
         self._llm_client = llm_client
 

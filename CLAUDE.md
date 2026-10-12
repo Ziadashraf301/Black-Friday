@@ -274,7 +274,7 @@ GitHub Actions workflow (`.github/workflows/ci-cd.yml`):
 
 ---
 
-## Active Work: Code Review (branch `review/round-1`)
+## Code Review Status
 
-- Runbook: `docs/REVIEW_PLAN.md`. Findings: `docs/REVIEW_LOG.md`.
-- When asked to "do the next step", read both files and follow the runbook exactly.
+- Round 1 review is complete (merged from `review/round-1`). Summary, before/after metrics and round-2 items are in `docs/REVIEW_LOG.md`; the runbook is `docs/REVIEW_PLAN.md`.
+- For round 2, reuse the same runbook loop: one area per session, one commit per finding, log every finding.

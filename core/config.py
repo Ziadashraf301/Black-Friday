@@ -210,7 +210,7 @@ class Settings(BaseSettings):
 
     GEMINI_API_KEY: Optional[str] = Field(default=None)
     TYPESAFE_API_KEY: Optional[str] = Field(default=None)
-    LLM_MODEL: str = Field(default="gemini-2.0-flash")
+    LLM_MODEL: str = Field(default="gemini-3-flash-preview")
 
 
 settings = Settings()
