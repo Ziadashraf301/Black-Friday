@@ -144,7 +144,7 @@ erDiagram
     }
 ```
 
-> The diagram above renders on GitHub and in VS Code with a Mermaid extension. The PDF version of this document has the same diagram drawn as a picture.
+*On GitHub (and in VS Code with a Mermaid extension) this diagram is drawn from the Mermaid code. In the PDF version it is the full-page picture on the previous page.*
 
 ---
 
@@ -152,21 +152,32 @@ erDiagram
 
 ```
 train.csv
-   |  make ingest (COPY, ~7s)
-   v
-raw_black_friday  ----- make preprocess (MissForest, outliers, split) ----->  black_friday_cleaned
-                                                                                 |
-                       +---------------------------------------------------------+------------------------+
-                       | make segmentation (Gower clustering)                    | make basket (Apriori,  |
-                       v                                                         v  Item2Vec, PageRank)   |
-               customer_segments (10 personas)                         product_network_metrics            |
-                                                                                 |                        |
-                                                                                 v  seed_curated          |
-                                                                          curated_products  <-------------+
-                                                                                 |
-             app_users  --(signup, demographics, persona)--> API <---------------+
-                 |                                            |
-                 +-- user_purchases (FK)        user_carts <--+--> semantic_query_cache (AI answers)
+  |
+  |  make ingest (COPY, ~7s)
+  v
+raw_black_friday
+  |
+  |  make preprocess (MissForest imputation, outliers, train/test split)
+  v
+black_friday_cleaned
+  |
+  +--> make segmentation (Gower clustering) --> customer_segments (10 personas)
+  |
+  +--> make basket (Apriori, Item2Vec, PageRank/HITS) --> product_network_metrics
+                                                              |
+                                                              |  seed_curated
+                                                              v
+                                                       curated_products
+
+
+FastAPI backend (reads the tables above, writes the application tables):
+
+  app_users  --(signup: demographics + persona from customer_segments)
+     |
+     +-- user_purchases   (FK user_id; ONNX price prediction per purchase)
+
+  user_carts             (durable cart; Redis is the fast tier)
+  semantic_query_cache   (AI assistant answers, per user_key)
 ```
 
 ---
