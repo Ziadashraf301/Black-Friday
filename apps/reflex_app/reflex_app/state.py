@@ -1256,7 +1256,14 @@ class ShoppingState(rx.State):
         self.bot_input_text = val
 
     def handle_bot_trigger_click(self):
-        """Floating trigger click: performs JWT auth check before drawer access."""
+        """Floating trigger click: performs JWT auth check before drawer access.
+
+        An event handler must return None or events (Reflex raises TypeError on a bool), so the outcome is only state.
+        """
+        self._open_bot_if_authenticated()
+
+    def _open_bot_if_authenticated(self) -> bool:
+        """Opens the drawer for a signed-in shopper, otherwise asks them to sign in; True when it opened."""
         self.bot_auth_checked = True
         if not self.is_authenticated:
             self.bot_auth_warning = "Please sign in to unlock your personal AI shopping assistant and member deals."
@@ -1280,7 +1287,7 @@ class ShoppingState(rx.State):
         return True
 
     def open_bot_drawer(self):
-        return self.handle_bot_trigger_click()
+        self._open_bot_if_authenticated()
 
     def close_bot_drawer(self):
         self.is_bot_open = False
@@ -1289,7 +1296,7 @@ class ShoppingState(rx.State):
         if self.is_bot_open:
             self.is_bot_open = False
         else:
-            self.handle_bot_trigger_click()
+            self._open_bot_if_authenticated()
 
     def prompt_bot_login(self):
         self.is_bot_open = False

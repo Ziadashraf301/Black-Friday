@@ -22,8 +22,8 @@ def test_frontend_bot_auth_check():
     assert state.is_authenticated is False
 
     # Clicking trigger while unauthenticated must prompt login
-    res = state.handle_bot_trigger_click()
-    assert res is False
+    assert state.handle_bot_trigger_click() is None  # Reflex handlers must not return a bool (TypeError)
+    assert state.is_bot_open is False
     assert state.show_auth is True, "Must prompt auth modal when guest clicks bot trigger"
     assert state.bot_auth_checked is True
     assert "sign in" in state.bot_auth_warning.lower()
@@ -35,8 +35,7 @@ def test_frontend_bot_auth_check():
     auth_state.user_cluster_persona = "Urban Trendsetter"
     assert auth_state.is_authenticated is True
 
-    opened = auth_state.handle_bot_trigger_click()
-    assert opened is True
+    assert auth_state.handle_bot_trigger_click() is None
     assert auth_state.is_bot_open is True
     assert len(auth_state.bot_messages) > 0
 
