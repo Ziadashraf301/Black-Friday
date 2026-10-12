@@ -21,7 +21,7 @@ from ai.guardrails.strike_tracker import strike_tracker
 from ai.services.cache_service import cache_service
 from ai.workflow.graph import shopping_graph
 from ai.workflow.state import AgentState
-from apps.api.client_identity import DEFAULT_SESSION_ID, bot_user_id, guest_user_id, sanitize_session_id
+from apps.api.client_identity import DEFAULT_SESSION_ID, bot_user_id, client_ip, guest_user_id, sanitize_session_id
 from apps.api.rate_limiting.rate_limiter import rate_limit_client_dependency
 from core.logging import get_logger
 
@@ -241,7 +241,7 @@ async def bot_live_websocket(websocket: WebSocket):
       - Synchronized product cards sent down the socket alongside voice
       - Interruption handling (barge-in)
     """
-    client_ip = websocket.client.host if websocket.client else "unknown"
+    peer_ip = client_ip(websocket)
 
     # Extract user identity from Authorization header or query parameter if available
     auth_user_id = None
@@ -263,13 +263,13 @@ async def bot_live_websocket(websocket: WebSocket):
             logger.debug(f"[WS: LIVE] Handshake token decode warning: {e}")
 
     # Check ban lockout by IP or user_id before accept
-    if strike_tracker.is_banned(client_ip) or (auth_user_id and strike_tracker.is_banned(auth_user_id)):
+    if strike_tracker.is_banned(peer_ip) or (auth_user_id and strike_tracker.is_banned(auth_user_id)):
         await websocket.close(code=1008)
-        logger.warning(f"[WS: LIVE] Handshake rejected for banned identifier (ip={client_ip}, user={auth_user_id})")
+        logger.warning(f"[WS: LIVE] Handshake rejected for banned identifier (ip={peer_ip}, user={auth_user_id})")
         return
 
     await websocket.accept()
-    logger.info(f"[WS: LIVE] Accepted live voice connection from {client_ip} (user={auth_user_id})")
+    logger.info(f"[WS: LIVE] Accepted live voice connection from {peer_ip} (user={auth_user_id})")
 
     try:
         while True:
@@ -305,7 +305,7 @@ async def bot_live_websocket(websocket: WebSocket):
             query_text = data.get("query") or data.get("text") or ""
             session_id = sanitize_session_id(data.get("session_id", "live_session"))
             # client-supplied user_id is ignored; guests get a per-(address, session) id
-            user_id = auth_user_id or guest_user_id(client_ip, session_id)
+            user_id = auth_user_id or guest_user_id(peer_ip, session_id)
 
             if user_id and strike_tracker.is_banned(str(user_id)):
                 await websocket.send_json(
@@ -367,7 +367,7 @@ async def bot_live_websocket(websocket: WebSocket):
             )
 
     except WebSocketDisconnect:
-        logger.info(f"[WS: LIVE] Client disconnected: {client_ip}")
+        logger.info(f"[WS: LIVE] Client disconnected: {peer_ip}")
     except Exception as e:
         logger.error(f"[WS: LIVE] Error in live voice session: {e}", exc_info=True)
         try:
