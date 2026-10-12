@@ -1,9 +1,47 @@
 import pytest
 from fastapi.testclient import TestClient
+from starlette.requests import Request
 
-from apps.api.client_identity import DEFAULT_SESSION_ID, guest_user_id, sanitize_session_id
+from ai.guardrails.strike_tracker import strike_tracker
+from apps.api.client_identity import DEFAULT_SESSION_ID, guest_user_id, resolve_client_identity, sanitize_session_id
 from apps.api.main import app
+from apps.api.rate_limiting.rate_limiter import extract_client_identifier
 from apps.api.routes import bot
+from core.security import create_access_token
+
+
+def _request(headers=None, query="", ip="203.0.113.7") -> Request:
+    scope = {
+        "type": "http",
+        "method": "GET",
+        "path": "/bot/stream",
+        "query_string": query.encode(),
+        "headers": [(k.lower().encode(), v.encode()) for k, v in (headers or {}).items()],
+        "client": (ip, 1234),
+    }
+    return Request(scope)
+
+
+def test_identity_uses_verified_jwt_sub():
+    token = create_access_token({"sub": "42"})
+    assert resolve_client_identity(_request({"Authorization": f"Bearer {token}"})) == "42"
+
+
+def test_identity_ignores_spoofable_header_and_query():
+    req = _request({"X-User-ID": "victim"}, query="user_id=victim")
+    assert extract_client_identifier(req) == "203.0.113.7"
+
+
+def test_identity_ignores_header_when_jwt_present():
+    token = create_access_token({"sub": "42"})
+    req = _request({"Authorization": f"Bearer {token}", "X-User-ID": "other"})
+    assert extract_client_identifier(req) == "42"
+
+
+def test_invalid_token_falls_back_to_ip():
+    assert resolve_client_identity(_request({"Authorization": "Bearer garbage"})) == "203.0.113.7"
+
+
 
 
 @pytest.fixture

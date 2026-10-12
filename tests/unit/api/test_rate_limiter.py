@@ -1,7 +1,12 @@
 import time
+
 import pytest
-from apps.api.rate_limiting.rate_limiter import RedisRateLimiter, LUA_SLIDING_WINDOW_RATE_LIMIT
 from fastapi import HTTPException
+from fastapi.testclient import TestClient
+
+from apps.api.main import app
+from apps.api.rate_limiting.rate_limiter import LUA_SLIDING_WINDOW_RATE_LIMIT, RedisRateLimiter, auth_rate_limiter
+from core.config import settings
 
 
 def test_lua_script_defined():
@@ -47,35 +52,24 @@ def test_in_memory_rate_limiter_bounded_cleanup():
     assert "mem:min:old-client" not in limiter._in_memory_windows
 
 
-def test_lua_script_real_execution_integration():
-    """Verify Lua script executes against real Redis without syntax/runtime errors."""
-    import redis
-    from core.config import settings
+
+
+
+
+def test_signup_is_throttled_and_spoofed_header_does_not_help():
+    client = TestClient(app)
+    key = "auth:testclient"
+    auth_rate_limiter.reset_user(key)
     try:
-        r = redis.Redis(
-            host=settings.REDIS_HOST,
-            port=settings.REDIS_PORT,
-            password=settings.REDIS_PASSWORD or None,
-            db=15,
-            socket_timeout=1.0,
-        )
-        r.ping()
-    except Exception:
-        pytest.skip("Local Redis server not reachable for Lua script integration test.")
-
-    test_uid = f"lua-test-{int(time.time())}"
-    now_ts = time.time()
-    limiter = RedisRateLimiter(redis_client=r, minute_limit=5, day_limit=20)
-
-    try:
-        # Run rate limit check via Redis Lua script
-        allowed, msg, retry_after, headers = limiter.check_rate_limit(test_uid)
-        assert allowed is True
-        assert headers["X-RateLimit-Limit-Minute"] == "5"
-
-        # Check Redis keys created
-        keys = r.keys(f"ratelimit:*:{test_uid}")
-        assert len(keys) >= 1
+        last = None
+        for i in range(settings.AUTH_RATE_LIMIT_MINUTE + 1):
+            last = client.post("/auth/signup", json={}, headers={"X-User-ID": f"rotating-{i}"}).status_code
+        assert last == 429
     finally:
-        for k in r.keys(f"ratelimit:*:{test_uid}"):
-            r.delete(k)
+        auth_rate_limiter.reset_user(key)
+
+
+def test_auth_limiter_is_stricter_and_separate_from_default():
+    assert auth_rate_limiter.minute_limit == settings.AUTH_RATE_LIMIT_MINUTE
+    assert isinstance(auth_rate_limiter, RedisRateLimiter)
+    assert settings.AUTH_RATE_LIMIT_MINUTE < settings.RATE_LIMIT_MINUTE

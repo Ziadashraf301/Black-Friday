@@ -1,7 +1,10 @@
 import pytest
-from apps.api.auth import get_optional_user, get_current_user
-from core.security import create_access_token
 from fastapi import HTTPException
+from fastapi.testclient import TestClient
+
+from apps.api.auth import get_current_user, get_optional_user
+from apps.api.main import app
+from core.security import create_access_token
 
 
 def test_get_optional_user_none_when_no_credentials():
@@ -27,3 +30,12 @@ def test_get_optional_user_returns_none_on_invalid_token():
 
     res = get_optional_user(credentials=FakeCreds())
     assert res is None
+
+
+def test_invalid_token_error_does_not_leak_exception_text():
+    resp = TestClient(app).get("/auth/me", headers={"Authorization": "Bearer not.a.jwt"})
+    assert resp.status_code == 401
+    body = resp.text
+    assert "Invalid or expired token." in body
+    for leaked in ("JWTError", "Not enough segments", "Invalid header", "Signature"):
+        assert leaked not in body
