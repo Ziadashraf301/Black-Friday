@@ -8,7 +8,7 @@ import json
 from typing import List, Optional
 
 import pandas as pd
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 
 from core.db.session import get_db_engine
 from core.logging import get_logger
@@ -63,6 +63,10 @@ class BaseRepository:
         """High-performance bulk insertion using PostgreSQL native COPY streaming (100x faster than to_sql multi)."""
         if table_name not in self.VALID_TABLES:
             raise ValueError(f"Unauthorized table insertion target: '{table_name}'")
+        # Never let the to_sql fallback create the table: pandas would pick its own types (TEXT JSON, DOUBLE,
+        # no primary key), which is how product_network_metrics drifted (CORE-17/18). The schema is Alembic's.
+        if not inspect(self.engine).has_table(table_name):
+            raise RuntimeError(f"Table '{table_name}' does not exist; run `make migrate` before loading data.")
 
         data = df.copy()
         # Ensure integer columns that might be float with NaNs (e.g. product_category_2/3) format as whole integers or \N
