@@ -4,16 +4,19 @@ Regression test for Fix 3.4:
 - First verify valid values accepted by RawTransactionSchema and CleanedTransactionSchema
 - Verify invalid values raise pandera SchemaError
 """
-import pytest
 import pandas as pd
+import pytest
 from pandera.errors import SchemaError
+
 from ml.features.data_contract import (
-    RawTransactionSchema,
-    CleanedTransactionSchema,
-    validate_raw_data,
-    validate_cleaned_data,
     VALID_STAY_YEARS,
+    CleanedTransactionSchema,
+    RawTransactionSchema,
+    validate_cleaned_data,
+    validate_raw_data,
 )
+
+pytestmark = pytest.mark.slow
 
 
 @pytest.fixture
@@ -73,6 +76,7 @@ def test_valid_stay_years_accepted_in_cleaned_contract(base_cleaned_row, stay_va
     assert validated["stay_in_current_city_years"].iloc[0] == stay_val
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("invalid_val", ["5", "4", "10", "unknown", "-1", "years"])
 def test_invalid_stay_years_rejected_in_raw_contract(base_raw_row, invalid_val):
     row = dict(base_raw_row)

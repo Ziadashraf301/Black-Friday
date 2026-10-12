@@ -111,6 +111,7 @@ def test_domain_error_from_model_surfaces_message(monkeypatch):
     assert "Missing required feature" in ei.value.message
 
 
+@pytest.mark.slow
 def test_plain_value_error_and_runtime_error_are_generic(monkeypatch):
     with pytest.raises(ValidationError) as ei:
         _estimate(monkeypatch, ValueError("onnx tensor shape (3,) at /models/x.onnx"))

@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from apps.api.main import app
@@ -29,6 +30,7 @@ def _headers():
     return {"Authorization": f"Bearer {create_access_token(ACCOUNT)}"}
 
 
+@pytest.mark.slow
 def test_predict_batch_ignores_body_demographics(monkeypatch):
     seen = {}
 

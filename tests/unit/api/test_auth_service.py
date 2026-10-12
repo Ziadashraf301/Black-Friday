@@ -16,6 +16,7 @@ def _repo(existing=None):
     return repo
 
 
+@pytest.mark.slow
 def test_signup_stores_normalized_email_and_checks_normalized():
     repo = _repo()
     out = AuthService.register_user(dict(SIGNUP), repo)

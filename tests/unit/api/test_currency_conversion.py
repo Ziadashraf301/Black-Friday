@@ -3,11 +3,15 @@ Regression test for Fix 9.4:
 - Centralize INR_TO_USD currency conversion constant in settings
 - Verify changing settings.INR_TO_USD proportionally changes model prediction prices
 """
-import pytest
 from unittest.mock import patch
+
 import pandas as pd
-from core.config import settings
+import pytest
+
 from apps.api.services.model_service import model_service
+from core.config import settings
+
+pytestmark = pytest.mark.slow
 
 
 @pytest.fixture(autouse=True)

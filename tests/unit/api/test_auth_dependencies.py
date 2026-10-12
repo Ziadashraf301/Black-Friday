@@ -7,6 +7,7 @@ from apps.api.main import app
 from core.security import create_access_token
 
 
+@pytest.mark.slow
 def test_get_optional_user_none_when_no_credentials():
     res = get_optional_user(credentials=None)
     assert res is None

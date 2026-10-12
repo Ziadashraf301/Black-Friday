@@ -15,7 +15,7 @@ markers = [
     "unit: fast tests with mocks only (no network, no live services)",
     "integration: needs live PostgreSQL / Redis / MLflow",
     "e2e: full API / graph flows",
-    "slow: takes more than ~10 seconds",
+    "slow: takes more than ~10 seconds, trains or loads a model, or imports a heavy library (mlflow, shap, evidently, pandera)",
     "benchmark: performance and latency benchmark tests",
 ]
 filterwarnings = [

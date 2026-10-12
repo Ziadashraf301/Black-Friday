@@ -1,10 +1,13 @@
 import pytest
+
 from core.security import (
     hash_password,
+    legacy_hash_password,
     verify_password,
     verify_password_with_upgrade,
-    legacy_hash_password,
 )
+
+pytestmark = pytest.mark.slow
 
 
 def test_hash_password_supports_long_passwords():

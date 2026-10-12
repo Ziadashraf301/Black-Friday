@@ -10,6 +10,8 @@ from reflex_app.state import CHECKOUT_NETWORK_ERROR, CartItem, ShoppingState  # 
 
 from core.config import settings
 
+pytestmark = pytest.mark.slow
+
 
 def test_authenticated_add_to_cart_uses_member_price():
     state = ShoppingState(_reflex_internal_init=True)

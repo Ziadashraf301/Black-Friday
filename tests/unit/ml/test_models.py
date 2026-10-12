@@ -29,6 +29,8 @@ from ml.models.regression import (
 from ml.serving.predictor import ONNXPredictor
 from ml.tracking.explainability import ModelExplainability
 
+pytestmark = pytest.mark.slow
+
 
 @pytest.fixture
 def train_data():

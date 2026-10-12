@@ -6,7 +6,10 @@ Validates:
   3. Safe fallback in offline mode.
 """
 import pytest
-from ai.observability.tracing import agent_tracer, AgentTracer
+
+from ai.observability.tracing import AgentTracer, agent_tracer
+
+pytestmark = pytest.mark.slow
 
 
 class TestMLflowGenAITracing:

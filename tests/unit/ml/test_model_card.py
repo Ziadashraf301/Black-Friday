@@ -4,8 +4,11 @@ Regression test for Fix 10.3:
 - List is derived dynamically from ml.models.regression.ALL_FEATURES.
 """
 import pytest
-from ml.tracking.model_card import ModelCardGenerator
+
 from ml.models.regression import ALL_FEATURES
+from ml.tracking.model_card import ModelCardGenerator
+
+pytestmark = pytest.mark.slow
 
 
 def test_model_card_generator_documents_all_10_features(tmp_path):

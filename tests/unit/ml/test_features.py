@@ -21,6 +21,8 @@ from ml.models.regression import (
     create_tree_preprocessor,
 )
 
+pytestmark = pytest.mark.slow
+
 
 @pytest.fixture
 def sample_transactions():

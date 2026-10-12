@@ -33,6 +33,7 @@ def test_rule_router_still_routes_benign_queries():
     assert decision.intent != IntentType.ADVERSARIAL_BLOCKED
 
 
+@pytest.mark.slow
 def test_jev_router_blocks_when_intent_choice_is_adversarial():
     router = JevApiRouter(api_key=None)
     router._client = SimpleNamespace(

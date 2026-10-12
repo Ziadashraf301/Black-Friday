@@ -13,6 +13,8 @@ import pytest
 from core.config import settings
 from ml.pipelines import common, monitor
 
+pytestmark = pytest.mark.slow
+
 
 @pytest.fixture
 def onnx_dir(tmp_path, monkeypatch):

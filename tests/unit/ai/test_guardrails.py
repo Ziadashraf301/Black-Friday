@@ -96,6 +96,7 @@ def test_engine_outage_still_passes_shopping_queries():
     assert all(engine.check_safety(t).is_safe for t in BENIGN)
 
 
+@pytest.mark.slow
 def test_router_fallback_uses_strict_rules_and_logs(caplog):
     router = JevApiRouter(api_key=None)
     router._client = FailingClient()
