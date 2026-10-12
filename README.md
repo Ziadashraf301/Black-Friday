@@ -1,11 +1,12 @@
 # Black Friday Sales Analysis & Production ML Platform
 
+[![CI](https://github.com/Ziadashraf301/Black-Friday/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/Ziadashraf301/Black-Friday/actions/workflows/ci-cd.yml)
 [![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![Reflex](https://img.shields.io/badge/Reflex-0.6.8-6E56CF?style=flat&logo=python&logoColor=white)](https://reflex.dev/)
+[![Reflex](https://img.shields.io/badge/Reflex-0.10.0-6E56CF?style=flat&logo=python&logoColor=white)](https://reflex.dev/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=flat&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![ONNX Runtime](https://img.shields.io/badge/ONNX_Runtime-1.17-005CED?style=flat&logo=onnx&logoColor=white)](https://onnxruntime.ai/)
-[![MLflow](https://img.shields.io/badge/MLflow-2.11-0194E2?style=flat&logo=mlflow&logoColor=white)](https://mlflow.org/)
+[![MLflow](https://img.shields.io/badge/MLflow-2.20-0194E2?style=flat&logo=mlflow&logoColor=white)](https://mlflow.org/)
 [![Locust](https://img.shields.io/badge/Locust-2.44-Green?style=flat&logo=loadrunner&logoColor=white)](https://locust.io/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
 
@@ -201,9 +202,10 @@ Comparing initial benchmark logs against latest Redis-cached and ONNX-vectorized
 
 - **FastAPI Core Engine (`apps/api/main.py`)**: Modular application lifecycle with strict dependency injection (`apps/api/dependencies.py`).
 - **REST Domain Services (`apps/api/routes/`)**:
-  - `/api/v1/auth`: JWT user registration, login authentication, and bcrypt password verification.
-  - `/api/v1/shopper`: Shopper storefront catalog browsing, ONNX price predictions, basket management, and order placement.
-  - `/api/v1/analytics`: Executive KPI summaries (revenue, AOV, order volume) and demographic breakdown distributions.
+  - `/auth`: JWT user registration, login authentication, and bcrypt password verification.
+  - `/shopper`: Shopper storefront catalog browsing, ONNX price predictions, basket management, and order placement.
+  - `/analytics`: Executive KPI summaries (revenue, AOV, order volume) and demographic breakdown distributions.
+  - `/bot`: AI shopping assistant (HTTP and the `/bot/live-ws` WebSocket).
 
 ---
 
@@ -211,8 +213,8 @@ Comparing initial benchmark logs against latest Redis-cached and ONNX-vectorized
 
 ![DevOps CI/CD Infrastructure](docs/images/devops_cicd_infrastructure.png)
 
-- **Multi-Container Docker Composition (`docker-compose.yml`)**: Orchestrates `postgres` (port 5432), `minio` (ports 9000/9001), `mlflow` (port 5000), `model-api` (port 8000), and `reflex-ui` (ports 3000/8001).
-- **GitHub Actions CI/CD Pipeline (`.github/workflows/ci-cd.yml`)**: Automated code quality verification (`flake8`, `black`), Pytest suite execution, and Docker build verification.
+- **Multi-Container Docker Composition (`docker-compose.yml`)**: Orchestrates `postgres` (port 5432), `minio` (ports 9000/9001, with a one-shot `minio-init` bucket job; `minio` and `mc` are pinned to release tags), `mlflow` (port 5000), `redis` (port 6379), `model-api` (port 8000), and `reflex-ui` (ports 3000/8001).
+- **GitHub Actions CI/CD Pipeline (`.github/workflows/ci-cd.yml`)**: On every push and pull request to `main`: `make lint-ci` (flake8, black, isort on `ai/` and `core/`, the directories that are lint-clean so far), the unit tests (`tests/unit`, `tests/load`) and the architecture tests (`tests/architecture`), each test with a 60s timeout. Integration and e2e tests need the live stack and run locally. CI does not build the Docker images.
 
 ---
 
@@ -223,6 +225,36 @@ Comparing initial benchmark logs against latest Redis-cached and ONNX-vectorized
 The platform features an interactive, reactive web UI built entirely in Python using **Reflex** (`apps/reflex_app`).
 
 - **Zero DB/ML Coupling**: Reflex state handlers consume backend APIs exclusively via HTTP REST endpoints (`http://localhost:8000`).
+
+---
+
+## Security Hardening
+
+Fixed during the code review (details and commit hashes in [docs/REVIEW_LOG.md](docs/REVIEW_LOG.md)):
+
+- **JWT secret enforcement**: when `ENVIRONMENT` is not a dev environment, startup fails if `SECRET_KEY`, `POSTGRES_PASSWORD` or `MINIO_ROOT_PASSWORD` still has its default (SEC-1). Tokens carry `iss`/`aud` claims, and JWT errors no longer echo exception text to the client (SEC-6, SEC-7).
+- **Rate limits**: Redis sliding-window limiter, per minute and per day (defaults 60/min and 1000/day; 10/min and 200/day on `/auth/login` and `/auth/signup`, which had no limit before) (SEC-4).
+- **Per-guest identity**: unauthenticated assistant users get an HMAC-derived `guest_<hex>` id from the peer IP and a validated session id, and the Reflex client sends a random per-browser session id, so strangers no longer share one `guest_user` (SEC-8, UI-1).
+- **No trusted client IDs**: rate limiting and the ban middleware no longer trust the caller-supplied `X-User-ID` header or `user_id` parameter; they use the verified JWT subject or the client address (SEC-2, SEC-3, SEC-5).
+- **Known gap**: `X-Forwarded-For` / trusted-proxy handling (SEC-9) is planned for round 2, so behind a reverse proxy all callers share the proxy address for limits and bans.
+
+---
+
+## Engineering Quality
+
+A structured code review of the whole repository found **105 findings across 10 areas: 100 fixed and 5 deferred** to a second round (4 rated high, all fixed). One commit per finding, each fix with a test where practical. The test suite is **530 tests**, all passing at the end of round 1. The full log, baseline and before/after metrics are in [docs/REVIEW_LOG.md](docs/REVIEW_LOG.md); the runbook is [docs/REVIEW_PLAN.md](docs/REVIEW_PLAN.md).
+
+Tests are split by what each one needs, under `tests/`:
+
+| Folder | Needs | Command |
+| :--- | :--- | :--- |
+| `tests/unit/` (`core`, `ml`, `ai`, `api`, `ui`) | Mocks only, no network | `make test-unit` (fast), `make test-slow` (the `@slow` ones) |
+| `tests/integration/` | Live PostgreSQL / Redis / MLflow | `make test-integration` |
+| `tests/e2e/` | Full API / LangGraph flows, real LLM calls | `make test-e2e` |
+| `tests/architecture/` | Nothing (AST layering checks) | runs with `make test-unit` |
+| `tests/load/` | Locust load test and its helpers | see the Locust section below |
+
+`make test` runs all of them. `make lint` runs flake8, black and isort on the whole repo; `make lint-ci` limits that to `ai/` and `core/`, which is what CI enforces.
 
 ---
 
