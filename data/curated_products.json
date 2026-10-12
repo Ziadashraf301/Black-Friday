@@ -32,14 +32,6 @@
         "price": 165.0,
         "lift": 1.6,
         "confidence": 0.44
-      },
-      {
-        "product_id": "P00112142",
-        "name": "Pastel Retro Varsity Bomber Jacket",
-        "image_url": "/products/P00112142.jpg",
-        "price": 89.0,
-        "lift": 1.72,
-        "confidence": 0.46
       }
     ],
     "item2vec_similars": [
@@ -93,11 +85,11 @@
     "order_count": 1470,
     "apriori_bundles": [
       {
-        "product_id": "P00046742",
-        "name": "Boho Gilded Velvet Embroidered Tunic",
-        "image_url": "/products/P00046742.jpg",
-        "price": 64.0,
-        "lift": 1.68,
+        "product_id": "P00237542",
+        "name": "Vintage Patchwork Denim Trucker Jacket",
+        "image_url": "/products/P00237542.jpg",
+        "price": 78.0,
+        "lift": 1.75,
         "confidence": 0.41
       },
       {
@@ -109,11 +101,11 @@
         "confidence": 0.41
       },
       {
-        "product_id": "P00110742",
-        "name": "Distressed Saddle Brown Aviator Bomber",
-        "image_url": "/products/P00110742.jpg",
-        "price": 165.0,
-        "lift": 1.48,
+        "product_id": "P00046742",
+        "name": "Boho Gilded Velvet Embroidered Tunic",
+        "image_url": "/products/P00046742.jpg",
+        "price": 64.0,
+        "lift": 1.68,
         "confidence": 0.41
       }
     ],
@@ -195,14 +187,14 @@
         "product_id": "P00110942",
         "name": "Pleated Silk Midi Wrap Skirt",
         "image_url": "/products/P00110942.jpg",
-        "price": 69.0,
+        "price": 65.0,
         "similarity": 0.953
       },
       {
         "product_id": "P00102642",
         "name": "Vintage Suede Penny Loafers",
         "image_url": "/products/P00102642.jpg",
-        "price": 95.0,
+        "price": 79.0,
         "similarity": 0.946
       }
     ]
@@ -247,14 +239,14 @@
         "product_id": "P00059442",
         "name": "Rugged Espresso Leather Chelsea Boots",
         "image_url": "/products/P00059442.jpg",
-        "price": 139.0,
+        "price": 135.0,
         "similarity": 0.974
       },
       {
         "product_id": "P00051442",
         "name": "Wide-Leg Sailor Front Indigo Trousers",
         "image_url": "/products/P00051442.jpg",
-        "price": 74.0,
+        "price": 59.0,
         "similarity": 0.961
       },
       {
@@ -290,32 +282,7 @@
     ],
     "image_url": "/products/P00184942.jpg",
     "order_count": 1440,
-    "apriori_bundles": [
-      {
-        "product_id": "P00110742",
-        "name": "Distressed Saddle Brown Aviator Bomber",
-        "image_url": "/products/P00110742.jpg",
-        "price": 165.0,
-        "lift": 1.75,
-        "confidence": 0.42
-      },
-      {
-        "product_id": "P00265242",
-        "name": "Chunky Woven Aran Cable Knit Cardigan",
-        "image_url": "/products/P00265242.jpg",
-        "price": 75.0,
-        "lift": 1.75,
-        "confidence": 0.42
-      },
-      {
-        "product_id": "P00059442",
-        "name": "Rugged Espresso Leather Chelsea Boots",
-        "image_url": "/products/P00059442.jpg",
-        "price": 135.0,
-        "lift": 1.75,
-        "confidence": 0.42
-      }
-    ],
+    "apriori_bundles": [],
     "item2vec_similars": [
       {
         "product_id": "P00147942",
@@ -365,24 +332,7 @@
     ],
     "image_url": "/products/P00265242.jpg",
     "order_count": 1880,
-    "apriori_bundles": [
-      {
-        "product_id": "P00110742",
-        "name": "Distressed Saddle Brown Aviator Bomber",
-        "image_url": "/products/P00110742.jpg",
-        "price": 165.0,
-        "lift": 1.75,
-        "confidence": 0.42
-      },
-      {
-        "product_id": "P00059442",
-        "name": "Rugged Espresso Leather Chelsea Boots",
-        "image_url": "/products/P00059442.jpg",
-        "price": 135.0,
-        "lift": 1.75,
-        "confidence": 0.42
-      }
-    ],
+    "apriori_bundles": [],
     "item2vec_similars": [
       {
         "product_id": "P00278642",
@@ -402,7 +352,7 @@
         "product_id": "P00220442",
         "name": "Retro Suede Fringe Western Overshirt",
         "image_url": "/products/P00220442.jpg",
-        "price": 79.0,
+        "price": 95.0,
         "similarity": 0.916
       }
     ]
@@ -455,7 +405,7 @@
         "product_id": "P00110942",
         "name": "Pleated Silk Midi Wrap Skirt",
         "image_url": "/products/P00110942.jpg",
-        "price": 69.0,
+        "price": 65.0,
         "similarity": 0.97
       },
       {
@@ -503,20 +453,20 @@
     "order_count": 1406,
     "apriori_bundles": [
       {
-        "product_id": "P00265242",
-        "name": "Chunky Woven Aran Cable Knit Cardigan",
-        "image_url": "/products/P00265242.jpg",
-        "price": 75.0,
-        "lift": 1.35,
-        "confidence": 0.43
-      },
-      {
         "product_id": "P00058042",
         "name": "Terracotta High-Waist Trouser Set",
         "image_url": "/products/P00058042.jpg",
         "price": 68.0,
         "lift": 1.67,
         "confidence": 0.4
+      },
+      {
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "lift": 1.35,
+        "confidence": 0.43
       }
     ],
     "item2vec_similars": [
@@ -531,7 +481,7 @@
         "product_id": "P00051442",
         "name": "Wide-Leg Sailor Front Indigo Trousers",
         "image_url": "/products/P00051442.jpg",
-        "price": 74.0,
+        "price": 59.0,
         "similarity": 0.972
       },
       {
@@ -569,20 +519,20 @@
     "order_count": 1438,
     "apriori_bundles": [
       {
-        "product_id": "P00057642",
-        "name": "Heritage Pleated Pinafore Dress",
-        "image_url": "/products/P00057642.jpg",
-        "price": 79.0,
-        "lift": 1.68,
-        "confidence": 0.42
-      },
-      {
         "product_id": "P00145042",
         "name": "Maritime Navy Heavy Wool Peacoat",
         "image_url": "/products/P00145042.jpg",
         "price": 105.0,
         "lift": 1.72,
         "confidence": 0.41
+      },
+      {
+        "product_id": "P00057642",
+        "name": "Heritage Pleated Pinafore Dress",
+        "image_url": "/products/P00057642.jpg",
+        "price": 79.0,
+        "lift": 1.68,
+        "confidence": 0.42
       }
     ],
     "item2vec_similars": [
@@ -636,20 +586,20 @@
     "order_count": 1406,
     "apriori_bundles": [
       {
-        "product_id": "P00057642",
-        "name": "Heritage Pleated Pinafore Dress",
-        "image_url": "/products/P00057642.jpg",
-        "price": 79.0,
-        "lift": 1.71,
-        "confidence": 0.43
-      },
-      {
         "product_id": "P00046742",
         "name": "Boho Gilded Velvet Embroidered Tunic",
         "image_url": "/products/P00046742.jpg",
         "price": 64.0,
         "lift": 1.72,
         "confidence": 0.42
+      },
+      {
+        "product_id": "P00057642",
+        "name": "Heritage Pleated Pinafore Dress",
+        "image_url": "/products/P00057642.jpg",
+        "price": 79.0,
+        "lift": 1.71,
+        "confidence": 0.43
       }
     ],
     "item2vec_similars": [
@@ -664,7 +614,7 @@
         "product_id": "P00117942",
         "name": "Hand-Knitted Nordic Wool Fair Isle Sweater",
         "image_url": "/products/P00117942.jpg",
-        "price": 110.0,
+        "price": 85.0,
         "similarity": 0.91
       },
       {
@@ -703,20 +653,28 @@
     "order_count": 1394,
     "apriori_bundles": [
       {
-        "product_id": "P00046742",
-        "name": "Hand-Tooled Heritage Chelsea Boots",
-        "image_url": "/products/P00046742.jpg",
-        "price": 139.0,
-        "lift": 1.65,
-        "confidence": 0.42
+        "product_id": "P00057642",
+        "name": "Heritage Pleated Pinafore Dress",
+        "image_url": "/products/P00057642.jpg",
+        "price": 79.0,
+        "lift": 1.75,
+        "confidence": 0.44
       },
       {
-        "product_id": "P00051442",
-        "name": "Wide-Leg Sailor Front Indigo Trousers",
-        "image_url": "/products/P00051442.jpg",
-        "price": 59.0,
-        "lift": 1.58,
-        "confidence": 0.39
+        "product_id": "P00025442",
+        "name": "Artisan Paisley Silk Kimono Shirt",
+        "image_url": "/products/P00025442.jpg",
+        "price": 49.9,
+        "lift": 1.51,
+        "confidence": 0.41
+      },
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "lift": 1.49,
+        "confidence": 0.41
       }
     ],
     "item2vec_similars": [
@@ -769,20 +727,12 @@
     "order_count": 1383,
     "apriori_bundles": [
       {
-        "product_id": "P00102642",
-        "name": "Vintage Suede Penny Loafers",
-        "image_url": "/products/P00102642.jpg",
-        "price": 79.0,
-        "lift": 1.72,
-        "confidence": 0.45
-      },
-      {
-        "product_id": "P00110842",
-        "name": "Oversized Herringbone Wool Overcoat",
-        "image_url": "/products/P00110842.jpg",
-        "price": 145.0,
-        "lift": 1.68,
-        "confidence": 0.41
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "lift": 1.32,
+        "confidence": 0.42
       }
     ],
     "item2vec_similars": [
@@ -804,7 +754,7 @@
         "product_id": "P00220442",
         "name": "Retro Suede Fringe Western Overshirt",
         "image_url": "/products/P00220442.jpg",
-        "price": 79.0,
+        "price": 95.0,
         "similarity": 0.89
       }
     ]
@@ -834,30 +784,13 @@
     ],
     "image_url": "/products/P00117942.jpg",
     "order_count": 1364,
-    "apriori_bundles": [
-      {
-        "product_id": "P00010742",
-        "name": "Waxed Canvas Field Explorer Parka",
-        "image_url": "/products/P00010742.jpg",
-        "price": 125.0,
-        "lift": 1.84,
-        "confidence": 0.48
-      },
-      {
-        "product_id": "P00046742",
-        "name": "Hand-Tooled Heritage Chelsea Boots",
-        "image_url": "/products/P00046742.jpg",
-        "price": 139.0,
-        "lift": 1.63,
-        "confidence": 0.4
-      }
-    ],
+    "apriori_bundles": [],
     "item2vec_similars": [
       {
         "product_id": "P00102642",
         "name": "Vintage Suede Penny Loafers",
         "image_url": "/products/P00102642.jpg",
-        "price": 95.0,
+        "price": 79.0,
         "similarity": 0.939
       },
       {
@@ -907,16 +840,16 @@
         "name": "Artisan Paisley Silk Kimono Shirt",
         "image_url": "/products/P00025442.jpg",
         "price": 49.9,
-        "lift": 1.77,
-        "confidence": 0.46
+        "lift": 1.58,
+        "confidence": 0.43
       },
       {
-        "product_id": "P00117442",
-        "name": "Artisan Floral Embroidered Cardigan",
-        "image_url": "/products/P00117442.jpg",
-        "price": 69.0,
-        "lift": 1.62,
-        "confidence": 0.38
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "lift": 1.57,
+        "confidence": 0.43
       }
     ],
     "item2vec_similars": [
@@ -967,30 +900,13 @@
     ],
     "image_url": "/products/P00010742.jpg",
     "order_count": 1350,
-    "apriori_bundles": [
-      {
-        "product_id": "P00117942",
-        "name": "Hand-Knitted Nordic Wool Fair Isle Sweater",
-        "image_url": "/products/P00117942.jpg",
-        "price": 85.0,
-        "lift": 1.84,
-        "confidence": 0.48
-      },
-      {
-        "product_id": "P00046742",
-        "name": "Hand-Tooled Heritage Chelsea Boots",
-        "image_url": "/products/P00046742.jpg",
-        "price": 139.0,
-        "lift": 1.7,
-        "confidence": 0.43
-      }
-    ],
+    "apriori_bundles": [],
     "item2vec_similars": [
       {
         "product_id": "P00051442",
         "name": "Wide-Leg Sailor Front Indigo Trousers",
         "image_url": "/products/P00051442.jpg",
-        "price": 74.0,
+        "price": 59.0,
         "similarity": 0.932
       },
       {
@@ -1035,20 +951,12 @@
     "order_count": 1282,
     "apriori_bundles": [
       {
-        "product_id": "P00046742",
-        "name": "Hand-Tooled Heritage Chelsea Boots",
-        "image_url": "/products/P00046742.jpg",
-        "price": 139.0,
-        "lift": 1.75,
-        "confidence": 0.44
-      },
-      {
-        "product_id": "P00051442",
-        "name": "Wide-Leg Sailor Front Indigo Trousers",
-        "image_url": "/products/P00051442.jpg",
-        "price": 59.0,
-        "lift": 1.6,
-        "confidence": 0.4
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "lift": 1.33,
+        "confidence": 0.42
       }
     ],
     "item2vec_similars": [
@@ -1101,20 +1009,12 @@
     "order_count": 1281,
     "apriori_bundles": [
       {
-        "product_id": "P00255842",
-        "name": "Burgundy Velvet Evening Blazer",
-        "image_url": "/products/P00255842.jpg",
-        "price": 110.0,
-        "lift": 1.68,
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "lift": 1.52,
         "confidence": 0.41
-      },
-      {
-        "product_id": "P00102642",
-        "name": "Vintage Suede Penny Loafers",
-        "image_url": "/products/P00102642.jpg",
-        "price": 79.0,
-        "lift": 1.74,
-        "confidence": 0.43
       }
     ],
     "item2vec_similars": [
@@ -1122,7 +1022,7 @@
         "product_id": "P00110942",
         "name": "Pleated Silk Midi Wrap Skirt",
         "image_url": "/products/P00110942.jpg",
-        "price": 69.0,
+        "price": 65.0,
         "similarity": 0.94
       },
       {
@@ -1167,20 +1067,12 @@
     "order_count": 1260,
     "apriori_bundles": [
       {
-        "product_id": "P00110942",
-        "name": "Pleated Silk Midi Wrap Skirt",
-        "image_url": "/products/P00110942.jpg",
-        "price": 65.0,
-        "lift": 1.62,
-        "confidence": 0.38
-      },
-      {
-        "product_id": "P00057642",
-        "name": "Heritage Pleated Pinafore Dress",
-        "image_url": "/products/P00057642.jpg",
-        "price": 79.0,
-        "lift": 1.55,
-        "confidence": 0.36
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "lift": 1.31,
+        "confidence": 0.42
       }
     ],
     "item2vec_similars": [
@@ -1234,20 +1126,12 @@
     "order_count": 1249,
     "apriori_bundles": [
       {
-        "product_id": "P00237542",
-        "name": "Vintage Patchwork Denim Trucker Jacket",
-        "image_url": "/products/P00237542.jpg",
-        "price": 78.0,
-        "lift": 1.58,
-        "confidence": 0.39
-      },
-      {
-        "product_id": "P00117942",
-        "name": "Hand-Knitted Nordic Wool Fair Isle Sweater",
-        "image_url": "/products/P00117942.jpg",
-        "price": 85.0,
-        "lift": 1.64,
-        "confidence": 0.41
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "lift": 1.26,
+        "confidence": 0.4
       }
     ],
     "item2vec_similars": [
@@ -1255,7 +1139,7 @@
         "product_id": "P00059442",
         "name": "Rugged Espresso Leather Chelsea Boots",
         "image_url": "/products/P00059442.jpg",
-        "price": 139.0,
+        "price": 135.0,
         "similarity": 0.972
       },
       {
@@ -1302,20 +1186,20 @@
     "order_count": 1246,
     "apriori_bundles": [
       {
-        "product_id": "P00255842",
-        "name": "Burgundy Velvet Evening Blazer",
-        "image_url": "/products/P00255842.jpg",
-        "price": 110.0,
-        "lift": 1.72,
-        "confidence": 0.45
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "lift": 1.6,
+        "confidence": 0.44
       },
       {
-        "product_id": "P00110842",
-        "name": "Oversized Herringbone Wool Overcoat",
-        "image_url": "/products/P00110842.jpg",
-        "price": 145.0,
-        "lift": 1.74,
-        "confidence": 0.43
+        "product_id": "P00025442",
+        "name": "Artisan Paisley Silk Kimono Shirt",
+        "image_url": "/products/P00025442.jpg",
+        "price": 49.9,
+        "lift": 1.5,
+        "confidence": 0.41
       }
     ],
     "item2vec_similars": [
@@ -1330,7 +1214,7 @@
         "product_id": "P00117942",
         "name": "Hand-Knitted Nordic Wool Fair Isle Sweater",
         "image_url": "/products/P00117942.jpg",
-        "price": 110.0,
+        "price": 85.0,
         "similarity": 0.939
       },
       {
@@ -1373,9 +1257,9 @@
         "product_id": "P00265242",
         "name": "Chunky Woven Aran Cable Knit Cardigan",
         "image_url": "/products/P00265242.jpg",
-        "price": 89.0,
-        "lift": 1.5489,
-        "confidence": 0.4943
+        "price": 75.0,
+        "lift": 1.55,
+        "confidence": 0.49
       }
     ],
     "item2vec_similars": [
@@ -1397,7 +1281,7 @@
         "product_id": "P00220442",
         "name": "Retro Suede Fringe Western Overshirt",
         "image_url": "/products/P00220442.jpg",
-        "price": 79.0,
+        "price": 95.0,
         "similarity": 0.836
       }
     ]
@@ -1433,33 +1317,25 @@
         "product_id": "P00237542",
         "name": "Vintage Patchwork Denim Trucker Jacket",
         "image_url": "/products/P00237542.jpg",
-        "price": 98.0,
-        "lift": 1.7286,
-        "confidence": 0.4091
-      },
-      {
-        "product_id": "P00025442",
-        "name": "Artisan Paisley Silk Kimono Shirt",
-        "image_url": "/products/P00025442.jpg",
-        "price": 49.9,
-        "lift": 1.4861,
-        "confidence": 0.4074
-      },
-      {
-        "product_id": "P00110742",
-        "name": "Distressed Saddle Brown Aviator Bomber",
-        "image_url": "/products/P00110742.jpg",
-        "price": 165.0,
-        "lift": 1.4828,
-        "confidence": 0.4058
+        "price": 78.0,
+        "lift": 1.73,
+        "confidence": 0.41
       },
       {
         "product_id": "P00046742",
         "name": "Boho Gilded Velvet Embroidered Tunic",
         "image_url": "/products/P00046742.jpg",
         "price": 64.0,
-        "lift": 1.6488,
-        "confidence": 0.4025
+        "lift": 1.65,
+        "confidence": 0.4
+      },
+      {
+        "product_id": "P00025442",
+        "name": "Artisan Paisley Silk Kimono Shirt",
+        "image_url": "/products/P00025442.jpg",
+        "price": 49.9,
+        "lift": 1.49,
+        "confidence": 0.41
       }
     ],
     "item2vec_similars": [
@@ -1481,7 +1357,7 @@
         "product_id": "P00145042",
         "name": "Maritime Navy Heavy Wool Peacoat",
         "image_url": "/products/P00145042.jpg",
-        "price": 95.0,
+        "price": 105.0,
         "similarity": 0.909
       }
     ]
@@ -1518,7 +1394,7 @@
         "product_id": "P00117442",
         "name": "Artisan Floral Embroidered Cardigan",
         "image_url": "/products/P00117442.jpg",
-        "price": 92.0,
+        "price": 69.0,
         "similarity": 0.901
       },
       {
@@ -1567,20 +1443,20 @@
     "order_count": 1204,
     "apriori_bundles": [
       {
-        "product_id": "P00265242",
-        "name": "Chunky Woven Aran Cable Knit Cardigan",
-        "image_url": "/products/P00265242.jpg",
-        "price": 89.0,
-        "lift": 1.3117,
-        "confidence": 0.4186
-      },
-      {
         "product_id": "P00058042",
         "name": "Terracotta High-Waist Trouser Set",
         "image_url": "/products/P00058042.jpg",
         "price": 68.0,
-        "lift": 1.6619,
-        "confidence": 0.4012
+        "lift": 1.66,
+        "confidence": 0.4
+      },
+      {
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "lift": 1.31,
+        "confidence": 0.42
       }
     ],
     "item2vec_similars": [
@@ -1588,7 +1464,7 @@
         "product_id": "P00059442",
         "name": "Rugged Espresso Leather Chelsea Boots",
         "image_url": "/products/P00059442.jpg",
-        "price": 139.0,
+        "price": 135.0,
         "similarity": 0.936
       },
       {
@@ -1647,14 +1523,14 @@
         "product_id": "P00059442",
         "name": "Rugged Espresso Leather Chelsea Boots",
         "image_url": "/products/P00059442.jpg",
-        "price": 139.0,
+        "price": 135.0,
         "similarity": 0.92
       },
       {
         "product_id": "P00051442",
         "name": "Wide-Leg Sailor Front Indigo Trousers",
         "image_url": "/products/P00051442.jpg",
-        "price": 74.0,
+        "price": 59.0,
         "similarity": 0.911
       }
     ]
@@ -1687,28 +1563,28 @@
     "order_count": 1200,
     "apriori_bundles": [
       {
-        "product_id": "P00265242",
-        "name": "Chunky Woven Aran Cable Knit Cardigan",
-        "image_url": "/products/P00265242.jpg",
-        "price": 89.0,
-        "lift": 1.3344,
-        "confidence": 0.4258
-      },
-      {
         "product_id": "P00058042",
         "name": "Terracotta High-Waist Trouser Set",
         "image_url": "/products/P00058042.jpg",
         "price": 68.0,
-        "lift": 1.7503,
-        "confidence": 0.4225
+        "lift": 1.75,
+        "confidence": 0.42
       },
       {
         "product_id": "P00059442",
         "name": "Rugged Espresso Leather Chelsea Boots",
         "image_url": "/products/P00059442.jpg",
-        "price": 139.0,
-        "lift": 1.7039,
-        "confidence": 0.4067
+        "price": 135.0,
+        "lift": 1.7,
+        "confidence": 0.41
+      },
+      {
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "lift": 1.33,
+        "confidence": 0.43
       }
     ],
     "item2vec_similars": [
@@ -1716,7 +1592,7 @@
         "product_id": "P00051442",
         "name": "Wide-Leg Sailor Front Indigo Trousers",
         "image_url": "/products/P00051442.jpg",
-        "price": 74.0,
+        "price": 59.0,
         "similarity": 0.962
       },
       {
@@ -1766,28 +1642,28 @@
     "order_count": 1197,
     "apriori_bundles": [
       {
-        "product_id": "P00265242",
-        "name": "Chunky Woven Aran Cable Knit Cardigan",
-        "image_url": "/products/P00265242.jpg",
-        "price": 89.0,
-        "lift": 1.4031,
-        "confidence": 0.4478
-      },
-      {
         "product_id": "P00059442",
         "name": "Rugged Espresso Leather Chelsea Boots",
         "image_url": "/products/P00059442.jpg",
-        "price": 139.0,
-        "lift": 1.8517,
-        "confidence": 0.4419
+        "price": 135.0,
+        "lift": 1.85,
+        "confidence": 0.44
       },
       {
         "product_id": "P00058042",
         "name": "Terracotta High-Waist Trouser Set",
         "image_url": "/products/P00058042.jpg",
         "price": 68.0,
-        "lift": 1.7097,
-        "confidence": 0.4127
+        "lift": 1.71,
+        "confidence": 0.41
+      },
+      {
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "lift": 1.4,
+        "confidence": 0.45
       }
     ],
     "item2vec_similars": [
@@ -1795,7 +1671,7 @@
         "product_id": "P00059442",
         "name": "Rugged Espresso Leather Chelsea Boots",
         "image_url": "/products/P00059442.jpg",
-        "price": 139.0,
+        "price": 135.0,
         "similarity": 0.965
       },
       {
@@ -1845,9 +1721,9 @@
         "product_id": "P00265242",
         "name": "Chunky Woven Aran Cable Knit Cardigan",
         "image_url": "/products/P00265242.jpg",
-        "price": 89.0,
-        "lift": 1.2988,
-        "confidence": 0.4145
+        "price": 75.0,
+        "lift": 1.3,
+        "confidence": 0.41
       }
     ],
     "item2vec_similars": [
@@ -1903,44 +1779,28 @@
     "order_count": 1178,
     "apriori_bundles": [
       {
-        "product_id": "P00110742",
-        "name": "Distressed Saddle Brown Aviator Bomber",
-        "image_url": "/products/P00110742.jpg",
-        "price": 165.0,
-        "lift": 1.7249,
-        "confidence": 0.472
-      },
-      {
         "product_id": "P00057642",
         "name": "Heritage Pleated Pinafore Dress",
         "image_url": "/products/P00057642.jpg",
         "price": 79.0,
-        "lift": 1.8575,
-        "confidence": 0.4635
-      },
-      {
-        "product_id": "P00025442",
-        "name": "Artisan Paisley Silk Kimono Shirt",
-        "image_url": "/products/P00025442.jpg",
-        "price": 49.9,
-        "lift": 1.638,
-        "confidence": 0.4491
-      },
-      {
-        "product_id": "P00112142",
-        "name": "Pastel Retro Varsity Bomber Jacket",
-        "image_url": "/products/P00112142.jpg",
-        "price": 89.0,
-        "lift": 1.6264,
-        "confidence": 0.4312
+        "lift": 1.86,
+        "confidence": 0.46
       },
       {
         "product_id": "P00237542",
         "name": "Vintage Patchwork Denim Trucker Jacket",
         "image_url": "/products/P00237542.jpg",
-        "price": 98.0,
-        "lift": 1.7291,
-        "confidence": 0.4092
+        "price": 78.0,
+        "lift": 1.73,
+        "confidence": 0.41
+      },
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "lift": 1.73,
+        "confidence": 0.47
       }
     ],
     "item2vec_similars": [
@@ -1994,44 +1854,28 @@
     "order_count": 1152,
     "apriori_bundles": [
       {
+        "product_id": "P00114942",
+        "name": "Bohemian Tiered Linen Maxi Dress",
+        "image_url": "/products/P00114942.jpg",
+        "price": 79.0,
+        "lift": 2.03,
+        "confidence": 0.41
+      },
+      {
         "product_id": "P00057642",
         "name": "Heritage Pleated Pinafore Dress",
         "image_url": "/products/P00057642.jpg",
         "price": 79.0,
-        "lift": 2.0107,
-        "confidence": 0.5017
+        "lift": 2.01,
+        "confidence": 0.5
       },
       {
         "product_id": "P00145042",
         "name": "Maritime Navy Heavy Wool Peacoat",
         "image_url": "/products/P00145042.jpg",
-        "price": 149.0,
-        "lift": 1.9458,
-        "confidence": 0.4644
-      },
-      {
-        "product_id": "P00237542",
-        "name": "Vintage Patchwork Denim Trucker Jacket",
-        "image_url": "/products/P00237542.jpg",
-        "price": 98.0,
-        "lift": 1.9406,
-        "confidence": 0.4592
-      },
-      {
-        "product_id": "P00046742",
-        "name": "Boho Gilded Velvet Embroidered Tunic",
-        "image_url": "/products/P00046742.jpg",
-        "price": 64.0,
-        "lift": 1.8492,
-        "confidence": 0.4514
-      },
-      {
-        "product_id": "P00110742",
-        "name": "Distressed Saddle Brown Aviator Bomber",
-        "image_url": "/products/P00110742.jpg",
-        "price": 165.0,
-        "lift": 1.5988,
-        "confidence": 0.4375
+        "price": 105.0,
+        "lift": 1.95,
+        "confidence": 0.46
       }
     ],
     "item2vec_similars": [
@@ -2083,16 +1927,7 @@
     ],
     "image_url": "/products/P00000142.jpg",
     "order_count": 1152,
-    "apriori_bundles": [
-      {
-        "product_id": "P00110742",
-        "name": "Distressed Saddle Brown Aviator Bomber",
-        "image_url": "/products/P00110742.jpg",
-        "price": 165.0,
-        "lift": 1.65,
-        "confidence": 0.42
-      }
-    ],
+    "apriori_bundles": [],
     "item2vec_similars": [
       {
         "product_id": "P00034742",
@@ -2143,12 +1978,28 @@
     "order_count": 1131,
     "apriori_bundles": [
       {
+        "product_id": "P00025442",
+        "name": "Artisan Paisley Silk Kimono Shirt",
+        "image_url": "/products/P00025442.jpg",
+        "price": 49.9,
+        "lift": 1.69,
+        "confidence": 0.46
+      },
+      {
         "product_id": "P00110742",
         "name": "Distressed Saddle Brown Aviator Bomber",
         "image_url": "/products/P00110742.jpg",
         "price": 165.0,
-        "lift": 1.65,
-        "confidence": 0.42
+        "lift": 1.66,
+        "confidence": 0.45
+      },
+      {
+        "product_id": "P00057642",
+        "name": "Heritage Pleated Pinafore Dress",
+        "image_url": "/products/P00057642.jpg",
+        "price": 79.0,
+        "lift": 1.66,
+        "confidence": 0.41
       }
     ],
     "item2vec_similars": [
@@ -2202,11 +2053,27 @@
     "order_count": 1111,
     "apriori_bundles": [
       {
-        "product_id": "P00110742",
-        "name": "Distressed Saddle Brown Aviator Bomber",
-        "image_url": "/products/P00110742.jpg",
-        "price": 165.0,
-        "lift": 1.65,
+        "product_id": "P00237542",
+        "name": "Vintage Patchwork Denim Trucker Jacket",
+        "image_url": "/products/P00237542.jpg",
+        "price": 78.0,
+        "lift": 1.85,
+        "confidence": 0.44
+      },
+      {
+        "product_id": "P00057642",
+        "name": "Heritage Pleated Pinafore Dress",
+        "image_url": "/products/P00057642.jpg",
+        "price": 79.0,
+        "lift": 1.74,
+        "confidence": 0.43
+      },
+      {
+        "product_id": "P00184942",
+        "name": "Heritage Olive Military Utility Trench",
+        "image_url": "/products/P00184942.jpg",
+        "price": 119.0,
+        "lift": 1.71,
         "confidence": 0.42
       }
     ],
@@ -2261,12 +2128,12 @@
     "order_count": 1093,
     "apriori_bundles": [
       {
-        "product_id": "P00110742",
-        "name": "Distressed Saddle Brown Aviator Bomber",
-        "image_url": "/products/P00110742.jpg",
-        "price": 165.0,
-        "lift": 1.65,
-        "confidence": 0.42
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "lift": 1.27,
+        "confidence": 0.41
       }
     ],
     "item2vec_similars": [
@@ -2320,12 +2187,28 @@
     "order_count": 1015,
     "apriori_bundles": [
       {
-        "product_id": "P00110742",
-        "name": "Distressed Saddle Brown Aviator Bomber",
-        "image_url": "/products/P00110742.jpg",
-        "price": 165.0,
-        "lift": 1.65,
-        "confidence": 0.42
+        "product_id": "P00112542",
+        "name": "Double-Breasted Camel Wool Overcoat",
+        "image_url": "/products/P00112542.jpg",
+        "price": 159.0,
+        "lift": 2.27,
+        "confidence": 0.44
+      },
+      {
+        "product_id": "P00114942",
+        "name": "Bohemian Tiered Linen Maxi Dress",
+        "image_url": "/products/P00114942.jpg",
+        "price": 79.0,
+        "lift": 2.24,
+        "confidence": 0.45
+      },
+      {
+        "product_id": "P00057642",
+        "name": "Heritage Pleated Pinafore Dress",
+        "image_url": "/products/P00057642.jpg",
+        "price": 79.0,
+        "lift": 1.8,
+        "confidence": 0.45
       }
     ],
     "item2vec_similars": [
@@ -2384,7 +2267,15 @@
         "name": "Distressed Saddle Brown Aviator Bomber",
         "image_url": "/products/P00110742.jpg",
         "price": 165.0,
-        "lift": 1.65,
+        "lift": 1.53,
+        "confidence": 0.42
+      },
+      {
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "lift": 1.31,
         "confidence": 0.42
       }
     ],
@@ -2439,12 +2330,28 @@
     "order_count": 982,
     "apriori_bundles": [
       {
+        "product_id": "P00114942",
+        "name": "Bohemian Tiered Linen Maxi Dress",
+        "image_url": "/products/P00114942.jpg",
+        "price": 79.0,
+        "lift": 2.1,
+        "confidence": 0.42
+      },
+      {
         "product_id": "P00110742",
         "name": "Distressed Saddle Brown Aviator Bomber",
         "image_url": "/products/P00110742.jpg",
         "price": 165.0,
+        "lift": 1.71,
+        "confidence": 0.47
+      },
+      {
+        "product_id": "P00025442",
+        "name": "Artisan Paisley Silk Kimono Shirt",
+        "image_url": "/products/P00025442.jpg",
+        "price": 49.9,
         "lift": 1.65,
-        "confidence": 0.42
+        "confidence": 0.45
       }
     ],
     "item2vec_similars": [
@@ -2495,12 +2402,12 @@
     "order_count": 979,
     "apriori_bundles": [
       {
-        "product_id": "P00110742",
-        "name": "Distressed Saddle Brown Aviator Bomber",
-        "image_url": "/products/P00110742.jpg",
-        "price": 165.0,
-        "lift": 1.65,
-        "confidence": 0.42
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "lift": 1.35,
+        "confidence": 0.43
       }
     ],
     "item2vec_similars": [
@@ -2508,7 +2415,7 @@
         "product_id": "P00117442",
         "name": "Artisan Floral Embroidered Cardigan",
         "image_url": "/products/P00117442.jpg",
-        "price": 92.0,
+        "price": 69.0,
         "similarity": 0.913
       },
       {
@@ -2522,7 +2429,7 @@
         "product_id": "P00117942",
         "name": "Hand-Knitted Nordic Wool Fair Isle Sweater",
         "image_url": "/products/P00117942.jpg",
-        "price": 110.0,
+        "price": 85.0,
         "similarity": 0.897
       }
     ]
@@ -2556,12 +2463,28 @@
     "order_count": 969,
     "apriori_bundles": [
       {
-        "product_id": "P00110742",
-        "name": "Distressed Saddle Brown Aviator Bomber",
-        "image_url": "/products/P00110742.jpg",
-        "price": 165.0,
-        "lift": 1.65,
+        "product_id": "P00028842",
+        "name": "Retro Gum-Sole Canvas Court Sneakers",
+        "image_url": "/products/P00028842.jpg",
+        "price": 49.0,
+        "lift": 2.07,
         "confidence": 0.42
+      },
+      {
+        "product_id": "P00148642",
+        "name": "Artisan Waxed Suede Chukka Boots",
+        "image_url": "/products/P00148642.jpg",
+        "price": 89.0,
+        "lift": 2.05,
+        "confidence": 0.42
+      },
+      {
+        "product_id": "P00059442",
+        "name": "Rugged Espresso Leather Chelsea Boots",
+        "image_url": "/products/P00059442.jpg",
+        "price": 135.0,
+        "lift": 1.86,
+        "confidence": 0.44
       }
     ],
     "item2vec_similars": [
@@ -2583,7 +2506,7 @@
         "product_id": "P00059442",
         "name": "Rugged Espresso Leather Chelsea Boots",
         "image_url": "/products/P00059442.jpg",
-        "price": 139.0,
+        "price": 135.0,
         "similarity": 0.941
       }
     ]
@@ -2615,12 +2538,28 @@
     "order_count": 966,
     "apriori_bundles": [
       {
+        "product_id": "P00025442",
+        "name": "Artisan Paisley Silk Kimono Shirt",
+        "image_url": "/products/P00025442.jpg",
+        "price": 49.9,
+        "lift": 1.7,
+        "confidence": 0.47
+      },
+      {
         "product_id": "P00110742",
         "name": "Distressed Saddle Brown Aviator Bomber",
         "image_url": "/products/P00110742.jpg",
         "price": 165.0,
-        "lift": 1.65,
-        "confidence": 0.42
+        "lift": 1.58,
+        "confidence": 0.43
+      },
+      {
+        "product_id": "P00112142",
+        "name": "Pastel Retro Varsity Bomber Jacket",
+        "image_url": "/products/P00112142.jpg",
+        "price": 89.0,
+        "lift": 1.56,
+        "confidence": 0.41
       }
     ],
     "item2vec_similars": [
@@ -2674,12 +2613,20 @@
     "order_count": 964,
     "apriori_bundles": [
       {
-        "product_id": "P00110742",
-        "name": "Distressed Saddle Brown Aviator Bomber",
-        "image_url": "/products/P00110742.jpg",
-        "price": 165.0,
-        "lift": 1.65,
+        "product_id": "P00117942",
+        "name": "Hand-Knitted Nordic Wool Fair Isle Sweater",
+        "image_url": "/products/P00117942.jpg",
+        "price": 85.0,
+        "lift": 1.82,
         "confidence": 0.42
+      },
+      {
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "lift": 1.27,
+        "confidence": 0.41
       }
     ],
     "item2vec_similars": [
@@ -2733,12 +2680,20 @@
     "order_count": 963,
     "apriori_bundles": [
       {
+        "product_id": "P00025442",
+        "name": "Artisan Paisley Silk Kimono Shirt",
+        "image_url": "/products/P00025442.jpg",
+        "price": 49.9,
+        "lift": 1.64,
+        "confidence": 0.45
+      },
+      {
         "product_id": "P00110742",
         "name": "Distressed Saddle Brown Aviator Bomber",
         "image_url": "/products/P00110742.jpg",
         "price": 165.0,
-        "lift": 1.65,
-        "confidence": 0.42
+        "lift": 1.5,
+        "confidence": 0.41
       }
     ],
     "item2vec_similars": [
@@ -2746,14 +2701,14 @@
         "product_id": "P00110942",
         "name": "Pleated Silk Midi Wrap Skirt",
         "image_url": "/products/P00110942.jpg",
-        "price": 69.0,
+        "price": 65.0,
         "similarity": 0.912
       },
       {
         "product_id": "P00102642",
         "name": "Vintage Suede Penny Loafers",
         "image_url": "/products/P00102642.jpg",
-        "price": 95.0,
+        "price": 79.0,
         "similarity": 0.887
       },
       {
@@ -2792,12 +2747,12 @@
     "order_count": 943,
     "apriori_bundles": [
       {
-        "product_id": "P00110742",
-        "name": "Distressed Saddle Brown Aviator Bomber",
-        "image_url": "/products/P00110742.jpg",
-        "price": 165.0,
-        "lift": 1.65,
-        "confidence": 0.42
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "lift": 1.26,
+        "confidence": 0.4
       }
     ],
     "item2vec_similars": [
@@ -2851,12 +2806,28 @@
     "order_count": 936,
     "apriori_bundles": [
       {
-        "product_id": "P00110742",
-        "name": "Distressed Saddle Brown Aviator Bomber",
-        "image_url": "/products/P00110742.jpg",
-        "price": 165.0,
-        "lift": 1.65,
-        "confidence": 0.42
+        "product_id": "P00270942",
+        "name": "Embroidered Velvet Kimono Duster",
+        "image_url": "/products/P00270942.jpg",
+        "price": 115.0,
+        "lift": 2.25,
+        "confidence": 0.44
+      },
+      {
+        "product_id": "P00145042",
+        "name": "Maritime Navy Heavy Wool Peacoat",
+        "image_url": "/products/P00145042.jpg",
+        "price": 105.0,
+        "lift": 1.9,
+        "confidence": 0.45
+      },
+      {
+        "product_id": "P00046742",
+        "name": "Boho Gilded Velvet Embroidered Tunic",
+        "image_url": "/products/P00046742.jpg",
+        "price": 64.0,
+        "lift": 1.82,
+        "confidence": 0.44
       }
     ],
     "item2vec_similars": [
@@ -2910,11 +2881,27 @@
     "order_count": 936,
     "apriori_bundles": [
       {
+        "product_id": "P00110942",
+        "name": "Pleated Silk Midi Wrap Skirt",
+        "image_url": "/products/P00110942.jpg",
+        "price": 65.0,
+        "lift": 1.75,
+        "confidence": 0.4
+      },
+      {
+        "product_id": "P00025442",
+        "name": "Artisan Paisley Silk Kimono Shirt",
+        "image_url": "/products/P00025442.jpg",
+        "price": 49.9,
+        "lift": 1.68,
+        "confidence": 0.46
+      },
+      {
         "product_id": "P00110742",
         "name": "Distressed Saddle Brown Aviator Bomber",
         "image_url": "/products/P00110742.jpg",
         "price": 165.0,
-        "lift": 1.65,
+        "lift": 1.53,
         "confidence": 0.42
       }
     ],
@@ -2923,7 +2910,7 @@
         "product_id": "P00110942",
         "name": "Pleated Silk Midi Wrap Skirt",
         "image_url": "/products/P00110942.jpg",
-        "price": 69.0,
+        "price": 65.0,
         "similarity": 0.906
       },
       {
@@ -2969,12 +2956,28 @@
     "order_count": 933,
     "apriori_bundles": [
       {
+        "product_id": "P00080342",
+        "name": "Sherpa-Lined Corduroy Trucker Jacket",
+        "image_url": "/products/P00080342.jpg",
+        "price": 92.0,
+        "lift": 2.3,
+        "confidence": 0.47
+      },
+      {
+        "product_id": "P00025442",
+        "name": "Artisan Paisley Silk Kimono Shirt",
+        "image_url": "/products/P00025442.jpg",
+        "price": 49.9,
+        "lift": 1.53,
+        "confidence": 0.42
+      },
+      {
         "product_id": "P00110742",
         "name": "Distressed Saddle Brown Aviator Bomber",
         "image_url": "/products/P00110742.jpg",
         "price": 165.0,
-        "lift": 1.65,
-        "confidence": 0.42
+        "lift": 1.48,
+        "confidence": 0.41
       }
     ],
     "item2vec_similars": [
@@ -2996,7 +2999,7 @@
         "product_id": "P00059442",
         "name": "Rugged Espresso Leather Chelsea Boots",
         "image_url": "/products/P00059442.jpg",
-        "price": 139.0,
+        "price": 135.0,
         "similarity": 0.886
       }
     ]
@@ -3029,12 +3032,28 @@
     "order_count": 923,
     "apriori_bundles": [
       {
-        "product_id": "P00110742",
-        "name": "Distressed Saddle Brown Aviator Bomber",
-        "image_url": "/products/P00110742.jpg",
-        "price": 165.0,
-        "lift": 1.65,
-        "confidence": 0.42
+        "product_id": "P00028842",
+        "name": "Retro Gum-Sole Canvas Court Sneakers",
+        "image_url": "/products/P00028842.jpg",
+        "price": 49.0,
+        "lift": 2.14,
+        "confidence": 0.44
+      },
+      {
+        "product_id": "P00031042",
+        "name": "Tailored Pleated Wool Flannel Trousers",
+        "image_url": "/products/P00031042.jpg",
+        "price": 74.0,
+        "lift": 1.97,
+        "confidence": 0.4
+      },
+      {
+        "product_id": "P00059442",
+        "name": "Rugged Espresso Leather Chelsea Boots",
+        "image_url": "/products/P00059442.jpg",
+        "price": 135.0,
+        "lift": 1.9,
+        "confidence": 0.45
       }
     ],
     "item2vec_similars": [
@@ -3042,7 +3061,7 @@
         "product_id": "P00059442",
         "name": "Rugged Espresso Leather Chelsea Boots",
         "image_url": "/products/P00059442.jpg",
-        "price": 139.0,
+        "price": 135.0,
         "similarity": 0.936
       },
       {
@@ -3088,12 +3107,28 @@
     "order_count": 917,
     "apriori_bundles": [
       {
+        "product_id": "P00114942",
+        "name": "Bohemian Tiered Linen Maxi Dress",
+        "image_url": "/products/P00114942.jpg",
+        "price": 79.0,
+        "lift": 2.03,
+        "confidence": 0.41
+      },
+      {
+        "product_id": "P00057642",
+        "name": "Heritage Pleated Pinafore Dress",
+        "image_url": "/products/P00057642.jpg",
+        "price": 79.0,
+        "lift": 1.62,
+        "confidence": 0.4
+      },
+      {
         "product_id": "P00110742",
         "name": "Distressed Saddle Brown Aviator Bomber",
         "image_url": "/products/P00110742.jpg",
         "price": 165.0,
-        "lift": 1.65,
-        "confidence": 0.42
+        "lift": 1.62,
+        "confidence": 0.44
       }
     ],
     "item2vec_similars": [
@@ -3147,12 +3182,28 @@
     "order_count": 912,
     "apriori_bundles": [
       {
-        "product_id": "P00110742",
-        "name": "Distressed Saddle Brown Aviator Bomber",
-        "image_url": "/products/P00110742.jpg",
-        "price": 165.0,
-        "lift": 1.65,
-        "confidence": 0.42
+        "product_id": "P00114942",
+        "name": "Bohemian Tiered Linen Maxi Dress",
+        "image_url": "/products/P00114942.jpg",
+        "price": 79.0,
+        "lift": 2.34,
+        "confidence": 0.47
+      },
+      {
+        "product_id": "P00044442",
+        "name": "Vintage Cafe Racer Leather Jacket",
+        "image_url": "/products/P00044442.jpg",
+        "price": 135.0,
+        "lift": 2.17,
+        "confidence": 0.41
+      },
+      {
+        "product_id": "P00270942",
+        "name": "Embroidered Velvet Kimono Duster",
+        "image_url": "/products/P00270942.jpg",
+        "price": 115.0,
+        "lift": 2.1,
+        "confidence": 0.41
       }
     ],
     "item2vec_similars": [
@@ -3206,11 +3257,27 @@
     "order_count": 911,
     "apriori_bundles": [
       {
-        "product_id": "P00110742",
-        "name": "Distressed Saddle Brown Aviator Bomber",
-        "image_url": "/products/P00110742.jpg",
-        "price": 165.0,
-        "lift": 1.65,
+        "product_id": "P00044442",
+        "name": "Vintage Cafe Racer Leather Jacket",
+        "image_url": "/products/P00044442.jpg",
+        "price": 135.0,
+        "lift": 2.29,
+        "confidence": 0.43
+      },
+      {
+        "product_id": "P00270942",
+        "name": "Embroidered Velvet Kimono Duster",
+        "image_url": "/products/P00270942.jpg",
+        "price": 115.0,
+        "lift": 2.13,
+        "confidence": 0.42
+      },
+      {
+        "product_id": "P00010742",
+        "name": "Waxed Canvas Field Explorer Parka",
+        "image_url": "/products/P00010742.jpg",
+        "price": 125.0,
+        "lift": 1.84,
         "confidence": 0.42
       }
     ],
@@ -3233,7 +3300,7 @@
         "product_id": "P00145042",
         "name": "Maritime Navy Heavy Wool Peacoat",
         "image_url": "/products/P00145042.jpg",
-        "price": 95.0,
+        "price": 105.0,
         "similarity": 0.895
       }
     ]
