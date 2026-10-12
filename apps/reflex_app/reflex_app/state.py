@@ -56,9 +56,35 @@ def _price_or_none(value: Any) -> Optional[float]:
     return price if price > 0 else None
 
 
+def _usd(amount: Any) -> str:
+    """The one dollar format used in the UI (totals may be 0)."""
+    return f"${float(amount):.2f}"
+
+
 def _format_price(value: Any, missing: str = PRICE_UNAVAILABLE) -> str:
     price = _price_or_none(value)
-    return f"${price:.2f}" if price is not None else missing
+    return _usd(price) if price is not None else missing
+
+
+_PRICE_FIELDS = ("original_price", "discounted_price")
+_NESTED_PRODUCT_LISTS = ("apriori_bundles", "item2vec_similars")
+
+
+def _validated_catalog(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Catalog boundary: every price becomes a positive float or None, once, so later code never re-checks raw values."""
+    products = []
+    for raw in data or []:
+        product = dict(raw)
+        for field in _PRICE_FIELDS:
+            product[field] = _price_or_none(product.get(field))
+        for field in _NESTED_PRODUCT_LISTS:
+            if isinstance(product.get(field), list):
+                product[field] = [
+                    {**item, "price": _price_or_none(item.get("price"))} if isinstance(item, dict) else item
+                    for item in product[field]
+                ]
+        products.append(product)
+    return products
 
 
 def _parse_auth_error(resp: httpx.Response) -> str:
@@ -414,16 +440,16 @@ class ShoppingState(rx.State):
 
     @rx.var
     def cart_subtotal_display(self) -> str:
-        return f"${self.cart_subtotal:.2f}"
+        return _usd(self.cart_subtotal)
 
     @rx.var
     def cart_personalized_total_display(self) -> str:
-        return f"${self.cart_personalized_total:.2f}"
+        return _usd(self.cart_personalized_total)
 
     @rx.var
     def cart_savings_display(self) -> str:
         savings = max(0.0, self.cart_subtotal - self.cart_personalized_total)
-        return f"${savings:.2f}"
+        return _usd(savings)
 
     # ── Active product computed vars ────────────────────────────────────
     @rx.var
@@ -531,7 +557,7 @@ class ShoppingState(rx.State):
             return f"${rev_usd / 1_000_000:.1f}M"
         if rev_usd >= 1_000:
             return f"${rev_usd / 1_000:.1f}K"
-        return f"${rev_usd:.2f}"
+        return _usd(rev_usd)
 
     @rx.var
     def dashboard_users_display(self) -> str:
@@ -548,7 +574,7 @@ class ShoppingState(rx.State):
         # Convert INR to USD by dividing by INR_TO_USD_RATE
         aov_inr = float(self.dashboard_summary.get("avg_order_value", 0.0))
         aov_usd = aov_inr / INR_TO_USD_RATE
-        return f"${aov_usd:.2f}"
+        return _usd(aov_usd)
 
     @rx.var
     def total_purchase_count(self) -> int:
@@ -560,7 +586,7 @@ class ShoppingState(rx.State):
 
     @rx.var
     def total_spent_display(self) -> str:
-        return f"${self.total_spent_usd:.2f}"
+        return _usd(self.total_spent_usd)
 
     # ── Auth actions ────────────────────────────────────────────────────
     def open_auth(self, tab: str = "login"):
@@ -736,8 +762,8 @@ class ShoppingState(rx.State):
                     product_category_1=i.product_category_1,
                     product_category_2=i.product_category_2,
                     product_category_3=i.product_category_3,
-                    price_display=f"${i.price:.2f}",
-                    personalized_display=f"${i.price:.2f}",
+                    price_display=_usd(i.price),
+                    personalized_display=_usd(i.price),
                 )
             )
         self.cart_items = updated_cart
@@ -777,6 +803,7 @@ class ShoppingState(rx.State):
                 self._reprice_cart()
 
     def _set_catalog(self, data: List[Dict[str, Any]]):
+        data = _validated_catalog(data)
         self.products = data
         hero = next((p for p in data if p.get("is_hero")), None)
         self.hero_product = hero if hero else (data[0] if data else {})
@@ -984,8 +1011,8 @@ class ShoppingState(rx.State):
                         product_category_1=item.product_category_1,
                         product_category_2=item.product_category_2,
                         product_category_3=item.product_category_3,
-                        price_display=f"${item.price:.2f}",
-                        personalized_display=f"${display_price:.2f}",
+                        price_display=_usd(item.price),
+                        personalized_display=_usd(display_price),
                     )
                 )
             else:
@@ -1006,8 +1033,8 @@ class ShoppingState(rx.State):
                     product_category_1=int(target.get("product_category_1", 1)),
                     product_category_2=target.get("product_category_2"),
                     product_category_3=target.get("product_category_3"),
-                    price_display=f"${base_price:.2f}",
-                    personalized_display=f"${pers_price:.2f}" if has_pers else f"${base_price:.2f}",
+                    price_display=_usd(base_price),
+                    personalized_display=_usd(pers_price) if has_pers else _usd(base_price),
                 )
             )
 
@@ -1056,8 +1083,8 @@ class ShoppingState(rx.State):
                                 product_category_1=item.product_category_1,
                                 product_category_2=item.product_category_2,
                                 product_category_3=item.product_category_3,
-                                price_display=f"${item.price:.2f}",
-                                personalized_display=f"${p_price:.2f}",
+                                price_display=_usd(item.price),
+                                personalized_display=_usd(p_price),
                             )
                         )
                     self.cart_items = updated_items
@@ -1181,7 +1208,7 @@ class ShoppingState(rx.State):
                                 id=int(r.get("id", 0)),
                                 product_id=str(r.get("product_id", "")),
                                 predicted_usd=p_usd,
-                                price_display=f"${p_usd:.2f}",
+                                price_display=_usd(p_usd),
                                 purchased_at_display=date_str,
                             )
                         )
@@ -1222,7 +1249,7 @@ class ShoppingState(rx.State):
                                 DemographicRow(
                                     group=group_name,
                                     total_orders=cnt,
-                                    avg_purchase_display=f"${avg_p_usd:.2f}",
+                                    avg_purchase_display=_usd(avg_p_usd),
                                     pct_display=f"{pct:.1f}%",
                                     pct_width=f"{min(100.0, pct):.1f}%",
                                 )
@@ -1427,8 +1454,8 @@ class ShoppingState(rx.State):
                                             url = c.get("url", "")
                                             price = c.get("price")
                                             label = title
-                                            if price:
-                                                label += f" (${float(price):.2f})"
+                                            if _price_or_none(price) is not None:
+                                                label += f" ({_format_price(price)})"
                                             if url:
                                                 formatted_cites.append(f"[{label}]({url})")
                                             elif label:
