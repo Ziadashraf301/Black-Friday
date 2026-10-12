@@ -4,6 +4,7 @@ SQLAlchemy ORM models for warehouse tables (raw, cleaned, segments, network metr
 These models are the schema: they match docker/postgres/init_schema.sql and the Alembic migrations in
 core/db/migrations (tests/integration/test_migrations.py compares them against a migrated database).
 """
+
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     BigInteger,
@@ -158,8 +159,8 @@ class CuratedProduct(Base):
     sizes = Column(JSONB, nullable=True)
     rating = Column(Float, nullable=False, default=4.5, server_default=text("4.5"))
     review_count = Column(Integer, nullable=False, default=100, server_default=text("100"))
-    original_price = Column(Float, nullable=False, default=99.9, server_default=text("99.9"))
-    discounted_price = Column(Float, nullable=False, default=49.9, server_default=text("49.9"))
+    original_price = Column(Numeric(10, 2), nullable=False)
+    discounted_price = Column(Numeric(10, 2), nullable=False)
     image_url = Column(Text, nullable=True)
     order_count = Column(Integer, nullable=False, default=0, server_default=text("0"))
     product_category_1 = Column(Integer, nullable=False, default=1, server_default=text("1"))
@@ -181,7 +182,7 @@ class UserCart(Base):
     cart_data = Column(JSONB, nullable=False)
     item_count = Column(Integer, default=0, server_default=text("0"))
     total_amount = Column(Numeric(10, 2), default=0.0, server_default=text("0.00"))
-    updated_at = Column(String(64), nullable=True)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
 class SemanticQueryCache(Base):

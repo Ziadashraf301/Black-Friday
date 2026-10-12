@@ -121,8 +121,9 @@ class WarehouseRepository(BaseRepository):
             "sizes": p.get("sizes") or [],
             "rating": float(p.get("rating", 4.5)),
             "review_count": int(p.get("review_count", 100)),
-            "original_price": float(p.get("original_price", 99.99)),
-            "discounted_price": float(p.get("discounted_price", 49.90)),
+            # Prices are hand-maintained USD values in the catalogue file; a product without them is an error
+            "original_price": float(p["original_price"]),
+            "discounted_price": float(p["discounted_price"]),
             "image_url": p.get("image_url"),
             "order_count": int(p.get("order_count", 0)),
             "product_category_1": int(p.get("product_category_1", 1)),

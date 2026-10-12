@@ -1,6 +1,6 @@
 # Database ERD: Black Friday Platform
 
-The PostgreSQL 16 database `fridayblack` (with pgvector), as read from the live database after Alembic migration `0002`.
+The PostgreSQL 16 database `fridayblack` (with pgvector), as read from the live database after Alembic migration `0003`.
 
 ---
 
@@ -15,7 +15,7 @@ The database has **10 tables in 4 groups**:
 | **Application** | `app_users`, `user_purchases`, `user_carts` | The FastAPI backend | 1,632 / 117 / 0 |
 | **AI cache and system** | `semantic_query_cache`, `alembic_version` | The AI assistant, Alembic | 0 / 1 |
 
-**Enforced vs logical relationships.** Only **one** relationship is enforced by a real foreign key (`user_purchases.user_id` references `app_users.user_id`). The others are **logical**: the columns match, but the database does not check them. That is normal for an analytics warehouse loaded in bulk, where foreign keys would slow down the 550k-row loads and block truncate-and-reload.
+**Enforced vs logical relationships.** Two relationships are enforced by real foreign keys, both on the application tables: `user_purchases.user_id` references `app_users.user_id`, and `user_purchases.product_id` references `curated_products.product_id` (migration `0003`). The others are **logical**: the columns match, but the database does not check them. That is normal for an analytics warehouse loaded in bulk, where foreign keys would slow down the 550k-row loads and block truncate-and-reload.
 
 ---
 
@@ -30,7 +30,7 @@ erDiagram
     black_friday_cleaned }o--|| product_network_metrics : "aggregated per product_id"
     product_network_metrics |o--o| curated_products : "same product_id"
     app_users ||--o{ user_purchases : "FK user_id"
-    curated_products ||..o{ user_purchases : "product_id"
+    curated_products ||--o{ user_purchases : "FK product_id"
     app_users }o..o| customer_segments : "cluster_id / persona"
     app_users ||..o| user_carts : "user_id (JWT sub or guest id)"
     app_users ||..o{ semantic_query_cache : "user_key"
@@ -96,8 +96,8 @@ erDiagram
         varchar category_name
         varchar brand
         boolean is_hero
-        float original_price
-        float discounted_price
+        numeric original_price
+        numeric discounted_price
         jsonb sizes
         jsonb apriori_bundles
         jsonb item2vec_similars
@@ -120,8 +120,8 @@ erDiagram
     user_purchases {
         int id PK
         int user_id FK
-        text product_id
-        float predicted_usd
+        varchar product_id FK
+        numeric predicted_usd
         text model_used
         timestamptz purchased_at
     }
@@ -131,6 +131,7 @@ erDiagram
         jsonb cart_data
         int item_count
         numeric total_amount
+        timestamptz updated_at
     }
     semantic_query_cache {
         bigint id PK
@@ -249,15 +250,16 @@ The 50 products shown in the store, enriched with names, images, prices and reco
 | `name`, `title`, `tagline`, `description`, `brand`, `style`, `season`, `badge` | varchar / text | Display text |
 | `category_name`, `category`, `gender` | varchar | Used by the sidebar filters |
 | `is_hero` | boolean | The featured product on the right of the page |
-| `original_price`, `discounted_price` | double | Prices shown in the UI |
-| `rating`, `review_count`, `order_count` | double / int | |
-| `sizes`, `apriori_bundles`, `item2vec_similars` | jsonb | Sizes and "bought together" / "similar" lists |
+| `original_price`, `discounted_price` | numeric(10,2) | Prices shown in the UI, in USD (hand-maintained in `data/curated_products.json`) |
+| `order_count` | int | Purchase rows in the warehouse (rebuilt by `make catalog`) |
+| `rating`, `review_count` | double / int | No real source in the dataset; not shown in the UI or the API |
+| `sizes`, `apriori_bundles`, `item2vec_similars` | jsonb | Sizes and "bought together" / "similar" lists (bundles and similars rebuilt by `make catalog` from the Apriori rules and the Item2Vec model) |
 | `embedding` | vector | **pgvector** embedding for semantic search (**HNSW index**) |
 | `search_vector` | tsvector | Full-text search (GIN index) |
 
 ### 4.6 app_users (application)
 
-Registered store users. Separate from the dataset customers in the warehouse.
+Registered store users. Separate from the dataset customers in the warehouse: `app_users.user_id` is a store account id, `customer_segments.user_id` / `black_friday_*.user_id` are dataset customer ids (see section 6, item 5).
 
 | Column | Type | Notes |
 |---|---|---|
@@ -274,9 +276,9 @@ Registered store users. Separate from the dataset customers in the warehouse.
 |---|---|---|
 | `id` | integer | **PK** |
 | `user_id` | integer | **FK to `app_users.user_id`**, not null (indexed) |
-| `product_id` | text | The product bought |
+| `product_id` | varchar(32) | **FK to `curated_products.product_id`** (indexed): the product bought |
 | `product_category_1..3` | integer | |
-| `predicted_usd` | double | The ONNX price prediction at purchase time |
+| `predicted_usd` | numeric(10,2) | The member price at purchase time, from the ONNX prediction |
 | `model_used` | text | Which model made the prediction |
 | `purchased_at` | timestamptz | |
 
@@ -290,7 +292,7 @@ Durable cart storage ("cold tier"; Redis is the fast tier).
 | `session_id` | varchar(64) | Browser session |
 | `cart_data` | jsonb | Cart items |
 | `item_count`, `total_amount` | int / numeric | |
-| `updated_at` | varchar(64) | Stored as text (see section 6) |
+| `updated_at` | timestamptz | Last save (default `now()`) |
 
 ### 4.9 semantic_query_cache (AI)
 
@@ -308,7 +310,7 @@ Caches the assistant's answers by meaning, so similar questions reuse an answer.
 
 ### 4.10 alembic_version (system)
 
-One row with the current migration version (`0002`). Managed by Alembic only; never edit it by hand.
+One row with the current migration version (`0003`). Managed by Alembic only; never edit it by hand.
 
 ---
 
@@ -327,10 +329,10 @@ One row with the current migration version (`0002`). Managed by Alembic only; ne
 
 ## 6. Observations
 
-These are facts noticed while drawing this ERD. They are not covered by the review findings so far:
+These were noticed while drawing this ERD. Round 2 (step 6.5) handled each one:
 
-1. **Prices in `curated_products` and `user_purchases.predicted_usd` use `double precision`**, while the warehouse uses exact `numeric`. Money is usually stored as `numeric`.
-2. **`user_carts.updated_at` is a `varchar`**, not a timestamp, so it cannot be sorted or filtered as a time.
-3. **Name mismatches between the app and the warehouse:** `app_users.gender` / `city_category` are `varchar(1)`, `user_purchases.product_id` is `text`, while the warehouse uses `varchar(8)` / `varchar(4)` / `varchar(32)`.
-4. **Only one foreign key.** Logical links (for example `user_purchases.product_id` to `curated_products`) are not enforced. That's fine for the warehouse; for the application tables, a foreign key could be considered.
-5. **Two kinds of "user":** `customer_segments.user_id` is a **dataset customer**, while `app_users.user_id` is a **store account**. They're different id spaces that share a column name.
+1. **Money as `double precision`** in `curated_products` and `user_purchases.predicted_usd`. Fixed: `numeric(10,2)` (migration `0003`; every stored value already had at most 2 decimals). The invented `99.9` / `49.9` column defaults are gone, so a product without a price is an error instead of a made-up price.
+2. **`user_carts.updated_at` was a `varchar`.** Fixed: `timestamptz` with default `now()`. Old ISO-8601 text converts; anything unreadable becomes NULL (never guessed). The repository now writes `now()`.
+3. **Size mismatches with the warehouse.** Fixed: `app_users.gender` `varchar(8)`, `city_category` `varchar(4)`, `user_purchases.product_id` `varchar(32)`, the same as the warehouse.
+4. **Only one foreign key.** Added `user_purchases.product_id` → `curated_products.product_id` (the store only sells catalogue products; the migration refuses to run while orphan rows exist). No foreign keys on the warehouse tables: they are bulk-loaded with TRUNCATE + COPY.
+5. **Two kinds of "user".** `customer_segments.user_id` and `black_friday_*.user_id` are **dataset customers** (from `train.csv`); `app_users.user_id`, `user_purchases.user_id` and `user_carts.user_id` (a JWT subject or a `guest_<hex>` id) are **store accounts**. A store account is linked to a persona through `app_users.cluster_id`, never through `user_id`. Not renamed: the column name is used across the pipelines, the API and the tests, and a rename would gain only clarity, which this note gives.

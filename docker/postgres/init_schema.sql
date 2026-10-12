@@ -111,8 +111,8 @@ CREATE TABLE IF NOT EXISTS curated_products (
     sizes JSONB,
     rating FLOAT NOT NULL DEFAULT 4.5,
     review_count INTEGER NOT NULL DEFAULT 100,
-    original_price FLOAT NOT NULL DEFAULT 99.9,
-    discounted_price FLOAT NOT NULL DEFAULT 49.9,
+    original_price NUMERIC(10, 2) NOT NULL,
+    discounted_price NUMERIC(10, 2) NOT NULL,
     image_url TEXT,
     order_count INTEGER NOT NULL DEFAULT 0,
     product_category_1 INTEGER NOT NULL DEFAULT 1,
@@ -133,9 +133,9 @@ CREATE TABLE IF NOT EXISTS app_users (
     name TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
-    gender VARCHAR(1),
+    gender VARCHAR(8),
     age VARCHAR(10),
-    city_category VARCHAR(1),
+    city_category VARCHAR(4),
     marital_status INTEGER,
     occupation INTEGER,
     stay_in_current_city_years VARCHAR(5),
@@ -151,16 +151,17 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON app_users (email);
 CREATE TABLE IF NOT EXISTS user_purchases (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES app_users(user_id) ON DELETE CASCADE,
-    product_id TEXT NOT NULL,
+    product_id VARCHAR(32) NOT NULL CONSTRAINT fk_user_purchases_product_id REFERENCES curated_products(product_id),
     product_category_1 INTEGER,
     product_category_2 INTEGER,
     product_category_3 INTEGER,
-    predicted_usd FLOAT,
+    predicted_usd NUMERIC(10, 2),
     model_used TEXT,
     purchased_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_purchases_user_id ON user_purchases (user_id);
+CREATE INDEX IF NOT EXISTS idx_purchases_product_id ON user_purchases (product_id);
 
 -- 8. Cold-Tier User Carts Table
 CREATE TABLE IF NOT EXISTS user_carts (
@@ -169,7 +170,7 @@ CREATE TABLE IF NOT EXISTS user_carts (
     cart_data JSONB NOT NULL,
     item_count INTEGER DEFAULT 0,
     total_amount NUMERIC(10, 2) DEFAULT 0.00,
-    updated_at VARCHAR(64)
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 9. Semantic Query Cache Table with pgvector HNSW index

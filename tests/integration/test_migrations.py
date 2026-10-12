@@ -115,7 +115,8 @@ def test_upgrade_repairs_live_drift(scratch_url):
             ('P00112142', 3, 0.00173, 0.0, 0.01, NULL, NULL, NULL, '["P00025442"]');
         ALTER TABLE curated_products ALTER COLUMN sizes TYPE JSON, ALTER COLUMN apriori_bundles TYPE JSON,
             ALTER COLUMN item2vec_similars TYPE JSON;
-        INSERT INTO curated_products (product_id, sizes) VALUES ('P00025442', '["S", "M"]');
+        INSERT INTO curated_products (product_id, sizes, original_price, discounted_price)
+            VALUES ('P00025442', '["S", "M"]', 99.9, 49.9);
         ALTER TABLE black_friday_cleaned ALTER COLUMN is_outlier DROP NOT NULL,
             ALTER COLUMN normalized_purchase DROP NOT NULL, ALTER COLUMN split DROP NOT NULL;
         DROP INDEX idx_cleaned_split;
@@ -134,9 +135,7 @@ def test_upgrade_repairs_live_drift(scratch_url):
         assert "user_key" in {c["name"] for c in insp.get_columns("semantic_query_cache")}
         with engine.connect() as conn:
             rows = dict(
-                conn.execute(
-                    text("SELECT product_id, top_bundle_recommendations FROM product_network_metrics")
-                ).fetchall()
+                conn.execute(text("SELECT product_id, top_bundle_recommendations FROM product_network_metrics")).fetchall()
             )
             sizes = conn.execute(text("SELECT sizes FROM curated_products")).scalar()
     finally:
@@ -155,8 +154,64 @@ def test_upgrade_refuses_to_drop_null_purchase_owners(scratch_url):
         scratch_url,
         """
         ALTER TABLE user_purchases ALTER COLUMN user_id DROP NOT NULL;
+        INSERT INTO curated_products (product_id, original_price, discounted_price) VALUES ('P1', 2, 1);
         INSERT INTO user_purchases (user_id, product_id) VALUES (NULL, 'P1');
         """,
     )
     with pytest.raises(RuntimeError, match="user_purchases.user_id has 1 NULL"):
+        _upgrade(scratch_url)
+
+
+# Shape of the application tables before 0003 (floats, text cart time, 1-char columns, no product foreign key)
+PRE_0003 = """
+    ALTER TABLE user_purchases DROP CONSTRAINT fk_user_purchases_product_id;
+    DROP INDEX idx_purchases_product_id;
+    ALTER TABLE user_purchases ALTER COLUMN product_id TYPE TEXT, ALTER COLUMN predicted_usd TYPE DOUBLE PRECISION;
+    ALTER TABLE curated_products ALTER COLUMN original_price TYPE DOUBLE PRECISION,
+        ALTER COLUMN original_price SET DEFAULT 99.9,
+        ALTER COLUMN discounted_price TYPE DOUBLE PRECISION, ALTER COLUMN discounted_price SET DEFAULT 49.9;
+    ALTER TABLE user_carts ALTER COLUMN updated_at DROP DEFAULT, ALTER COLUMN updated_at TYPE VARCHAR(64);
+    ALTER TABLE app_users ALTER COLUMN gender TYPE VARCHAR(1), ALTER COLUMN city_category TYPE VARCHAR(1);
+    INSERT INTO curated_products (product_id, original_price, discounted_price) VALUES ('P00025442', 99.9, 49.9);
+    INSERT INTO app_users (user_id, name, email, password_hash, gender, city_category)
+        VALUES (1, 'a', 'a@x.com', 'h', 'M', 'A');
+    INSERT INTO user_purchases (user_id, product_id, predicted_usd) VALUES (1, 'P00025442', 37.45);
+    INSERT INTO user_carts (user_id, session_id, cart_data, updated_at) VALUES
+        ('u1', 's', '{}', '2026-10-12T18:30:00.123456+00:00'), ('u2', 's', '{}', 'not a time'), ('u3', 's', '{}', NULL);
+"""
+
+
+def test_0003_converts_app_tables_and_keeps_values(scratch_url):
+    _run_sql(scratch_url, SCHEMA_SQL.read_text(encoding="utf-8"))
+    _run_sql(scratch_url, PRE_0003)
+    _upgrade(scratch_url)
+
+    engine = create_engine(scratch_url)
+    try:
+        insp = inspect(engine)
+        fks = {fk["name"]: fk for fk in insp.get_foreign_keys("user_purchases")}
+        assert fks["fk_user_purchases_product_id"]["referred_table"] == "curated_products"
+        with engine.connect() as conn:
+            price, usd = conn.execute(
+                text(
+                    "SELECT cp.discounted_price, up.predicted_usd "
+                    "FROM user_purchases up JOIN curated_products cp USING (product_id)"
+                )
+            ).one()
+            carts = dict(conn.execute(text("SELECT user_id, updated_at FROM user_carts")).fetchall())
+            with pytest.raises(Exception, match="fk_user_purchases_product_id"):
+                conn.execute(text("INSERT INTO user_purchases (user_id, product_id) VALUES (1, 'P_UNKNOWN')"))
+    finally:
+        engine.dispose()
+
+    assert (str(price), str(usd)) == ("49.90", "37.45")  # exact NUMERIC(10, 2)
+    assert carts["u1"].isoformat().startswith("2026-10-12T18:30:00.123456")
+    assert carts["u2"] is None and carts["u3"] is None  # unreadable text is dropped, never guessed
+    assert _schema_diff(scratch_url) == []
+
+
+def test_0003_refuses_purchases_of_unknown_products(scratch_url):
+    _run_sql(scratch_url, SCHEMA_SQL.read_text(encoding="utf-8"))
+    _run_sql(scratch_url, PRE_0003 + "INSERT INTO user_purchases (user_id, product_id) VALUES (1, 'P_GONE');")
+    with pytest.raises(RuntimeError, match="1 rows whose product_id is not in curated_products"):
         _upgrade(scratch_url)
