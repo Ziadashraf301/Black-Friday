@@ -4,12 +4,15 @@ Regression test for Fix 3.1:
 - Verified on an isolated scratch database (never using production/dev data)
 - Verify pgvector extension requirement
 """
+
 import uuid
-from sqlalchemy import create_engine, text, inspect
+
+from sqlalchemy import create_engine, inspect, text
+
 from core.config import settings
+from core.db.models import Base
 from core.db.repositories.base import BaseRepository
 from core.db.repository import BlackFridayRepository
-from core.db.models import Base
 
 
 def test_base_repository_create_app_tables_on_scratch_db():
@@ -52,10 +55,14 @@ def test_base_repository_create_app_tables_on_scratch_db():
             assert ext == "vector", "pgvector extension was not created"
 
             # Verify vector column on curated_products
-            col_type = conn.execute(text("""
+            col_type = conn.execute(
+                text(
+                    """
                 SELECT udt_name FROM information_schema.columns 
                 WHERE table_name = 'curated_products' AND column_name = 'embedding';
-            """)).scalar()
+            """
+                )
+            ).scalar()
             assert col_type == "vector", f"curated_products.embedding column type is {col_type}, expected vector"
 
         # 2. BlackFridayRepository facade delegates create_app_tables to BaseRepository

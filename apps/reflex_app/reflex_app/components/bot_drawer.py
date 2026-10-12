@@ -6,6 +6,7 @@ Features:
   - Preset Action Chips (*"Top Deals Today"*, *"Sale Products"*, *"Under $50"*, *"Style Advisor"*)
   - Interactive Conversation Pane
 """
+
 import reflex as rx
 from reflex_app.state import ShoppingState
 
@@ -94,12 +95,19 @@ def bot_auth_gate() -> rx.Component:
             border_radius="9999px",
             border="1px solid #f9dab3",
         ),
-        rx.text("Member Authentication Required",
-                font_family="Georgia, 'Playfair Display', serif",
-                font_size="1.1rem", font_weight="700", color="#07281e"),
+        rx.text(
+            "Member Authentication Required",
+            font_family="Georgia, 'Playfair Display', serif",
+            font_size="1.1rem",
+            font_weight="700",
+            color="#07281e",
+        ),
         rx.text(
             "Sign in to your member account to unlock personalized shopping, AI price quotes, and Apriori bundle styling.",
-            font_size="0.8rem", color="#718278", text_align="center", max_width="320px",
+            font_size="0.8rem",
+            color="#718278",
+            text_align="center",
+            max_width="320px",
         ),
         rx.button(
             rx.hstack(
@@ -191,11 +199,14 @@ def bot_drawer() -> rx.Component:
                             border_radius="8px",
                         ),
                         rx.vstack(
-                            rx.text("Vintage AI Concierge",
-                                    font_family="Georgia, 'Playfair Display', serif",
-                                    font_size="1.1rem", font_weight="700", color="#07281e"),
-                            rx.text("Powered by Gemini 2.0 & Apriori Intelligence",
-                                    font_size="0.72rem", color="#718278"),
+                            rx.text(
+                                "Vintage AI Concierge",
+                                font_family="Georgia, 'Playfair Display', serif",
+                                font_size="1.1rem",
+                                font_weight="700",
+                                color="#07281e",
+                            ),
+                            rx.text("Powered by Gemini 2.0 & Apriori Intelligence", font_size="0.72rem", color="#718278"),
                             spacing="0",
                             align_items="flex-start",
                         ),
@@ -217,7 +228,6 @@ def bot_drawer() -> rx.Component:
                     border_bottom="1px solid #eedec7",
                     padding_bottom="0.8rem",
                 ),
-
                 # Body: Auth Check or Chat
                 rx.cond(
                     ShoppingState.is_authenticated,
@@ -254,14 +264,18 @@ def bot_drawer() -> rx.Component:
                             spacing="2",
                             width="100%",
                         ),
-
                         # Security Strike Lockout Alert Banner
                         rx.cond(
                             ShoppingState.bot_is_locked_out,
                             rx.box(
                                 rx.hstack(
                                     rx.icon(tag="shield-alert", size=18, color="#e63946"),
-                                    rx.text(ShoppingState.bot_lockout_message, font_size="0.75rem", color="#721c24", font_weight="600"),
+                                    rx.text(
+                                        ShoppingState.bot_lockout_message,
+                                        font_size="0.75rem",
+                                        color="#721c24",
+                                        font_weight="600",
+                                    ),
                                     spacing="2",
                                     align_items="center",
                                 ),
@@ -273,14 +287,15 @@ def bot_drawer() -> rx.Component:
                             ),
                             rx.fragment(),
                         ),
-
                         # Persona Ribbon
                         rx.box(
                             rx.hstack(
                                 rx.icon(tag="user-check", size=14, color="#25a244"),
                                 rx.text(
                                     "Connected as: " + ShoppingState.welcome_name + " • " + ShoppingState.user_persona_label,
-                                    font_size="0.75rem", font_weight="600", color="#07281e",
+                                    font_size="0.75rem",
+                                    font_weight="600",
+                                    color="#07281e",
                                 ),
                                 spacing="2",
                                 align_items="center",
@@ -291,10 +306,15 @@ def bot_drawer() -> rx.Component:
                             padding="0.4rem 0.75rem",
                             width="100%",
                         ),
-
                         # Preset Action Chips
                         rx.vstack(
-                            rx.text("Quick Actions & Deals", font_size="0.72rem", font_weight="700", color="#718278", text_transform="uppercase"),
+                            rx.text(
+                                "Quick Actions & Deals",
+                                font_size="0.72rem",
+                                font_weight="700",
+                                color="#718278",
+                                text_transform="uppercase",
+                            ),
                             rx.hstack(
                                 rx.foreach(ShoppingState.bot_action_chips, action_chip),
                                 spacing="2",
@@ -303,7 +323,6 @@ def bot_drawer() -> rx.Component:
                             width="100%",
                             spacing="1",
                         ),
-
                         # Conversation Pane
                         rx.box(
                             rx.vstack(
@@ -317,12 +336,17 @@ def bot_drawer() -> rx.Component:
                             width="100%",
                             padding_y="0.5rem",
                         ),
-
                         # Active Product Cards Carousel / List
                         rx.cond(
                             ShoppingState.bot_active_cards.length() > 0,
                             rx.vstack(
-                                rx.text("Highlighted Catalog Selections", font_size="0.72rem", font_weight="700", color="#718278", text_transform="uppercase"),
+                                rx.text(
+                                    "Highlighted Catalog Selections",
+                                    font_size="0.72rem",
+                                    font_weight="700",
+                                    color="#718278",
+                                    text_transform="uppercase",
+                                ),
                                 rx.vstack(
                                     rx.foreach(ShoppingState.bot_active_cards, bot_card_item),
                                     spacing="2",
@@ -335,7 +359,6 @@ def bot_drawer() -> rx.Component:
                             ),
                             rx.fragment(),
                         ),
-
                         # Mode-Specific Input: Voice Mic or Text Input
                         rx.cond(
                             ShoppingState.bot_mode == "voice",
@@ -346,7 +369,9 @@ def bot_drawer() -> rx.Component:
                                         rx.hstack(
                                             rx.icon(tag="mic", size=24, color="#ffffff"),
                                             rx.text(
-                                                rx.cond(ShoppingState.bot_is_listening, "Stop Streaming", "Start Voice Stream"),
+                                                rx.cond(
+                                                    ShoppingState.bot_is_listening, "Stop Streaming", "Start Voice Stream"
+                                                ),
                                                 font_weight="700",
                                                 font_size="0.85rem",
                                             ),

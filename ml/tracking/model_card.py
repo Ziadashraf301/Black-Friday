@@ -1,8 +1,9 @@
-import os
 import datetime
-from typing import Dict, Any, Optional
-from ml.models.regression import ALL_FEATURES
+import os
+from typing import Any, Dict, Optional
+
 from core.logging import get_logger
+from ml.models.regression import ALL_FEATURES
 
 logger = get_logger(__name__)
 
@@ -12,11 +13,7 @@ class ModelCardGenerator:
 
     @classmethod
     def generate_model_card(
-        cls,
-        model_name: str,
-        metrics: Dict[str, Any],
-        fairness_metrics: Dict[str, Any],
-        output_filepath: Optional[str] = None
+        cls, model_name: str, metrics: Dict[str, Any], fairness_metrics: Dict[str, Any], output_filepath: Optional[str] = None
     ) -> str:
         """Assembles and writes a comprehensive markdown Model Card."""
         date_str = datetime.datetime.now().strftime("%Y-%m-%d")

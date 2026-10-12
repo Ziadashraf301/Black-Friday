@@ -3,6 +3,7 @@ Regression test for Fix 9.4:
 - Centralize INR_TO_USD currency conversion constant in settings
 - Verify changing settings.INR_TO_USD proportionally changes model prediction prices
 """
+
 from unittest.mock import patch
 
 import pandas as pd
@@ -52,18 +53,22 @@ def test_predict_price_respects_inr_to_usd_setting():
 
 def test_predict_price_batch_matrix_respects_inr_to_usd_setting():
     """Verify vectorized 2D matrix prediction scales with settings.INR_TO_USD."""
-    df = pd.DataFrame([{
-        "product_id": "P00025442",
-        "product_category_1": 1,
-        "product_category_2": 6,
-        "product_category_3": 14,
-        "gender": "M",
-        "age": "26-35",
-        "occupation": 4,
-        "city_category": "B",
-        "stay_in_current_city_years": "2",
-        "marital_status": 0,
-    }])
+    df = pd.DataFrame(
+        [
+            {
+                "product_id": "P00025442",
+                "product_category_1": 1,
+                "product_category_2": 6,
+                "product_category_3": 14,
+                "gender": "M",
+                "age": "26-35",
+                "occupation": 4,
+                "city_category": "B",
+                "stay_in_current_city_years": "2",
+                "marital_status": 0,
+            }
+        ]
+    )
 
     with patch.object(settings, "INR_TO_USD", 80.0):
         batch_80 = model_service.predict_price_batch_matrix(df)

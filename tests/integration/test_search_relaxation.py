@@ -6,7 +6,9 @@ Validates:
   3. Tier 3: TIER_3_RELAX_BUDGET fallback expanding budget by +25% when budget is too tight.
   4. Tier 4: TIER_4_ZERO_DATA_DEALS guaranteed fallback returning top featured doorbuster deals.
 """
+
 import pytest
+
 from ai.services.search_service import search_service
 from core.db.repository import BlackFridayRepository
 

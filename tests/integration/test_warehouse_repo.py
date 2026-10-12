@@ -3,8 +3,10 @@ Regression test for Fix 4.1:
 - Parameterized :top_k query binding and injection defense
 - No inline DDL (CREATE TABLE / CREATE INDEX / create_all) executed during get_curated_products or cart operations
 """
+
 import pytest
 from sqlalchemy import event
+
 from core.db.repositories.warehouse_repo import WarehouseRepository
 
 
@@ -43,9 +45,7 @@ def test_no_ddl_issued_during_get_curated_and_cart_calls():
 
         # 2. Save user cart
         repo.save_user_cart_snapshot(
-            user_id="test_perf_user_1",
-            session_id="session_perf_1",
-            cart_dict={"item_count": 2, "final_total": 85.50}
+            user_id="test_perf_user_1", session_id="session_perf_1", cart_dict={"item_count": 2, "final_total": 85.50}
         )
 
         # 3. Load user cart
@@ -54,8 +54,7 @@ def test_no_ddl_issued_during_get_curated_and_cart_calls():
         # Assert no DDL statements were issued
         ddl_keywords = ["CREATE TABLE", "CREATE INDEX", "ALTER TABLE", "DROP TABLE"]
         ddl_executed = [
-            stmt for stmt in executed_statements
-            if any(stmt.startswith(kw) or f" {kw} " in stmt for kw in ddl_keywords)
+            stmt for stmt in executed_statements if any(stmt.startswith(kw) or f" {kw} " in stmt for kw in ddl_keywords)
         ]
 
         assert len(ddl_executed) == 0, f"Unexpected DDL statements detected: {ddl_executed}"

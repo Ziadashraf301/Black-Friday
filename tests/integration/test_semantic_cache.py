@@ -55,7 +55,9 @@ def test_invalidate_only_removes_that_shoppers_entry(service):
 
 def test_constraint_cache_is_not_shared_between_shoppers(service):
     service.store_semantic_response("PRODUCT_SEARCH", {"category": "coats"}, "alice", "alice answer")
-    assert service.get_semantic_response("PRODUCT_SEARCH", {"category": "coats"}, "alice")["response_message"] == "alice answer"
+    assert (
+        service.get_semantic_response("PRODUCT_SEARCH", {"category": "coats"}, "alice")["response_message"] == "alice answer"
+    )
     assert service.get_semantic_response("PRODUCT_SEARCH", {"category": "coats"}, "bob") is None
 
 

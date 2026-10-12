@@ -6,20 +6,22 @@ Validates:
 3. Single-intent run preserves cards and action chips.
 4. Fake LLM client integration without network calls.
 """
-from typing import Dict, Any, List
+
+from typing import Any, Dict, List
 from unittest.mock import MagicMock
+
 import pytest
 
-from ai.workflow.state import (
-    AgentState,
-    UIPayload,
-    UICard,
-    GroundingCitation,
-    ui_payload_reducer,
-)
 from ai.services.synthesis_service import SynthesisService
 from ai.services.template_service import ResponseTemplateService
 from ai.workflow.graph import build_shopping_graph
+from ai.workflow.state import (
+    AgentState,
+    GroundingCitation,
+    UICard,
+    UIPayload,
+    ui_payload_reducer,
+)
 
 
 def test_ui_payload_reducer_combines_specialist_cards_and_chips():

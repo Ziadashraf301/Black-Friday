@@ -32,8 +32,6 @@ def test_predict_batch_item_count_capped():
     assert client.post("/shopper/predict-price-batch", json=body, headers=_headers()).status_code == 422
 
 
-
-
 @pytest.mark.parametrize("limit", [0, -1, 501, "abc"])
 def test_catalog_limit_bounds_rejected(limit):
     assert client.get(f"/shopper/catalog?limit={limit}").status_code == 422
@@ -109,6 +107,7 @@ def test_shopper_predict_price_rate_limit(monkeypatch):
 
     import apps.api.rate_limiting.rate_limiter as rl_module
     from apps.api.rate_limiting.rate_limiter import RedisRateLimiter
+
     strict_limiter = RedisRateLimiter(minute_limit=1, day_limit=10)
     strict_limiter._custom_client = None
     strict_limiter._in_memory_windows = {}

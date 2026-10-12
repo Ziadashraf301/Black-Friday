@@ -5,18 +5,22 @@ Regression tests for Fix 9.2 (and WP6 decoupling):
 - AnalyticsService falls back gracefully to DB execution when Redis is down.
 - AnalyticsService cache invalidation after pipeline reloads.
 """
-from unittest.mock import patch, MagicMock, PropertyMock
-from core.db.repositories.analytics_repo import AnalyticsRepository
+
+from unittest.mock import MagicMock, PropertyMock, patch
+
 from apps.api.services.analytics_service import AnalyticsService, analytics_service
-from core.cache import cache_manager, RedisCacheManager
+from core.cache import RedisCacheManager, cache_manager
+from core.db.repositories.analytics_repo import AnalyticsRepository
 
 
 def test_repository_pure_data_access_with_redis_stopped():
     """Verify AnalyticsRepository operates as pure data access without invoking Redis."""
     repo = AnalyticsRepository()
-    with patch.object(cache_manager, "get_json") as mock_get_json, \
-         patch.object(cache_manager, "set_json") as mock_set_json, \
-         patch.object(RedisCacheManager, "is_available", new_callable=PropertyMock, return_value=False):
+    with (
+        patch.object(cache_manager, "get_json") as mock_get_json,
+        patch.object(cache_manager, "set_json") as mock_set_json,
+        patch.object(RedisCacheManager, "is_available", new_callable=PropertyMock, return_value=False),
+    ):
         res = repo.get_eda_summary()
         assert isinstance(res, dict)
         assert "total_orders" in res
@@ -58,9 +62,11 @@ def test_service_fallback_when_redis_is_down():
     cache_manager.delete_key(cache_key)
 
     repo = AnalyticsRepository()
-    with patch.object(RedisCacheManager, "is_available", new_callable=PropertyMock, return_value=False), \
-         patch.object(cache_manager, "get_json", return_value=None), \
-         patch.object(cache_manager, "set_json", return_value=False):
+    with (
+        patch.object(RedisCacheManager, "is_available", new_callable=PropertyMock, return_value=False),
+        patch.object(cache_manager, "get_json", return_value=None),
+        patch.object(cache_manager, "set_json", return_value=False),
+    ):
         res = analytics_service.get_summary(repo)
         assert isinstance(res, dict)
         assert "total_orders" in res

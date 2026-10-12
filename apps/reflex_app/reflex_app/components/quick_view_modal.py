@@ -3,8 +3,9 @@ Quick-View Modal — product detail, ONNX pricing, and recommendation navigation
 Clicking a recommendation switches the modal directly to that product.
 Fully typed with RecProduct for 100% Reflex compiler compatibility.
 """
+
 import reflex as rx
-from reflex_app.state import ShoppingState, RecProduct
+from reflex_app.state import RecProduct, ShoppingState
 
 
 def rec_card(item: RecProduct) -> rx.Component:
@@ -98,11 +99,16 @@ def pricing_box() -> rx.Component:
                         rx.hstack(
                             rx.icon(tag="star", size=14, color="#25a244"),
                             rx.text("Your Exclusive Member Price", font_size="0.75rem", font_weight="700", color="#25a244"),
-                            spacing="1", align_items="center",
+                            spacing="1",
+                            align_items="center",
                         ),
                         rx.cond(
                             ShoppingState.is_predicting_price,
-                            rx.hstack(rx.spinner(size="2"), rx.text("Calculating personalized deal...", font_size="0.85rem", color="#718278"), spacing="2"),
+                            rx.hstack(
+                                rx.spinner(size="2"),
+                                rx.text("Calculating personalized deal...", font_size="0.85rem", color="#718278"),
+                                spacing="2",
+                            ),
                             rx.hstack(
                                 rx.text(
                                     ShoppingState.active_estimated_price_display,
@@ -116,14 +122,17 @@ def pricing_box() -> rx.Component:
                                     color="#aab5ae",
                                     text_decoration="line-through",
                                 ),
-                                spacing="3", align_items="baseline",
+                                spacing="3",
+                                align_items="baseline",
                             ),
                         ),
                         rx.text(
                             "Special Member Deal",
-                            font_size="0.7rem", color="#496556",
+                            font_size="0.7rem",
+                            color="#496556",
                         ),
-                        spacing="0", align_items="flex-start",
+                        spacing="0",
+                        align_items="flex-start",
                     ),
                     rx.vstack(
                         rx.text("Catalog Price", font_size="0.72rem", font_weight="600", color="#496556"),
@@ -218,7 +227,9 @@ def quick_view_modal() -> rx.Component:
                         ),
                         rx.hstack(
                             rx.box(
-                                rx.text(ShoppingState.active_product_id, font_size="0.72rem", font_weight="700", color="#07281e"),
+                                rx.text(
+                                    ShoppingState.active_product_id, font_size="0.72rem", font_weight="700", color="#07281e"
+                                ),
                                 background="#fbf6ec",
                                 padding="0.2rem 0.6rem",
                                 border_radius="4px",
@@ -267,7 +278,9 @@ def quick_view_modal() -> rx.Component:
                         pricing_box(),
                         # Size selector
                         rx.vstack(
-                            rx.text("Select Size", font_size="0.78rem", font_weight="700", color="#496556", letter_spacing="0.05em"),
+                            rx.text(
+                                "Select Size", font_size="0.78rem", font_weight="700", color="#496556", letter_spacing="0.05em"
+                            ),
                             rx.hstack(
                                 rx.foreach(
                                     ShoppingState.active_product_sizes,

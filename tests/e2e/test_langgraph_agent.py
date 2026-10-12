@@ -9,23 +9,24 @@ Validates 100% of Phase 3 Requirements:
   - P3-06: Order Support & Policies (test_support_agent_node_tracking_and_policies)
   - P3-07: Multi-Turn Conversational Journey (test_multi_turn_conversational_workflow)
 """
+
 import pytest
-from ai.workflow.state import AgentState
+
 from ai.schemas import (
-    ProductSearchResult,
-    ProductDetails,
     BundleItem,
     CartItem,
     CartState,
     OrderStatus,
+    ProductDetails,
+    ProductSearchResult,
 )
-from ai.workflow.graph import shopping_graph
-from ai.tools.search_tools import search_tool
-from ai.tools.catalog_tools import catalog_details_tool
 from ai.tools.bundle_tools import bundle_tool
 from ai.tools.cart_tools import cart_tool
+from ai.tools.catalog_tools import catalog_details_tool
 from ai.tools.order_tools import order_tool
-
+from ai.tools.search_tools import search_tool
+from ai.workflow.graph import shopping_graph
+from ai.workflow.state import AgentState
 
 pytestmark = pytest.mark.slow
 
@@ -236,28 +237,34 @@ def test_multi_turn_conversational_workflow():
     session_id = "multi_turn_sess"
 
     # Turn 1: Search
-    t1 = shopping_graph.invoke({
-        "query": "Show me silk kimonos or shirts",
-        "user_id": user_id,
-        "session_id": session_id,
-    })
+    t1 = shopping_graph.invoke(
+        {
+            "query": "Show me silk kimonos or shirts",
+            "user_id": user_id,
+            "session_id": session_id,
+        }
+    )
     assert t1["intent"] == "PRODUCT_SEARCH"
     assert len(t1["retrieved_products"]) > 0
 
     # Turn 2: Inspect item
-    t2 = shopping_graph.invoke({
-        "query": "Is the Artisan Silk Kimono P00025442 machine washable?",
-        "user_id": user_id,
-        "session_id": session_id,
-    })
+    t2 = shopping_graph.invoke(
+        {
+            "query": "Is the Artisan Silk Kimono P00025442 machine washable?",
+            "user_id": user_id,
+            "session_id": session_id,
+        }
+    )
     assert t2["intent"] == "PRODUCT_DETAILS"
     assert t2["product_details"]["product_id"] == "P00025442"
 
     # Turn 3: Add to cart
-    t3 = shopping_graph.invoke({
-        "query": "Add P00025442 in size M to my cart",
-        "user_id": user_id,
-        "session_id": session_id,
-    })
+    t3 = shopping_graph.invoke(
+        {
+            "query": "Add P00025442 in size M to my cart",
+            "user_id": user_id,
+            "session_id": session_id,
+        }
+    )
     assert t3["intent"] == "CART_ACTIONS"
     assert t3["cart"]["item_count"] >= 1

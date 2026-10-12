@@ -6,10 +6,12 @@ Curated catalog against the live database:
   - P1-04: 30 Product Image Assets Coverage (test_product_image_paths_exist)
   - P1-07: Ingestion & Incremental Vector Embeddings (test_catalog_embeddings_incremental_skip)
 """
-import os
+
 import json
-import pytest
+import os
 from pathlib import Path
+
+import pytest
 
 from core.config import settings
 from core.db.repository import BlackFridayRepository
@@ -36,16 +38,21 @@ def test_pgvector_schema(repo):
     """Validates pgvector extension, vector(768), tsvector columns, and HNSW/GIN indexes."""
     with repo.engine.connect() as conn:
         from sqlalchemy import text
+
         # 1. Extension check
         ext_res = conn.execute(text("SELECT extname FROM pg_extension WHERE extname='vector';")).fetchall()
         assert len(ext_res) == 1, "pgvector extension is not enabled in PostgreSQL"
 
         # 2. Columns check
-        col_res = conn.execute(text("""
+        col_res = conn.execute(
+            text(
+                """
             SELECT column_name, udt_name 
             FROM information_schema.columns 
             WHERE table_name='curated_products' AND column_name IN ('embedding', 'search_vector');
-        """)).fetchall()
+        """
+            )
+        ).fetchall()
         cols = {row[0]: row[1] for row in col_res}
         assert "embedding" in cols, "embedding column missing in curated_products"
         assert cols["embedding"] == "vector", f"embedding column must be vector, got {cols['embedding']}"
@@ -53,11 +60,15 @@ def test_pgvector_schema(repo):
         assert cols["search_vector"] == "tsvector", f"search_vector column must be tsvector, got {cols['search_vector']}"
 
         # 3. Index check
-        idx_res = conn.execute(text("""
+        idx_res = conn.execute(
+            text(
+                """
             SELECT indexname 
             FROM pg_indexes 
             WHERE tablename='curated_products';
-        """)).fetchall()
+        """
+            )
+        ).fetchall()
         indexes = [row[0] for row in idx_res]
         assert "idx_curated_embedding_hnsw" in indexes, "HNSW vector index missing on curated_products"
         assert "idx_curated_search_vector" in indexes, "GIN fulltext index missing on curated_products"
@@ -69,8 +80,14 @@ def test_pgvector_schema(repo):
 def test_existing_20_products_audited(catalog_data):
     """Audits the first 20 products ensuring required fields and existing image assets."""
     required_fields = [
-        "product_id", "name", "description", "category_name",
-        "original_price", "discounted_price", "sizes", "image_url"
+        "product_id",
+        "name",
+        "description",
+        "category_name",
+        "original_price",
+        "discounted_price",
+        "sizes",
+        "image_url",
     ]
     first_20 = catalog_data[:20]
     assert len(first_20) == 20, "First 20 products must be present"
@@ -139,10 +156,6 @@ def test_product_image_paths_exist(catalog_data):
         for d in dirs:
             target = d / img_name
             assert target.exists(), f"Product image not found at {target}"
-
-
-
-
 
 
 # ==============================================================================

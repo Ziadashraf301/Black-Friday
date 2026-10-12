@@ -1,6 +1,8 @@
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 from fastapi.testclient import TestClient
+
 from apps.api.main import app
 from apps.api.middleware import security_ban_middleware
 from core.security import create_access_token

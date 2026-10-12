@@ -6,8 +6,10 @@ Validates:
   3. Fast-path guardrail evaluation rejection for locked-out shoppers.
   4. FastAPI Gateway Middleware returning 403 Forbidden with SECURITY_STRIKE_LOCKOUT.
 """
+
 import pytest
 from fastapi.testclient import TestClient
+
 from ai.guardrails.strike_tracker import strike_tracker
 from ai.services.guardrail_service import guardrail_service
 from apps.api.main import app

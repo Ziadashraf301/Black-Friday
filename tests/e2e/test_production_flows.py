@@ -10,17 +10,18 @@ Validates:
   7. Adversarial 3-Strike Tracker & SecurityBanMiddleware 403 Lockout (P4-07)
   8. Bot Assistant SSE Streaming (/bot/stream) & Live WebSocket (/bot/live-ws) (P4-08)
 """
-import pytest
+
 import time
+
+import pytest
 from fastapi.testclient import TestClient
 
-from apps.api.main import app
-from ai.workflow.graph import shopping_graph
-from ai.services.cache_service import cache_service
 from ai.guardrails.strike_tracker import strike_tracker
+from ai.services.cache_service import cache_service
+from ai.workflow.graph import shopping_graph
+from apps.api.main import app
 from core.db.repository import BlackFridayRepository
 from core.security import create_access_token
-
 
 pytestmark = pytest.mark.slow
 
@@ -67,7 +68,7 @@ def test_multi_intent_fan_out_and_aggregation():
 def test_tier0_and_tier1_caching(repo):
     """Validates Tier-0 exact hit and Tier-1 pgvector vector semantic cache lookup."""
     query = "Exclusive vintage velvet evening jacket"
-    
+
     # Pre-populate exact cache
     cache_service.store_exact_llm_response(
         raw_query=query,
@@ -222,7 +223,6 @@ def test_adversarial_strike_lockout_and_middleware(api_client):
 
     # Cleanup
     strike_tracker.reset_strikes(ban_user)
-
 
 
 # =============================================================================

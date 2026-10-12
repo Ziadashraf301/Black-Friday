@@ -1,21 +1,18 @@
-import os
 import json
-import pandas as pd
+import os
+from typing import Any, Dict, List, Optional
+
 import numpy as np
-from typing import Optional, Dict, Any, List
+import pandas as pd
+
 from core.config import settings
 from core.logging import get_logger
 
 logger = get_logger(__name__)
 
-from evidently.legacy.report import Report
+from evidently.legacy.metric_preset import DataDriftPreset, DataQualityPreset, RegressionPreset, TargetDriftPreset
 from evidently.legacy.pipeline.column_mapping import ColumnMapping
-from evidently.legacy.metric_preset import (
-    DataDriftPreset,
-    TargetDriftPreset,
-    DataQualityPreset,
-    RegressionPreset
-)
+from evidently.legacy.report import Report
 
 
 class DriftResult:
@@ -37,7 +34,7 @@ class DriftResult:
         regression_performance: Optional[Dict[str, Any]] = None,
         data_quality_summary: Optional[Dict[str, Any]] = None,
         json_path: Optional[str] = None,
-        retrain_result: Optional[Any] = None
+        retrain_result: Optional[Any] = None,
     ):
         self.dataset_drift_detected = dataset_drift_detected
         self.drifted_feature_share = round(float(drifted_feature_share), 4)
@@ -92,7 +89,7 @@ class DriftResult:
             "drifted_columns": self.drifted_columns,
             "column_drift_scores": self.column_drift_scores,
             "retrain_triggered": self.retrain_result is not None,
-            "retrain_promoted": getattr(self.retrain_result, "is_promoted", False) if self.retrain_result else None
+            "retrain_promoted": getattr(self.retrain_result, "is_promoted", False) if self.retrain_result else None,
         }
 
     def __bool__(self) -> bool:
@@ -116,11 +113,7 @@ class DriftMonitor:
     def __init__(self, reference_df: pd.DataFrame):
         self.reference_df = reference_df
 
-    def evaluate_drift(
-        self,
-        current_df: pd.DataFrame,
-        output_dir: str = "reports/drift"
-    ) -> DriftResult:
+    def evaluate_drift(self, current_df: pd.DataFrame, output_dir: str = "reports/drift") -> DriftResult:
         """Generates comprehensive drift report comparing reference baseline vs incoming batch using Evidently AI."""
         os.makedirs(output_dir, exist_ok=True)
         html_path = os.path.join(output_dir, "data_drift_report.html")
@@ -152,10 +145,7 @@ class DriftMonitor:
                 cat_features.append(c)
 
         column_mapping = ColumnMapping(
-            target=target_col,
-            prediction=pred_col,
-            numerical_features=num_features,
-            categorical_features=cat_features
+            target=target_col, prediction=pred_col, numerical_features=num_features, categorical_features=cat_features
         )
 
         # 3. Assemble built-in Evidently Metric Presets
@@ -166,14 +156,12 @@ class DriftMonitor:
             presets.append(RegressionPreset())
 
         preset_names = [p.__class__.__name__ for p in presets]
-        logger.info(f"Running Evidently Report with {len(presets)} presets: {preset_names} (target='{target_col}', pred='{pred_col}')...")
+        logger.info(
+            f"Running Evidently Report with {len(presets)} presets: {preset_names} (target='{target_col}', pred='{pred_col}')..."
+        )
 
         report = Report(metrics=presets)
-        report.run(
-            reference_data=self.reference_df,
-            current_data=current_df,
-            column_mapping=column_mapping
-        )
+        report.run(reference_data=self.reference_df, current_data=current_df, column_mapping=column_mapping)
         report.save_html(html_path)
 
         report_dict = report.as_dict()
@@ -212,8 +200,16 @@ class DriftMonitor:
                         "drift_score": round(p_val, 4),
                         "stat_test": stat_name,
                         "threshold": threshold,
-                        "current_mean": round(float(col_info.get("current", {}).get("mean", 0)), 4) if isinstance(col_info.get("current"), dict) and "mean" in col_info.get("current") else None,
-                        "reference_mean": round(float(col_info.get("reference", {}).get("mean", 0)), 4) if isinstance(col_info.get("reference"), dict) and "mean" in col_info.get("reference") else None,
+                        "current_mean": (
+                            round(float(col_info.get("current", {}).get("mean", 0)), 4)
+                            if isinstance(col_info.get("current"), dict) and "mean" in col_info.get("current")
+                            else None
+                        ),
+                        "reference_mean": (
+                            round(float(col_info.get("reference", {}).get("mean", 0)), 4)
+                            if isinstance(col_info.get("reference"), dict) and "mean" in col_info.get("reference")
+                            else None
+                        ),
                     }
                     if is_drifted:
                         drifted_columns.append(col_name)
@@ -277,7 +273,7 @@ class DriftMonitor:
             json_path=json_path,
             engine="evidently",
             drifted_columns=sorted(list(set(drifted_columns))),
-            column_drift_scores=column_drift_scores
+            column_drift_scores=column_drift_scores,
         )
 
         # Write clean summary JSON

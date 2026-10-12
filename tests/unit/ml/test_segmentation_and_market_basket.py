@@ -34,8 +34,14 @@ def _customers(n_per_group=6):
     for gender, marital, age, ltv in [("F", "Single", "<=50", 1000.0), ("M", "Married", ">51", 9000.0)]:
         for i in range(n_per_group):
             rows.append(
-                {"user_id": uid, "lifetime_value": ltv + i, "frequency": 10 + i, "gender": gender,
-                 "marital_status": marital, "age_binned": age}
+                {
+                    "user_id": uid,
+                    "lifetime_value": ltv + i,
+                    "frequency": 10 + i,
+                    "gender": gender,
+                    "marital_status": marital,
+                    "age_binned": age,
+                }
             )
             uid += 1
     return pd.DataFrame(rows)
@@ -79,8 +85,12 @@ def test_anl5_negative_association_is_not_labelled_1_2():
     # P(a)=P(b)=4/6, P(a and b)=2/6 -> lift 0.75
     m = _basket_matrix([[1, 0, 0], [1, 0, 0], [1, 1, 0], [1, 1, 0], [0, 1, 0], [0, 1, 0]])
     rules = AprioriAssociationEngine(min_support=0.1, min_confidence=0.1).mine_rules(m)
-    levels = dict(zip(zip(rules["antecedents"].map(sorted).map(tuple), rules["consequents"].map(sorted).map(tuple)),
-                      zip(rules["lift"], rules["lift_level"])))
+    levels = dict(
+        zip(
+            zip(rules["antecedents"].map(sorted).map(tuple), rules["consequents"].map(sorted).map(tuple)),
+            zip(rules["lift"], rules["lift_level"]),
+        )
+    )
     lift, level = levels[(("a",), ("b",))]
     assert lift < 1 and level == "<1"
 
@@ -136,19 +146,21 @@ def test_anl10_hits_non_convergence_falls_back_to_uniform_scores(monkeypatch):
 
 
 def test_compute_cluster_statistics():
-    sample_df = pd.DataFrame({
-        "user_id": [10001, 10002, 10003, 10004],
-        "lifetime_value": [5000.0, 7000.0, 15000.0, 25000.0],
-        "average_order_value": [500.0, 700.0, 1500.0, 2500.0],
-        "frequency": [10, 10, 10, 10],
-        "gender": ["F", "F", "M", "M"],
-        "marital_status": ["Single", "Single", "Married", "Married"],
-        "age_binned": ["<=50", "<=50", "<=50", "<=50"],
-        "popular_category": [1, 1, 5, 5],
-        "cluster_id": [1, 1, 3, 3],
-        "cluster_persona": ["Single females <= 50", "Single females <= 50", "Married males <= 50", "Married males <= 50"],
-        "recommended_action": ["Target lifestyle ads", "Target lifestyle ads", "Target tech deals", "Target tech deals"]
-    })
+    sample_df = pd.DataFrame(
+        {
+            "user_id": [10001, 10002, 10003, 10004],
+            "lifetime_value": [5000.0, 7000.0, 15000.0, 25000.0],
+            "average_order_value": [500.0, 700.0, 1500.0, 2500.0],
+            "frequency": [10, 10, 10, 10],
+            "gender": ["F", "F", "M", "M"],
+            "marital_status": ["Single", "Single", "Married", "Married"],
+            "age_binned": ["<=50", "<=50", "<=50", "<=50"],
+            "popular_category": [1, 1, 5, 5],
+            "cluster_id": [1, 1, 3, 3],
+            "cluster_persona": ["Single females <= 50", "Single females <= 50", "Married males <= 50", "Married males <= 50"],
+            "recommended_action": ["Target lifestyle ads", "Target lifestyle ads", "Target tech deals", "Target tech deals"],
+        }
+    )
 
     stats_df = CustomerSegmentationEngine.compute_cluster_statistics(sample_df)
 

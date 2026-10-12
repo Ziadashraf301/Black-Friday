@@ -43,6 +43,7 @@ def test_get_logger_with_unwritable_log_dir(monkeypatch):
     """Verify get_logger falls back gracefully when file handler cannot be created."""
     with patch("os.makedirs", side_effect=PermissionError("Permission denied: unwritable dir")):
         import core.logging
+
         logger = core.logging.get_logger("test_unwritable_fallback")
 
         assert isinstance(logger, logging.Logger)

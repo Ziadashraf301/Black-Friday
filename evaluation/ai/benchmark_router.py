@@ -3,35 +3,38 @@ System-1 Router & Guardrail Benchmark Harness with MLflow Tracking.
 Evaluates JevApiRouter, FastRuleRouter, and Entity Extractors across 40 Golden Test Cases.
 Logs parameters, metrics, confusion matrices, latency histograms, and artifacts to MLflow.
 """
+
+import json
 import os
 import sys
-import json
 import time
 from pathlib import Path
-from typing import Dict, List, Any, Tuple
+from typing import Any, Dict, List, Tuple
+
+import matplotlib
 import numpy as np
 import pandas as pd
-import matplotlib
+
 matplotlib.use("Agg")  # Non-interactive backend for headless execution
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, brier_score_loss, confusion_matrix
+from sklearn.metrics import accuracy_score, brier_score_loss, confusion_matrix, f1_score, precision_score, recall_score
 
 # Add project root to sys.path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from core.tracking import (
-    mlflow,
-    setup_tracking_environment,
-    get_or_create_experiment,
-)
+from ai.extractor import HybridEntityExtractor, JevEntityExtractor, RegexEntityExtractor
+from ai.router import FastRuleRouter, JevApiRouter
+from ai.schemas import IntentType
 from core.config import settings
 from core.logging import get_logger
-from ai.schemas import IntentType
-from ai.router import JevApiRouter, FastRuleRouter
-from ai.extractor import RegexEntityExtractor, JevEntityExtractor, HybridEntityExtractor
+from core.tracking import (
+    get_or_create_experiment,
+    mlflow,
+    setup_tracking_environment,
+)
 
 logger = get_logger(__name__)
 
@@ -63,16 +66,18 @@ class RouterBenchmarkRunner:
             logger.info(f"[BENCHMARK: MLFLOW] Started MLflow run '{run_name}' (ID: {run.info.run_id})")
 
             # 1. Log Parameters
-            mlflow.log_params({
-                "model_name": "jev-system-one",
-                "prompt_version": "v1.0.0",
-                "dataset_size": len(self.test_cases),
-                "dataset_path": str(self.dataset_path),
-                "adversarial_threshold": 0.80,
-                "strategy_evaluated_1": "JevApiRouter",
-                "strategy_evaluated_2": "FastRuleRouter",
-                "entity_extractors_tested": "Regex,Jev,Hybrid",
-            })
+            mlflow.log_params(
+                {
+                    "model_name": "jev-system-one",
+                    "prompt_version": "v1.0.0",
+                    "dataset_size": len(self.test_cases),
+                    "dataset_path": str(self.dataset_path),
+                    "adversarial_threshold": 0.80,
+                    "strategy_evaluated_1": "JevApiRouter",
+                    "strategy_evaluated_2": "FastRuleRouter",
+                    "entity_extractors_tested": "Regex,Jev,Hybrid",
+                }
+            )
 
             # 2. Benchmark FastRuleRouter (Offline SLA check: p50 < 3ms, p95 < 10ms)
             logger.info("[BENCHMARK] Evaluating FastRuleRouter...")
@@ -126,7 +131,9 @@ class RouterBenchmarkRunner:
                 mlflow.log_artifacts(str(self.artifacts_dir))
                 logger.info("[BENCHMARK: MLFLOW] All artifacts logged to MLflow successfully!")
             except Exception as e:
-                logger.warning(f"[BENCHMARK: MLFLOW] Remote artifact upload note: {e}. Artifacts preserved locally in {self.artifacts_dir}")
+                logger.warning(
+                    f"[BENCHMARK: MLFLOW] Remote artifact upload note: {e}. Artifacts preserved locally in {self.artifacts_dir}"
+                )
 
             return all_metrics
 
@@ -157,19 +164,21 @@ class RouterBenchmarkRunner:
             y_adv_probs.append(adv_prob)
             latencies.append(elapsed_ms)
 
-            detailed_records.append({
-                "id": tc["id"],
-                "category_id": tc["category_id"],
-                "query": query,
-                "target_intent": target_intent,
-                "predicted_intent": pred_intent,
-                "is_adversarial_ground_truth": is_adv_true,
-                "adversarial_probability": adv_prob,
-                "is_safe_predicted": dec.is_safe,
-                "latency_ms": round(elapsed_ms, 2),
-                "strategy": strategy_name,
-                "match": 1 if pred_intent == target_intent else 0,
-            })
+            detailed_records.append(
+                {
+                    "id": tc["id"],
+                    "category_id": tc["category_id"],
+                    "query": query,
+                    "target_intent": target_intent,
+                    "predicted_intent": pred_intent,
+                    "is_adversarial_ground_truth": is_adv_true,
+                    "adversarial_probability": adv_prob,
+                    "is_safe_predicted": dec.is_safe,
+                    "latency_ms": round(elapsed_ms, 2),
+                    "strategy": strategy_name,
+                    "match": 1 if pred_intent == target_intent else 0,
+                }
+            )
 
         acc = accuracy_score(y_true, y_pred)
         f1 = f1_score(y_true, y_pred, average="macro", zero_division=0)
@@ -239,8 +248,7 @@ class RouterBenchmarkRunner:
                 if exp_cats:
                     total += 1
                     has_cat_match = any(
-                        any(c.lower() in ec or ec in c.lower() for ec in exp_cats)
-                        for c in entities.categories
+                        any(c.lower() in ec or ec in c.lower() for ec in exp_cats) for c in entities.categories
                     )
                     if has_cat_match:
                         matches += 1
@@ -252,10 +260,7 @@ class RouterBenchmarkRunner:
                 if not exp_cats:
                     # Non-shopping or general support query without specific department expectation
                     return 1.0 if not entities.categories or "None" in entities.categories else 0.0
-                has_cat_match = any(
-                    any(c.lower() in ec or ec in c.lower() for ec in exp_cats)
-                    for c in entities.categories
-                )
+                has_cat_match = any(any(c.lower() in ec or ec in c.lower() for ec in exp_cats) for c in entities.categories)
                 return 1.0 if has_cat_match else 0.0
 
             reg_ent = regex_ext.extract(query)
@@ -339,7 +344,15 @@ class RouterBenchmarkRunner:
         fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
         # Boxplot
-        sns.boxplot(ax=axes[0], data=df_combined, x="Strategy", y="Latency (ms)", hue="Strategy", palette=["#3b82f6", "#10b981"], legend=False)
+        sns.boxplot(
+            ax=axes[0],
+            data=df_combined,
+            x="Strategy",
+            y="Latency (ms)",
+            hue="Strategy",
+            palette=["#3b82f6", "#10b981"],
+            legend=False,
+        )
         axes[0].set_title("Latency Distribution by Router Strategy", fontsize=13, fontweight="bold")
         axes[0].grid(axis="y", linestyle="--", alpha=0.6)
 
@@ -380,18 +393,27 @@ class RouterBenchmarkRunner:
     def _generate_extractor_chart(self, metrics: Dict[str, float]) -> None:
         """Plots extraction accuracy comparison."""
         plt.figure(figsize=(8, 5))
-        df = pd.DataFrame([
-            {"Extractor": "Regex (Deterministic Entities)", "Accuracy": metrics["regex_entity_accuracy"] * 100},
-            {"Extractor": "Jev (Semantic Category Inference)", "Accuracy": metrics["jev_entity_accuracy"] * 100},
-            {"Extractor": "Hybrid (Production Ensemble)", "Accuracy": metrics["hybrid_entity_accuracy"] * 100},
-        ])
+        df = pd.DataFrame(
+            [
+                {"Extractor": "Regex (Deterministic Entities)", "Accuracy": metrics["regex_entity_accuracy"] * 100},
+                {"Extractor": "Jev (Semantic Category Inference)", "Accuracy": metrics["jev_entity_accuracy"] * 100},
+                {"Extractor": "Hybrid (Production Ensemble)", "Accuracy": metrics["hybrid_entity_accuracy"] * 100},
+            ]
+        )
         ax = sns.barplot(data=df, x="Extractor", y="Accuracy", hue="Extractor", palette="viridis", legend=False)
         plt.title("Entity Extractor Strategy Comparison", fontsize=13, fontweight="bold")
         plt.ylabel("Extraction Accuracy (%)", fontsize=11)
         plt.ylim(0, 105)
         for p in ax.patches:
-            ax.annotate(f"{p.get_height():.1f}%", (p.get_x() + p.get_width() / 2., p.get_height()),
-                        ha="center", va="center", xytext=(0, 7), textcoords="offset points", fontweight="bold")
+            ax.annotate(
+                f"{p.get_height():.1f}%",
+                (p.get_x() + p.get_width() / 2.0, p.get_height()),
+                ha="center",
+                va="center",
+                xytext=(0, 7),
+                textcoords="offset points",
+                fontweight="bold",
+            )
         plt.grid(axis="y", linestyle="--", alpha=0.5)
         plt.tight_layout()
 

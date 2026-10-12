@@ -1,4 +1,5 @@
 """Rate limiter Lua script executed by the live Redis."""
+
 import time
 
 import pytest
@@ -15,6 +16,7 @@ def test_lua_script_real_execution_integration():
     import redis
 
     from core.config import settings
+
     try:
         r = redis.Redis(
             host=settings.REDIS_HOST,

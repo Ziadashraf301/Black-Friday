@@ -1,4 +1,5 @@
 """A banned user cannot evade the ban with a spoofed header (strike tracker on the live Redis)."""
+
 import pytest
 from fastapi.testclient import TestClient
 from starlette.requests import Request

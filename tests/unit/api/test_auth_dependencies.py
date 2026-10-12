@@ -15,7 +15,7 @@ def test_get_optional_user_none_when_no_credentials():
 
 def test_get_optional_user_returns_user_with_valid_token():
     token = create_access_token({"sub": "42", "email": "shopper@test.com"})
-    
+
     class FakeCreds:
         credentials = token
 

@@ -4,7 +4,9 @@ Validates:
 1. Sizing queries across shoe sizes, waist inches, and spelled-out word sizes extract expected entities.
 2. Sizing extraction matches RegexEntityExtractor results without redundant duplicate parsing logic.
 """
+
 import pytest
+
 from ai.extractor.hybrid_extractor import HybridEntityExtractor
 from ai.extractor.regex_extractor import RegexEntityExtractor
 from ai.schemas import ExtractedEntities
@@ -23,7 +25,7 @@ def regex_extractor():
 def test_shoe_sizing_query_extraction(hybrid_extractor, regex_extractor):
     """Validates shoe size extraction from footwear queries."""
     query = "Looking for waterproof boots in shoe size 10 under $120"
-    
+
     mock_jev = ExtractedEntities(categories=["Footwear & Boots"])
     res_hybrid = hybrid_extractor.extract(query, jev_entities=mock_jev)
     res_regex = regex_extractor.extract(query)
@@ -37,7 +39,7 @@ def test_shoe_sizing_query_extraction(hybrid_extractor, regex_extractor):
 def test_waist_sizing_query_extraction(hybrid_extractor, regex_extractor):
     """Validates waist sizing extraction from denim/bottoms queries."""
     query = "Find raw selvedge denim jeans with 32 waist under $80"
-    
+
     mock_jev = ExtractedEntities(categories=["Denim & Jeans"])
     res_hybrid = hybrid_extractor.extract(query, jev_entities=mock_jev)
     res_regex = regex_extractor.extract(query)

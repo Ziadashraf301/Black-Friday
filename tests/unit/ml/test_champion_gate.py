@@ -11,6 +11,7 @@ Regression test for Fix 2.4:
     - candidate better by more than delta
     - candidate below min_r2_threshold
 """
+
 import pytest
 
 
@@ -40,9 +41,7 @@ def champion_gate_decision(
         ("candidate_above_threshold_and_sufficient_delta", 0.7500, 0.7200, 0.0100, 0.6500, True),
     ],
 )
-def test_champion_challenger_promotion_gate_table(
-    case_name, candidate_r2, champion_r2, delta, min_r2, expected_promoted
-):
+def test_champion_challenger_promotion_gate_table(case_name, candidate_r2, champion_r2, delta, min_r2, expected_promoted):
     promoted = champion_gate_decision(
         candidate_r2=candidate_r2,
         champion_r2=champion_r2,

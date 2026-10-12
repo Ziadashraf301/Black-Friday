@@ -3,6 +3,7 @@ Fixtures for the e2e tests, which use the live services.
 
 Automatic clearing of Redis DB 15, semantic_query_cache and user_carts before every test.
 """
+
 from pathlib import Path
 
 import pytest

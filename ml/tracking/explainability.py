@@ -1,11 +1,14 @@
+from typing import Any, Optional, Tuple
+
 import pandas as pd
-from typing import Optional, Tuple, Any
+
 from core.logging import get_logger
 
 logger = get_logger(__name__)
 
 try:
     import shap
+
     HAS_SHAP = True
 except ImportError:
     HAS_SHAP = False

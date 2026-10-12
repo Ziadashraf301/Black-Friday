@@ -87,7 +87,9 @@ def test_catalog_answer_is_cached(stores):
 
 
 def test_policy_answer_is_cached(stores):
-    _synth(query="what is the return policy", intent="ORDER_SUPPORT", policy_details={"title": "Returns", "summary": "30 days"})
+    _synth(
+        query="what is the return policy", intent="ORDER_SUPPORT", policy_details={"title": "Returns", "summary": "30 days"}
+    )
     assert {kind for kind, _ in stores} == {"exact", "vec"}
 
 

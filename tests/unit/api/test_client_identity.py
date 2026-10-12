@@ -42,8 +42,6 @@ def test_invalid_token_falls_back_to_ip():
     assert resolve_client_identity(_request({"Authorization": "Bearer garbage"})) == "203.0.113.7"
 
 
-
-
 @pytest.fixture
 def captured(monkeypatch):
     seen = []

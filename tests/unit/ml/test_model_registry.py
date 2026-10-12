@@ -42,7 +42,7 @@ def test_model_registry_in_ml_models_all():
         ("random_forest", "random_forest"),
         ("decision_tree", "decision_tree"),
         ("linear_regression", "linear_regression"),
-    ]
+    ],
 )
 def test_model_alias_resolution(alias, canonical):
     resolved = ModelRegistry.resolve_name(alias)
@@ -62,7 +62,7 @@ def test_unknown_model_name_raises_clean_error():
 def test_train_pipeline_model_resolution():
     """Verify resolution logic used by run_training_pipeline accepts aliases."""
     available_model_names = ModelRegistry.list_available_models()
-    
+
     for alias in ["lgbm", "rf", "dt", "lr"]:
         resolved_names = [ModelRegistry.resolve_name(m) for m in [alias]]
         selected_model_names = [m for m in resolved_names if m in available_model_names]

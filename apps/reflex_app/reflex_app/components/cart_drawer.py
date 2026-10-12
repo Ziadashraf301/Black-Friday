@@ -3,8 +3,9 @@ Cart drawer with personalized member pricing, cluster persona badge,
 purchase history panel, and owner dashboard link.
 Fully typed with CartItem and PurchaseEntry.
 """
+
 import reflex as rx
-from reflex_app.state import ShoppingState, CartItem, PurchaseEntry
+from reflex_app.state import CartItem, PurchaseEntry, ShoppingState
 
 
 def cart_row(item: CartItem) -> rx.Component:
@@ -90,7 +91,11 @@ def member_panel() -> rx.Component:
                         align_items="center",
                     ),
                     rx.text(
-                        ShoppingState.welcome_name + " · " + ShoppingState.user_gender_label + " · Age " + ShoppingState.user_age,
+                        ShoppingState.welcome_name
+                        + " · "
+                        + ShoppingState.user_gender_label
+                        + " · Age "
+                        + ShoppingState.user_age,
                         font_size="0.72rem",
                         color="#496556",
                     ),
@@ -199,20 +204,30 @@ def cart_drawer() -> rx.Component:
                 rx.hstack(
                     rx.hstack(
                         rx.icon(tag="shopping-bag", size=20, color="#07281e"),
-                        rx.text("Your Vintage Bag",
-                                font_family="Georgia, 'Playfair Display', serif",
-                                font_size="1.2rem", font_weight="700", color="#07281e"),
-                        spacing="2", align_items="center",
+                        rx.text(
+                            "Your Vintage Bag",
+                            font_family="Georgia, 'Playfair Display', serif",
+                            font_size="1.2rem",
+                            font_weight="700",
+                            color="#07281e",
+                        ),
+                        spacing="2",
+                        align_items="center",
                     ),
                     rx.dialog.close(
                         rx.button(
                             rx.icon(tag="x", size=18, color="#718278"),
                             on_click=ShoppingState.toggle_cart,
-                            background="transparent", border="none", cursor="pointer",
+                            background="transparent",
+                            border="none",
+                            cursor="pointer",
                         ),
                     ),
-                    justify_content="space-between", align_items="center",
-                    width="100%", border_bottom="1px solid #eedec7", padding_bottom="0.8rem",
+                    justify_content="space-between",
+                    align_items="center",
+                    width="100%",
+                    border_bottom="1px solid #eedec7",
+                    padding_bottom="0.8rem",
                 ),
                 # Member panel (cluster + history/dashboard links)
                 member_panel(),
@@ -226,12 +241,21 @@ def cart_drawer() -> rx.Component:
                         rx.vstack(
                             rx.icon(tag="shopping-bag", size=36, color="#b0beb6"),
                             rx.text("Your vintage bag is empty.", color="#718278", font_size="0.9rem"),
-                            rx.text("Browse our curated archive to find your next piece.",
-                                    font_size="0.8rem", color="#b0beb6", text_align="center"),
-                            spacing="2", align_items="center", padding="2rem 0",
+                            rx.text(
+                                "Browse our curated archive to find your next piece.",
+                                font_size="0.8rem",
+                                color="#b0beb6",
+                                text_align="center",
+                            ),
+                            spacing="2",
+                            align_items="center",
+                            padding="2rem 0",
                         ),
                     ),
-                    max_height="280px", overflow_y="auto", width="100%", padding_y="0.5rem",
+                    max_height="280px",
+                    overflow_y="auto",
+                    width="100%",
+                    padding_y="0.5rem",
                 ),
                 # Totals + checkout
                 rx.cond(
@@ -268,7 +292,12 @@ def cart_drawer() -> rx.Component:
                                 ),
                                 rx.hstack(
                                     rx.text("You Save", font_size="0.75rem", color="#25a244", font_weight="600"),
-                                    rx.text(ShoppingState.cart_savings_display, font_size="0.75rem", color="#25a244", font_weight="700"),
+                                    rx.text(
+                                        ShoppingState.cart_savings_display,
+                                        font_size="0.75rem",
+                                        color="#25a244",
+                                        font_weight="700",
+                                    ),
                                     justify_content="space-between",
                                     width="100%",
                                 ),
@@ -301,8 +330,16 @@ def cart_drawer() -> rx.Component:
                                 rx.icon(tag="credit-card", size=16, color="#ffffff"),
                                 rx.cond(
                                     ShoppingState.is_authenticated,
-                                    rx.text("Checkout · " + ShoppingState.cart_personalized_total_display, font_weight="700", color="#ffffff"),
-                                    rx.text("Log In & Checkout · " + ShoppingState.cart_subtotal_display, font_weight="700", color="#ffffff"),
+                                    rx.text(
+                                        "Checkout · " + ShoppingState.cart_personalized_total_display,
+                                        font_weight="700",
+                                        color="#ffffff",
+                                    ),
+                                    rx.text(
+                                        "Log In & Checkout · " + ShoppingState.cart_subtotal_display,
+                                        font_weight="700",
+                                        color="#ffffff",
+                                    ),
                                 ),
                                 spacing="2",
                             ),

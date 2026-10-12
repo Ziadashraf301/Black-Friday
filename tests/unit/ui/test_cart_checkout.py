@@ -16,9 +16,7 @@ pytestmark = pytest.mark.slow
 def test_authenticated_add_to_cart_uses_member_price():
     state = ShoppingState(_reflex_internal_init=True)
     state.auth_token = "test_token_123"
-    state.products = [
-        {"product_id": "P100", "name": "Vintage Denim", "discounted_price": 60.0, "product_category_1": 1}
-    ]
+    state.products = [{"product_id": "P100", "name": "Vintage Denim", "discounted_price": 60.0, "product_category_1": 1}]
     state.cached_price_estimates = {"P100": 45.0}
 
     state.add_to_cart("P100")
@@ -33,9 +31,7 @@ def test_authenticated_add_to_cart_uses_member_price():
 def test_guest_add_to_cart_uses_catalog_price():
     state = ShoppingState(_reflex_internal_init=True)
     state.auth_token = ""
-    state.products = [
-        {"product_id": "P100", "name": "Vintage Denim", "discounted_price": 60.0, "product_category_1": 1}
-    ]
+    state.products = [{"product_id": "P100", "name": "Vintage Denim", "discounted_price": 60.0, "product_category_1": 1}]
     state.cached_price_estimates = {"P100": 45.0}
 
     state.add_to_cart("P100")
@@ -96,8 +92,7 @@ def test_checkout_respects_quantity_and_uses_batch_endpoint():
         }
         return mock_resp
 
-    with patch("httpx.Client.post", side_effect=mock_post), \
-         patch.object(ShoppingState, "load_purchase_history"):
+    with patch("httpx.Client.post", side_effect=mock_post), patch.object(ShoppingState, "load_purchase_history"):
         state.checkout()
 
     assert len(state.cart_items) == 0, "Successful checkout must clear cart"
@@ -167,8 +162,7 @@ def test_checkout_fallback_when_batch_endpoint_unavailable():
             return mock_resp
         return mock_resp
 
-    with patch("httpx.Client.post", side_effect=mock_post), \
-         patch.object(ShoppingState, "load_purchase_history"):
+    with patch("httpx.Client.post", side_effect=mock_post), patch.object(ShoppingState, "load_purchase_history"):
         state.checkout()
 
     assert len(per_item_calls) == 3, "Fallback must send request per quantity item"

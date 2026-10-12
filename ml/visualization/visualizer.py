@@ -1,11 +1,15 @@
 import os
+
 import matplotlib
+
 matplotlib.use("Agg")  # Non-interactive backend for server/CLI execution
+from typing import Any, Dict, List, Optional
+
 import matplotlib.pyplot as plt
-import seaborn as sns
 import numpy as np
 import pandas as pd
-from typing import Dict, Any, Optional, List
+import seaborn as sns
+
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -19,7 +23,7 @@ class Visualizer:
         raw_df: pd.DataFrame,
         cleaned_df: pd.DataFrame,
         outlier_bounds: Dict[str, float],
-        output_dir: str = "reports/preprocessing"
+        output_dir: str = "reports/preprocessing",
     ) -> Dict[str, str]:
         """Generates visual diagnostic charts for outlier detection and target normalization across Train and Test splits."""
         os.makedirs(output_dir, exist_ok=True)
@@ -40,13 +44,15 @@ class Visualizer:
                     color="#e53e3e",
                     linestyle="--",
                     linewidth=2,
-                    label=f"IQR Upper ({outlier_bounds['upper']:.1f})"
+                    label=f"IQR Upper ({outlier_bounds['upper']:.1f})",
                 )
                 axes[0, col_idx].set_title(f"{split_name.title()} Split: Purchase Boxplot", fontsize=12, fontweight="bold")
                 axes[0, col_idx].legend(loc="upper right")
 
                 sns.histplot(split_data, ax=axes[1, col_idx], kde=True, color=color, bins=50)
-                axes[1, col_idx].axvline(outlier_bounds["upper"], color="#e53e3e", linestyle="--", linewidth=2, label="Outlier Boundary")
+                axes[1, col_idx].axvline(
+                    outlier_bounds["upper"], color="#e53e3e", linestyle="--", linewidth=2, label="Outlier Boundary"
+                )
                 axes[1, col_idx].set_xlabel("Purchase Amount ($ USD)", fontsize=11)
                 axes[1, col_idx].set_ylabel("Count", fontsize=11)
                 axes[1, col_idx].legend(loc="upper right")
@@ -60,7 +66,7 @@ class Visualizer:
                 color="#e53e3e",
                 linestyle="--",
                 linewidth=2,
-                label=f"IQR Upper ({outlier_bounds['upper']:.1f})"
+                label=f"IQR Upper ({outlier_bounds['upper']:.1f})",
             )
             ax_box.set(xlabel="")
             ax_box.set_title("Purchase Distribution & IQR Outlier Threshold", fontsize=14, fontweight="bold")
@@ -87,7 +93,9 @@ class Visualizer:
                 c2 = "#38b2ac" if split_name == "train" else "#319795"
 
                 sns.histplot(non_outliers["purchase"], ax=axes[row_idx, 0], kde=True, color=c1, bins=40)
-                axes[row_idx, 0].set_title(f"{split_name.title()} Raw Purchase (Non-Outliers USD)", fontsize=11, fontweight="bold")
+                axes[row_idx, 0].set_title(
+                    f"{split_name.title()} Raw Purchase (Non-Outliers USD)", fontsize=11, fontweight="bold"
+                )
                 axes[row_idx, 0].set_xlabel("Purchase ($)")
 
                 sns.histplot(non_outliers["normalized_purchase"], ax=axes[row_idx, 1], kde=True, color=c2, bins=40)
@@ -99,7 +107,9 @@ class Visualizer:
             ax1.set_title("Raw Purchase (Non-Outliers in USD)", fontsize=12, fontweight="bold")
             ax1.set_xlabel("Purchase ($)")
 
-            sns.histplot(cleaned_df[~cleaned_df["is_outlier"]]["normalized_purchase"], ax=ax2, kde=True, color="#38b2ac", bins=40)
+            sns.histplot(
+                cleaned_df[~cleaned_df["is_outlier"]]["normalized_purchase"], ax=ax2, kde=True, color="#38b2ac", bins=40
+            )
             ax2.set_title("Normalized Purchase [0, 1] (Max Scaled)", fontsize=12, fontweight="bold")
             ax2.set_xlabel("Normalized Target")
 
@@ -113,10 +123,7 @@ class Visualizer:
         return chart_paths
 
     @staticmethod
-    def generate_imputation_charts(
-        eval_data: Dict[str, Any],
-        output_dir: str = "reports/preprocessing"
-    ) -> Dict[str, str]:
+    def generate_imputation_charts(eval_data: Dict[str, Any], output_dir: str = "reports/preprocessing") -> Dict[str, str]:
         """Generates visual diagnostic charts comparing true holdout ground-truth vs imputed categories,
         producing both individual per-category charts and an overall evaluation summary."""
         os.makedirs(output_dir, exist_ok=True)
@@ -127,7 +134,9 @@ class Visualizer:
             fig_cat2, ax_cat2 = plt.subplots(figsize=(8, 5))
             bins = np.arange(1, 20) - 0.5
             ax_cat2.hist(eval_data["y_true_cat2"], bins=bins, alpha=0.6, label="Ground Truth", color="#3182ce", density=True)
-            ax_cat2.hist(eval_data["y_pred_cat2"], bins=bins, alpha=0.6, label="Imputed (MissForest)", color="#e53e3e", density=True)
+            ax_cat2.hist(
+                eval_data["y_pred_cat2"], bins=bins, alpha=0.6, label="Imputed (MissForest)", color="#e53e3e", density=True
+            )
             ax_cat2.set_title("Product Category 2: True vs. Imputed (Test Holdout)", fontsize=13, fontweight="bold")
             ax_cat2.set_xlabel("Category ID")
             ax_cat2.set_ylabel("Density")
@@ -143,7 +152,9 @@ class Visualizer:
             fig_cat3, ax_cat3 = plt.subplots(figsize=(8, 5))
             bins = np.arange(1, 20) - 0.5
             ax_cat3.hist(eval_data["y_true_cat3"], bins=bins, alpha=0.6, label="Ground Truth", color="#38a169", density=True)
-            ax_cat3.hist(eval_data["y_pred_cat3"], bins=bins, alpha=0.6, label="Imputed (MissForest)", color="#dd6b20", density=True)
+            ax_cat3.hist(
+                eval_data["y_pred_cat3"], bins=bins, alpha=0.6, label="Imputed (MissForest)", color="#dd6b20", density=True
+            )
             ax_cat3.set_title("Product Category 3: True vs. Imputed (Test Holdout)", fontsize=13, fontweight="bold")
             ax_cat3.set_xlabel("Category ID")
             ax_cat3.set_ylabel("Density")
@@ -162,7 +173,9 @@ class Visualizer:
             ax = axes[0]
             bins = np.arange(1, 20) - 0.5
             ax.hist(eval_data["y_true_cat2"], bins=bins, alpha=0.6, label="Ground Truth", color="#3182ce", density=True)
-            ax.hist(eval_data["y_pred_cat2"], bins=bins, alpha=0.6, label="Imputed (MissForest)", color="#e53e3e", density=True)
+            ax.hist(
+                eval_data["y_pred_cat2"], bins=bins, alpha=0.6, label="Imputed (MissForest)", color="#e53e3e", density=True
+            )
             ax.set_title("Product Category 2: True vs. Imputed", fontsize=12, fontweight="bold")
             ax.set_xlabel("Category ID")
             ax.set_ylabel("Density")
@@ -173,7 +186,9 @@ class Visualizer:
             ax = axes[1]
             bins = np.arange(1, 20) - 0.5
             ax.hist(eval_data["y_true_cat3"], bins=bins, alpha=0.6, label="Ground Truth", color="#38a169", density=True)
-            ax.hist(eval_data["y_pred_cat3"], bins=bins, alpha=0.6, label="Imputed (MissForest)", color="#dd6b20", density=True)
+            ax.hist(
+                eval_data["y_pred_cat3"], bins=bins, alpha=0.6, label="Imputed (MissForest)", color="#dd6b20", density=True
+            )
             ax.set_title("Product Category 3: True vs. Imputed", fontsize=12, fontweight="bold")
             ax.set_xlabel("Category ID")
             ax.legend()
@@ -202,7 +217,7 @@ class Visualizer:
                 textcoords="offset points",
                 ha="center",
                 va="bottom",
-                fontsize=9
+                fontsize=9,
             )
 
         plt.tight_layout()
@@ -216,10 +231,7 @@ class Visualizer:
 
     @staticmethod
     def generate_model_evaluation_charts(
-        y_true: np.ndarray,
-        y_pred: np.ndarray,
-        model_name: str,
-        output_dir: str = "reports/models"
+        y_true: np.ndarray, y_pred: np.ndarray, model_name: str, output_dir: str = "reports/models"
     ) -> Dict[str, str]:
         """Generates Actual vs Predicted scatter and Residual distribution plots."""
         os.makedirs(output_dir, exist_ok=True)
@@ -268,8 +280,7 @@ class Visualizer:
 
     @staticmethod
     def generate_benchmark_comparison_chart(
-        metadata: Dict[str, Any],
-        output_path: str = "reports/models/model_benchmark_comparison.png"
+        metadata: Dict[str, Any], output_path: str = "reports/models/model_benchmark_comparison.png"
     ) -> str:
         """Generates cross-model benchmark bar chart comparing R2 and RMSE across all trained models."""
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -283,14 +294,14 @@ class Visualizer:
         fig, ax1 = plt.subplots(figsize=(9, 5))
         ax2 = ax1.twinx()
 
-        ax1.bar(x - width/2, r2_scores, width, label='Test R² (higher is better)', color='#3182ce')
-        ax2.bar(x + width/2, rmse_scores, width, label='Test RMSE (lower is better)', color='#e53e3e')
+        ax1.bar(x - width / 2, r2_scores, width, label="Test R² (higher is better)", color="#3182ce")
+        ax2.bar(x + width / 2, rmse_scores, width, label="Test RMSE (lower is better)", color="#e53e3e")
 
-        ax1.set_ylabel('R² Score', color='#3182ce', fontsize=12, fontweight="bold")
-        ax2.set_ylabel('RMSE', color='#e53e3e', fontsize=12, fontweight="bold")
+        ax1.set_ylabel("R² Score", color="#3182ce", fontsize=12, fontweight="bold")
+        ax2.set_ylabel("RMSE", color="#e53e3e", fontsize=12, fontweight="bold")
         ax1.set_xticks(x)
-        ax1.set_xticklabels([m.replace('_', ' ').title() for m in model_names], fontsize=11)
-        ax1.set_title('Model Performance Benchmark Comparison', fontsize=14, fontweight="bold")
+        ax1.set_xticklabels([m.replace("_", " ").title() for m in model_names], fontsize=11)
+        ax1.set_title("Model Performance Benchmark Comparison", fontsize=14, fontweight="bold")
 
         ax1.set_ylim(0, max(max(r2_scores) * 1.25, 1.0))
         ax2.set_ylim(0, max(max(rmse_scores) * 1.25, 0.5))
@@ -306,7 +317,7 @@ class Visualizer:
         shap_values: Any,
         eval_features: pd.DataFrame,
         feature_names: Optional[List[str]] = None,
-        output_dir: str = "reports/shap"
+        output_dir: str = "reports/shap",
     ) -> Optional[str]:
         """Generates and saves SHAP summary beeswarm plot as PNG artifact."""
         try:
@@ -329,7 +340,9 @@ class Visualizer:
             # Validate feature_names length matches transformed feature matrix columns
             n_cols = eval_features.shape[1] if hasattr(eval_features, "shape") and len(eval_features.shape) > 1 else None
             if feature_names is not None and n_cols is not None and len(feature_names) != n_cols:
-                logger.info(f"SHAP feature_names count ({len(feature_names)}) != transformed matrix columns ({n_cols}); using auto indexing.")
+                logger.info(
+                    f"SHAP feature_names count ({len(feature_names)}) != transformed matrix columns ({n_cols}); using auto indexing."
+                )
                 feature_names = None
 
             plt.figure(figsize=(10, 6))
@@ -345,9 +358,7 @@ class Visualizer:
 
     @staticmethod
     def generate_segmentation_charts(
-        segmented_df: pd.DataFrame,
-        stats_df: Optional[pd.DataFrame] = None,
-        output_dir: str = "reports/segmentation"
+        segmented_df: pd.DataFrame, stats_df: Optional[pd.DataFrame] = None, output_dir: str = "reports/segmentation"
     ) -> Dict[str, str]:
         """Generates visual persona distribution, LTV profiling, and cluster statistics table charts for Customer Segmentation."""
         os.makedirs(output_dir, exist_ok=True)
@@ -368,7 +379,13 @@ class Visualizer:
         for bar in bars:
             width = bar.get_width()
             pct = (width / max(len(segmented_df), 1)) * 100
-            ax.text(width + max(persona_counts.values)*0.01, bar.get_y() + bar.get_height()/2, f"{int(width):,} ({pct:.1f}%)", va="center", fontsize=9)
+            ax.text(
+                width + max(persona_counts.values) * 0.01,
+                bar.get_y() + bar.get_height() / 2,
+                f"{int(width):,} ({pct:.1f}%)",
+                va="center",
+                fontsize=9,
+            )
 
         plt.tight_layout()
         dist_path = os.path.join(output_dir, "customer_personas_distribution.png")
@@ -385,8 +402,8 @@ class Visualizer:
             x = np.arange(len(profile_df))
             width = 0.35
 
-            ax1.bar(x - width/2, profile_df["lifetime_value"], width, label="Mean LTV ($)", color="#4299e1")
-            ax2.bar(x + width/2, profile_df["frequency"], width, label="Mean Orders Frequency", color="#ed8936")
+            ax1.bar(x - width / 2, profile_df["lifetime_value"], width, label="Mean LTV ($)", color="#4299e1")
+            ax2.bar(x + width / 2, profile_df["frequency"], width, label="Mean Orders Frequency", color="#ed8936")
 
             ax1.set_ylabel("Mean Lifetime Value ($)", color="#4299e1", fontsize=11, fontweight="bold")
             ax2.set_ylabel("Mean Order Frequency", color="#ed8936", fontsize=11, fontweight="bold")
@@ -409,12 +426,7 @@ class Visualizer:
             headers = [c.replace("_", " ").title() for c in display_cols]
             cell_text = stats_df[display_cols].astype(str).values.tolist()
 
-            table = ax.table(
-                cellText=cell_text,
-                colLabels=headers,
-                loc="center",
-                cellLoc="center"
-            )
+            table = ax.table(cellText=cell_text, colLabels=headers, loc="center", cellLoc="center")
             table.auto_set_font_size(False)
             table.set_fontsize(8)
             table.scale(1.1, 1.5)
@@ -426,7 +438,12 @@ class Visualizer:
                 else:
                     cell.set_facecolor("#f7fafc" if r % 2 == 0 else "#ffffff")
 
-            ax.set_title("Cluster Statistics per Persona (Mean Numeric Features & Mode Categorical Features)", fontsize=13, fontweight="bold", pad=15)
+            ax.set_title(
+                "Cluster Statistics per Persona (Mean Numeric Features & Mode Categorical Features)",
+                fontsize=13,
+                fontweight="bold",
+                pad=15,
+            )
             plt.tight_layout()
             table_chart_path = os.path.join(output_dir, "cluster_statistics_table.png")
             fig.savefig(table_chart_path, dpi=200, bbox_inches="tight")
@@ -436,13 +453,9 @@ class Visualizer:
         logger.info(f"Customer segmentation diagnostic charts saved to: {output_dir}")
         return charts
 
-
     @staticmethod
     def generate_market_basket_charts(
-        rules_df: pd.DataFrame,
-        metrics_df: pd.DataFrame,
-        item2vec: Any = None,
-        output_dir: str = "reports/market_basket"
+        rules_df: pd.DataFrame, metrics_df: pd.DataFrame, item2vec: Any = None, output_dir: str = "reports/market_basket"
     ) -> Dict[str, str]:
         """Generates Apriori association rules scatter plot, Product Network centrality leaders chart, and Item2Vec embedding similarity distribution."""
         os.makedirs(output_dir, exist_ok=True)
@@ -458,7 +471,7 @@ class Visualizer:
                 cmap="YlOrRd",
                 alpha=0.75,
                 s=60,
-                edgecolors="none"
+                edgecolors="none",
             )
             cbar = plt.colorbar(scatter, ax=ax)
             cbar.set_label("Lift Factor", fontsize=11)
@@ -473,9 +486,17 @@ class Visualizer:
             charts["apriori_rules_chart"] = rules_chart_path
 
         # 2. Product Network Centrality Leaders Chart (PageRank, Hubs, Authorities)
-        pr_col = "pagerank_score" if "pagerank_score" in metrics_df.columns else ("pagerank" if "pagerank" in metrics_df.columns else None)
+        pr_col = (
+            "pagerank_score"
+            if "pagerank_score" in metrics_df.columns
+            else ("pagerank" if "pagerank" in metrics_df.columns else None)
+        )
         hub_col = "hub_score" if "hub_score" in metrics_df.columns else ("hubs" if "hubs" in metrics_df.columns else None)
-        auth_col = "authority_score" if "authority_score" in metrics_df.columns else ("authorities" if "authorities" in metrics_df.columns else None)
+        auth_col = (
+            "authority_score"
+            if "authority_score" in metrics_df.columns
+            else ("authorities" if "authorities" in metrics_df.columns else None)
+        )
 
         if metrics_df is not None and not metrics_df.empty and pr_col:
             top_nodes = metrics_df.sort_values(by=pr_col, ascending=False).head(10)
@@ -488,8 +509,15 @@ class Visualizer:
 
             for bar in bars:
                 height = bar.get_height()
-                ax.annotate(f"{height:.4f}", xy=(bar.get_x() + bar.get_width()/2, height),
-                            xytext=(0, 3), textcoords="offset points", ha="center", va="bottom", fontsize=8)
+                ax.annotate(
+                    f"{height:.4f}",
+                    xy=(bar.get_x() + bar.get_width() / 2, height),
+                    xytext=(0, 3),
+                    textcoords="offset points",
+                    ha="center",
+                    va="bottom",
+                    fontsize=8,
+                )
 
             plt.tight_layout()
             net_chart_path = os.path.join(output_dir, "product_network_centrality.png")
@@ -546,5 +574,3 @@ class Visualizer:
 
         logger.info(f"Market basket & product network diagnostic charts saved to: {output_dir}")
         return charts
-
-

@@ -57,7 +57,7 @@ async def test_mocked_sse_stream_yields_incremental_state_updates_in_order():
         'data: {"type": "ui_card", "payload": {"cards": [{"product_id": "P01", "name": "Tweed Coat", "price": 99.0}]}}',
         'data: {"type": "grounding", "citations": [{"product_id": "P01", "title": "Tweed Coat", "url": "/shopper/browse/P01", "price": 99.0}]}',
         'data: {"type": "done"}',
-        'data: [DONE]',
+        "data: [DONE]",
     ]
     mock_resp = MockAsyncResponse(sse_lines, status_code=200)
 
@@ -65,12 +65,14 @@ async def test_mocked_sse_stream_yields_incremental_state_updates_in_order():
     with patch("httpx.AsyncClient", return_value=MockAsyncClient(response=mock_resp)):
         async for _ in state._execute_bot_query("Show me coats"):
             assistant_content = state.bot_messages[-1]["content"] if state.bot_messages else ""
-            states_recorded.append({
-                "loading": state.bot_loading,
-                "content": assistant_content,
-                "card_count": len(state.bot_active_cards),
-                "citations_count": len(state.bot_citations),
-            })
+            states_recorded.append(
+                {
+                    "loading": state.bot_loading,
+                    "content": assistant_content,
+                    "card_count": len(state.bot_active_cards),
+                    "citations_count": len(state.bot_citations),
+                }
+            )
 
     # Assert incremental progression
     assert len(states_recorded) >= 4
@@ -137,7 +139,7 @@ async def test_send_bot_message_yields_progressively():
 
     sse_lines = [
         'data: {"type": "token", "content": "Leather boots found."}',
-        'data: [DONE]',
+        "data: [DONE]",
     ]
     mock_resp = MockAsyncResponse(sse_lines, status_code=200)
 

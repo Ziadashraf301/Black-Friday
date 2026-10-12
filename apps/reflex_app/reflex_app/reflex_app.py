@@ -3,19 +3,18 @@ Main application page for 'THE Second Hand STORE' Reflex frontend.
 Faithfully recreates the visual design, typography, warm creamy vintage canvas (#fbf6ec),
 dark forest green header (#07281e), Shop By accordion, 2x2 product grid, and featured hero card.
 """
+
 import reflex as rx
-
-from reflex_app.state import ShoppingState
-from reflex_app.components.header import header
-from reflex_app.components.sidebar import sidebar
-from reflex_app.components.product_card import product_grid
-from reflex_app.components.hero_card import hero_card
-from reflex_app.components.quick_view_modal import quick_view_modal
-from reflex_app.components.cart_drawer import cart_drawer
 from reflex_app.components.auth_modal import auth_modal
-from reflex_app.components.dashboard_modal import dashboard_modal
 from reflex_app.components.bot_drawer import bot_drawer, bot_trigger_button
-
+from reflex_app.components.cart_drawer import cart_drawer
+from reflex_app.components.dashboard_modal import dashboard_modal
+from reflex_app.components.header import header
+from reflex_app.components.hero_card import hero_card
+from reflex_app.components.product_card import product_grid
+from reflex_app.components.quick_view_modal import quick_view_modal
+from reflex_app.components.sidebar import sidebar
+from reflex_app.state import ShoppingState
 
 
 def decorative_elements() -> rx.Component:

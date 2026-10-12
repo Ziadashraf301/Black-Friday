@@ -21,7 +21,7 @@ def test_in_memory_rate_limiter_allows_and_blocks():
     # mock client property to return None
     limiter._custom_client = None
     limiter._in_memory_windows = {}
-    
+
     # First 3 requests allowed
     allowed, _, _, _ = limiter._check_in_memory("test-client", time.time())
     assert allowed is True
@@ -29,7 +29,7 @@ def test_in_memory_rate_limiter_allows_and_blocks():
     assert allowed is True
     allowed, _, _, _ = limiter._check_in_memory("test-client", time.time())
     assert allowed is True
-    
+
     # 4th request blocked
     allowed, msg, _, headers = limiter._check_in_memory("test-client", time.time())
     assert allowed is False
@@ -40,20 +40,16 @@ def test_in_memory_rate_limiter_allows_and_blocks():
 def test_in_memory_rate_limiter_bounded_cleanup():
     limiter = RedisRateLimiter(minute_limit=10, day_limit=100)
     now = time.time()
-    
+
     # Insert older timestamps (> 60 seconds ago)
     past_time = now - 70.0
     limiter._in_memory_windows["mem:min:old-client"] = [past_time]
-    
+
     # Call cleanup
     limiter._clean_expired_in_memory(now)
-    
+
     # Expired client entries should be cleaned up
     assert "mem:min:old-client" not in limiter._in_memory_windows
-
-
-
-
 
 
 def test_signup_is_throttled_and_spoofed_header_does_not_help():

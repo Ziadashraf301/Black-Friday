@@ -5,15 +5,17 @@ Regression tests for Fix 7.2:
 - process_purchase executes without DDL queries.
 - Member discount calculation uses extracted helper.
 """
+
 import uuid
+
 import pytest
 from sqlalchemy import event
-from core.db.repository import BlackFridayRepository
-from apps.api.services.shopper_service import shopper_service
+
 from apps.api.services.helpers import calculate_member_discount_price
 from apps.api.services.model_service import model_service
+from apps.api.services.shopper_service import shopper_service
 from core.cache import cache_manager
-
+from core.db.repository import BlackFridayRepository
 
 pytestmark = pytest.mark.slow
 
@@ -52,9 +54,9 @@ def test_batch_price_issues_constant_category_queries(setup_models_and_tables):
 
     # In the old code with N=10, 10 separate queries were fired.
     # With Fix 7.2, exactly 1 bulk query is executed.
-    assert len(category_queries) == 1, (
-        f"Expected exactly 1 bulk category query for {n_items} items, but captured {len(category_queries)} queries"
-    )
+    assert (
+        len(category_queries) == 1
+    ), f"Expected exactly 1 bulk category query for {n_items} items, but captured {len(category_queries)} queries"
     assert len(quotes) == n_items
 
 
@@ -109,20 +111,22 @@ def test_process_purchase_executes_no_ddl(setup_models_and_tables):
     repo = setup_models_and_tables
     # Create test user
     email = f"user_{uuid.uuid4().hex[:8]}@example.com"
-    user = repo.create_user({
-        "name": "Purchase Tester",
-        "email": email,
-        "password_hash": "dummyhash",
-        "gender": "M",
-        "age": "26-35",
-        "city_category": "A",
-        "marital_status": 0,
-        "occupation": 4,
-        "stay_in_current_city_years": "2",
-        "cluster_id": 1,
-        "cluster_persona": "Preferred Member",
-        "recommended_action": "Exclusive",
-    })
+    user = repo.create_user(
+        {
+            "name": "Purchase Tester",
+            "email": email,
+            "password_hash": "dummyhash",
+            "gender": "M",
+            "age": "26-35",
+            "city_category": "A",
+            "marital_status": 0,
+            "occupation": 4,
+            "stay_in_current_city_years": "2",
+            "cluster_id": 1,
+            "cluster_persona": "Preferred Member",
+            "recommended_action": "Exclusive",
+        }
+    )
 
     captured_statements = []
 

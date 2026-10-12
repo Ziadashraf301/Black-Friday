@@ -1,4 +1,5 @@
 """The pytest markers used by the test folders are registered in pyproject.toml."""
+
 from pathlib import Path
 
 PYPROJECT = Path(__file__).resolve().parents[2] / "pyproject.toml"

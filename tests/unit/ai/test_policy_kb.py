@@ -4,9 +4,11 @@ Validates:
 1. PolicyKnowledgeBase reloads store_policies.json when file mtime changes.
 2. Updates in a temporary file reflect immediately in get_policy without restarting or re-instantiating.
 """
+
 import json
 import time
 from pathlib import Path
+
 import pytest
 
 from ai.tools.policy_kb import PolicyKnowledgeBase

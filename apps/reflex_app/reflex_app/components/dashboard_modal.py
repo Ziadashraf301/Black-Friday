@@ -4,8 +4,9 @@ Shows executive KPIs from the analytics API: total orders, revenue, AOV,
 user count, and demographics breakdown.
 Uses typed DemographicRow rx.Base objects for 100% Reflex compiler compatibility.
 """
+
 import reflex as rx
-from reflex_app.state import ShoppingState, DemographicRow
+from reflex_app.state import DemographicRow, ShoppingState
 
 
 def kpi_card(label: str, value: str, icon: str, color: str = "#07281e") -> rx.Component:
@@ -14,14 +15,19 @@ def kpi_card(label: str, value: str, icon: str, color: str = "#07281e") -> rx.Co
             rx.hstack(
                 rx.icon(tag=icon, size=15, color=color),
                 rx.text(label, font_size="0.7rem", color="#718278", font_weight="500"),
-                spacing="1", align_items="center",
+                spacing="1",
+                align_items="center",
             ),
             rx.text(value, font_size="1.3rem", font_weight="800", color=color),
-            spacing="1", align_items="flex-start",
+            spacing="1",
+            align_items="flex-start",
         ),
-        background="#ffffff", border="1px solid #e4ede8",
-        border_radius="10px", padding="0.7rem 0.9rem",
-        flex="1", min_width="110px",
+        background="#ffffff",
+        border="1px solid #e4ede8",
+        border_radius="10px",
+        padding="0.7rem 0.9rem",
+        flex="1",
+        min_width="110px",
         box_shadow="0 2px 6px rgba(0,0,0,0.05)",
     )
 
@@ -33,14 +39,22 @@ def demo_row(row: DemographicRow) -> rx.Component:
         rx.text(row.avg_purchase_display, font_size="0.78rem", color="#f59b38", font_weight="700", width="80px"),
         rx.box(
             rx.box(
-                height="8px", background="#07281e", border_radius="4px",
+                height="8px",
+                background="#07281e",
+                border_radius="4px",
                 width=row.pct_width,
             ),
-            background="#e4ede8", border_radius="4px", height="8px", flex="1",
+            background="#e4ede8",
+            border_radius="4px",
+            height="8px",
+            flex="1",
         ),
         rx.text(row.pct_display, font_size="0.72rem", color="#718278", width="50px", text_align="right"),
-        spacing="3", align_items="center", width="100%",
-        border_bottom="1px solid #f3ede1", padding_bottom="0.3rem",
+        spacing="3",
+        align_items="center",
+        width="100%",
+        border_bottom="1px solid #f3ede1",
+        padding_bottom="0.3rem",
     )
 
 
@@ -55,19 +69,27 @@ def dashboard_modal() -> rx.Component:
                         rx.text(
                             "Store Analytics Dashboard",
                             font_family="Georgia, 'Playfair Display', serif",
-                            font_size="1.2rem", font_weight="700", color="#07281e",
+                            font_size="1.2rem",
+                            font_weight="700",
+                            color="#07281e",
                         ),
-                        spacing="2", align_items="center",
+                        spacing="2",
+                        align_items="center",
                     ),
                     rx.dialog.close(
                         rx.button(
                             rx.icon(tag="x", size=18, color="#718278"),
                             on_click=ShoppingState.toggle_dashboard,
-                            background="transparent", border="none", cursor="pointer",
+                            background="transparent",
+                            border="none",
+                            cursor="pointer",
                         ),
                     ),
-                    justify_content="space-between", align_items="center",
-                    width="100%", border_bottom="1px solid #eedec7", padding_bottom="0.8rem",
+                    justify_content="space-between",
+                    align_items="center",
+                    width="100%",
+                    border_bottom="1px solid #eedec7",
+                    padding_bottom="0.8rem",
                 ),
                 # Body
                 rx.cond(
@@ -81,7 +103,9 @@ def dashboard_modal() -> rx.Component:
                             kpi_card("Customers", ShoppingState.dashboard_users_display, "users", "#25a244"),
                             kpi_card("Products", ShoppingState.dashboard_products_display, "package", "#2563eb"),
                             kpi_card("Avg Order", ShoppingState.dashboard_aov_display, "trending-up", "#8b5cf6"),
-                            spacing="3", flex_wrap="wrap", width="100%",
+                            spacing="3",
+                            flex_wrap="wrap",
+                            width="100%",
                         ),
                         # Demographics
                         rx.vstack(
@@ -95,41 +119,66 @@ def dashboard_modal() -> rx.Component:
                                             disabled=ShoppingState.is_dashboard_loading,
                                             background=rx.cond(ShoppingState.dashboard_dimension == dim, "#07281e", "#f3ede1"),
                                             color=rx.cond(ShoppingState.dashboard_dimension == dim, "#ffffff", "#07281e"),
-                                            border="none", border_radius="6px",
-                                            padding="0.2rem 0.55rem", font_size="0.75rem", cursor="pointer",
+                                            border="none",
+                                            border_radius="6px",
+                                            padding="0.2rem 0.55rem",
+                                            font_size="0.75rem",
+                                            cursor="pointer",
                                             opacity=rx.cond(ShoppingState.is_dashboard_loading, "0.5", "1.0"),
                                         )
                                         for dim in ["gender", "age", "city_category", "marital_status"]
                                     ],
                                     spacing="1",
                                 ),
-                                justify_content="space-between", align_items="center", width="100%",
+                                justify_content="space-between",
+                                align_items="center",
+                                width="100%",
                             ),
                             rx.hstack(
                                 rx.text("Group", font_size="0.7rem", font_weight="700", color="#718278", width="100px"),
                                 rx.text("Orders", font_size="0.7rem", font_weight="700", color="#718278", width="80px"),
                                 rx.text("Avg Spend", font_size="0.7rem", font_weight="700", color="#718278", width="80px"),
-                                rx.text("Distribution Share", font_size="0.7rem", font_weight="700", color="#718278", flex="1"),
-                                rx.text("Pct", font_size="0.7rem", font_weight="700", color="#718278", width="50px", text_align="right"),
-                                spacing="3", width="100%",
+                                rx.text(
+                                    "Distribution Share", font_size="0.7rem", font_weight="700", color="#718278", flex="1"
+                                ),
+                                rx.text(
+                                    "Pct",
+                                    font_size="0.7rem",
+                                    font_weight="700",
+                                    color="#718278",
+                                    width="50px",
+                                    text_align="right",
+                                ),
+                                spacing="3",
+                                width="100%",
                             ),
                             rx.box(
                                 rx.foreach(
                                     ShoppingState.dashboard_demographics,
                                     demo_row,
                                 ),
-                                width="100%", max_height="200px", overflow_y="auto",
+                                width="100%",
+                                max_height="200px",
+                                overflow_y="auto",
                             ),
-                            width="100%", spacing="2",
-                            background="#fbf6ec", border_radius="8px", padding="0.75rem", margin_top="0.5rem",
+                            width="100%",
+                            spacing="2",
+                            background="#fbf6ec",
+                            border_radius="8px",
+                            padding="0.75rem",
+                            margin_top="0.5rem",
                         ),
-                        width="100%", spacing="3",
+                        width="100%",
+                        spacing="3",
                     ),
                 ),
-                spacing="3", width="100%",
+                spacing="3",
+                width="100%",
             ),
-            max_width="800px", background="#ffffff",
-            padding="1.5rem", border_radius="16px",
+            max_width="800px",
+            background="#ffffff",
+            padding="1.5rem",
+            border_radius="16px",
             box_shadow="0 20px 48px rgba(0,0,0,0.25)",
         ),
         open=ShoppingState.show_dashboard,

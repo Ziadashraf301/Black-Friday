@@ -3,26 +3,43 @@ Global state for 'THE Second Hand STORE' Reflex frontend.
 Fully typed with rx.Base for 100% Reflex compiler compatibility.
 Handles auth, catalog, filters, quick view, ONNX pricing, cart, history, and dashboard.
 """
-import json
-import httpx
+
 import asyncio
+import json
+import os
 import uuid
 from pathlib import Path
-from typing import List, Dict, Any, Optional
-from pydantic import BaseModel
-import reflex as rx
+from typing import Any, Dict, List, Optional
 
-import os
+import httpx
+import reflex as rx
+from pydantic import BaseModel
 
 API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000")
 INR_TO_USD_RATE: float = 80.0
 
 _OCCUPATION_MAP = {
-    0: "Student", 1: "Technology", 2: "Healthcare", 3: "Management",
-    4: "Finance", 5: "Legal", 6: "Retail / Sales", 7: "Engineering",
-    8: "Trades", 9: "Education", 10: "Government", 11: "Hospitality",
-    12: "Agriculture", 13: "Media", 14: "Transport", 15: "Arts & Design",
-    16: "Freelance", 17: "Real Estate", 18: "Retired", 19: "Homemaker", 20: "Other",
+    0: "Student",
+    1: "Technology",
+    2: "Healthcare",
+    3: "Management",
+    4: "Finance",
+    5: "Legal",
+    6: "Retail / Sales",
+    7: "Engineering",
+    8: "Trades",
+    9: "Education",
+    10: "Government",
+    11: "Hospitality",
+    12: "Agriculture",
+    13: "Media",
+    14: "Transport",
+    15: "Arts & Design",
+    16: "Freelance",
+    17: "Real Estate",
+    18: "Retired",
+    19: "Homemaker",
+    20: "Other",
 }
 
 
@@ -356,8 +373,10 @@ class ShoppingState(rx.State):
                 continue
             if self.search_query.strip():
                 q = self.search_query.lower()
-                if not any(q in str(p.get(f, "")).lower()
-                           for f in ("name", "tagline", "description", "category_name", "brand", "style")):
+                if not any(
+                    q in str(p.get(f, "")).lower()
+                    for f in ("name", "tagline", "description", "category_name", "brand", "style")
+                ):
                     continue
             if self.selected_category != "All" and p.get("category_name") != self.selected_category:
                 continue
@@ -476,14 +495,16 @@ class ShoppingState(rx.State):
                 continue
             seen.add(pid)
             p = _price_or_none(item.get("price"))
-            res.append(RecProduct(
-                product_id=pid,
-                name=str(item.get("name", default_name)),
-                image_url=str(item.get("image_url", f"/products/{pid}.jpg")),
-                price=p,
-                price_display=_format_price(p),
-                badge_label=badge,
-            ))
+            res.append(
+                RecProduct(
+                    product_id=pid,
+                    name=str(item.get("name", default_name)),
+                    image_url=str(item.get("image_url", f"/products/{pid}.jpg")),
+                    price=p,
+                    price_display=_format_price(p),
+                    badge_label=badge,
+                )
+            )
             if len(res) >= 3:
                 break
         return res
@@ -556,14 +577,29 @@ class ShoppingState(rx.State):
         self.auth_tab = tab
         self.auth_error = ""
 
-    def set_login_email(self, v: str): self.login_email = v
-    def set_login_password(self, v: str): self.login_password = v
-    def set_signup_name(self, v: str): self.signup_name = v
-    def set_signup_email(self, v: str): self.signup_email = v
-    def set_signup_password(self, v: str): self.signup_password = v
-    def set_signup_gender(self, v: str): self.signup_gender = v
-    def set_signup_age(self, v: str): self.signup_age = v
-    def set_signup_city(self, v: str): self.signup_city = v
+    def set_login_email(self, v: str):
+        self.login_email = v
+
+    def set_login_password(self, v: str):
+        self.login_password = v
+
+    def set_signup_name(self, v: str):
+        self.signup_name = v
+
+    def set_signup_email(self, v: str):
+        self.signup_email = v
+
+    def set_signup_password(self, v: str):
+        self.signup_password = v
+
+    def set_signup_gender(self, v: str):
+        self.signup_gender = v
+
+    def set_signup_age(self, v: str):
+        self.signup_age = v
+
+    def set_signup_city(self, v: str):
+        self.signup_city = v
 
     def set_signup_occupation(self, v: str):
         try:
@@ -585,7 +621,7 @@ class ShoppingState(rx.State):
             with httpx.Client(timeout=8.0) as client:
                 resp = client.post(
                     f"{API_BASE_URL}/auth/login",
-                    json={"email": self.login_email.strip().lower(), "password": self.login_password}
+                    json={"email": self.login_email.strip().lower(), "password": self.login_password},
                 )
                 if resp.status_code == 200:
                     self._apply_auth(resp.json())
@@ -652,10 +688,7 @@ class ShoppingState(rx.State):
             return
         try:
             with httpx.Client(timeout=5.0) as client:
-                resp = client.get(
-                    f"{API_BASE_URL}/auth/me",
-                    headers={"Authorization": f"Bearer {self.auth_token}"}
-                )
+                resp = client.get(f"{API_BASE_URL}/auth/me", headers={"Authorization": f"Bearer {self.auth_token}"})
                 if resp.status_code == 200:
                     me = resp.json()
                     self.user_id = int(me.get("user_id", me.get("id", 0)))
@@ -688,22 +721,24 @@ class ShoppingState(rx.State):
         # Revert personalized prices back to catalog prices in cart
         updated_cart = []
         for i in self.cart_items:
-            updated_cart.append(CartItem(
-                key=i.key,
-                product_id=i.product_id,
-                name=i.name,
-                image_url=i.image_url,
-                price=i.price,
-                personalized_price=0.0,
-                has_personalized=False,
-                size=i.size,
-                quantity=i.quantity,
-                product_category_1=i.product_category_1,
-                product_category_2=i.product_category_2,
-                product_category_3=i.product_category_3,
-                price_display=f"${i.price:.2f}",
-                personalized_display=f"${i.price:.2f}",
-            ))
+            updated_cart.append(
+                CartItem(
+                    key=i.key,
+                    product_id=i.product_id,
+                    name=i.name,
+                    image_url=i.image_url,
+                    price=i.price,
+                    personalized_price=0.0,
+                    has_personalized=False,
+                    size=i.size,
+                    quantity=i.quantity,
+                    product_category_1=i.product_category_1,
+                    product_category_2=i.product_category_2,
+                    product_category_3=i.product_category_3,
+                    price_display=f"${i.price:.2f}",
+                    personalized_display=f"${i.price:.2f}",
+                )
+            )
         self.cart_items = updated_cart
         self.purchase_history = []
         self.is_cart_open = False
@@ -748,11 +783,20 @@ class ShoppingState(rx.State):
     def set_search_query(self, q: str):
         self.search_query = q
 
-    def set_filter_category(self, v: str): self.selected_category = v
-    def set_filter_gender(self, v: str): self.selected_gender = v
-    def set_filter_brand(self, v: str): self.selected_brand = v
-    def set_filter_style(self, v: str): self.selected_style = v
-    def set_filter_season(self, v: str): self.selected_season = v
+    def set_filter_category(self, v: str):
+        self.selected_category = v
+
+    def set_filter_gender(self, v: str):
+        self.selected_gender = v
+
+    def set_filter_brand(self, v: str):
+        self.selected_brand = v
+
+    def set_filter_style(self, v: str):
+        self.selected_style = v
+
+    def set_filter_season(self, v: str):
+        self.selected_season = v
 
     def reset_filters(self):
         self.selected_category = "All"
@@ -823,7 +867,8 @@ class ShoppingState(rx.State):
                 "product_category_2": p.get("product_category_2"),
                 "product_category_3": p.get("product_category_3"),
             }
-            for p in self.products if p.get("product_id")
+            for p in self.products
+            if p.get("product_id")
         ]
         if not items_payload:
             return
@@ -832,7 +877,7 @@ class ShoppingState(rx.State):
                 resp = client.post(
                     f"{API_BASE_URL}/shopper/predict-price-batch",
                     json={"items": items_payload},
-                    headers={"Authorization": f"Bearer {self.auth_token}"}
+                    headers={"Authorization": f"Bearer {self.auth_token}"},
                 )
                 if resp.status_code == 200:
                     data = resp.json()
@@ -867,7 +912,7 @@ class ShoppingState(rx.State):
                 resp = client.post(
                     f"{API_BASE_URL}/shopper/predict-price",
                     json=payload,
-                    headers={"Authorization": f"Bearer {self.auth_token}"}
+                    headers={"Authorization": f"Bearer {self.auth_token}"},
                 )
                 if resp.status_code == 200:
                     d = resp.json()
@@ -921,42 +966,48 @@ class ShoppingState(rx.State):
         for item in self.cart_items:
             if item.key == key:
                 found = True
-                new_items.append(CartItem(
-                    key=item.key,
-                    product_id=item.product_id,
-                    name=item.name,
-                    image_url=item.image_url,
-                    price=item.price,
-                    personalized_price=pers_price if has_pers else (item.personalized_price if item.has_personalized else 0.0),
-                    has_personalized=has_pers or item.has_personalized,
-                    size=item.size,
-                    quantity=item.quantity + 1,
-                    product_category_1=item.product_category_1,
-                    product_category_2=item.product_category_2,
-                    product_category_3=item.product_category_3,
-                    price_display=f"${item.price:.2f}",
-                    personalized_display=f"${(pers_price if has_pers else (item.personalized_price if item.has_personalized else item.price)):.2f}",
-                ))
+                new_items.append(
+                    CartItem(
+                        key=item.key,
+                        product_id=item.product_id,
+                        name=item.name,
+                        image_url=item.image_url,
+                        price=item.price,
+                        personalized_price=(
+                            pers_price if has_pers else (item.personalized_price if item.has_personalized else 0.0)
+                        ),
+                        has_personalized=has_pers or item.has_personalized,
+                        size=item.size,
+                        quantity=item.quantity + 1,
+                        product_category_1=item.product_category_1,
+                        product_category_2=item.product_category_2,
+                        product_category_3=item.product_category_3,
+                        price_display=f"${item.price:.2f}",
+                        personalized_display=f"${(pers_price if has_pers else (item.personalized_price if item.has_personalized else item.price)):.2f}",
+                    )
+                )
             else:
                 new_items.append(item)
 
         if not found:
-            new_items.append(CartItem(
-                key=key,
-                product_id=target["product_id"],
-                name=str(target.get("name", product_id)),
-                image_url=str(target.get("image_url", f"/products/{product_id}.jpg")),
-                price=base_price,
-                personalized_price=pers_price if has_pers else 0.0,
-                has_personalized=has_pers,
-                size=size,
-                quantity=1,
-                product_category_1=int(target.get("product_category_1", 1)),
-                product_category_2=target.get("product_category_2"),
-                product_category_3=target.get("product_category_3"),
-                price_display=f"${base_price:.2f}",
-                personalized_display=f"${pers_price:.2f}" if has_pers else f"${base_price:.2f}",
-            ))
+            new_items.append(
+                CartItem(
+                    key=key,
+                    product_id=target["product_id"],
+                    name=str(target.get("name", product_id)),
+                    image_url=str(target.get("image_url", f"/products/{product_id}.jpg")),
+                    price=base_price,
+                    personalized_price=pers_price if has_pers else 0.0,
+                    has_personalized=has_pers,
+                    size=size,
+                    quantity=1,
+                    product_category_1=int(target.get("product_category_1", 1)),
+                    product_category_2=target.get("product_category_2"),
+                    product_category_3=target.get("product_category_3"),
+                    price_display=f"${base_price:.2f}",
+                    personalized_display=f"${pers_price:.2f}" if has_pers else f"${base_price:.2f}",
+                )
+            )
 
         self.cart_items = new_items
 
@@ -978,7 +1029,7 @@ class ShoppingState(rx.State):
                 resp = client.post(
                     f"{API_BASE_URL}/shopper/predict-price-batch",
                     json={"items": items_payload},
-                    headers={"Authorization": f"Bearer {self.auth_token}"}
+                    headers={"Authorization": f"Bearer {self.auth_token}"},
                 )
                 if resp.status_code == 200:
                     quotes = resp.json().get("quotes", [])
@@ -989,22 +1040,24 @@ class ShoppingState(rx.State):
                         if p_price is None:
                             updated_items.append(item)
                             continue
-                        updated_items.append(CartItem(
-                            key=item.key,
-                            product_id=item.product_id,
-                            name=item.name,
-                            image_url=item.image_url,
-                            price=item.price,
-                            personalized_price=p_price,
-                            has_personalized=True,
-                            size=item.size,
-                            quantity=item.quantity,
-                            product_category_1=item.product_category_1,
-                            product_category_2=item.product_category_2,
-                            product_category_3=item.product_category_3,
-                            price_display=f"${item.price:.2f}",
-                            personalized_display=f"${p_price:.2f}",
-                        ))
+                        updated_items.append(
+                            CartItem(
+                                key=item.key,
+                                product_id=item.product_id,
+                                name=item.name,
+                                image_url=item.image_url,
+                                price=item.price,
+                                personalized_price=p_price,
+                                has_personalized=True,
+                                size=item.size,
+                                quantity=item.quantity,
+                                product_category_1=item.product_category_1,
+                                product_category_2=item.product_category_2,
+                                product_category_3=item.product_category_3,
+                                price_display=f"${item.price:.2f}",
+                                personalized_display=f"${p_price:.2f}",
+                            )
+                        )
                     self.cart_items = updated_items
         except Exception:
             pass
@@ -1017,10 +1070,7 @@ class ShoppingState(rx.State):
 
     def add_active_to_cart(self):
         if self.active_product:
-            self._add_with_size(
-                self.active_product.get("product_id", ""),
-                self.active_selected_size
-            )
+            self._add_with_size(self.active_product.get("product_id", ""), self.active_selected_size)
             self.is_cart_open = True
 
     def add_hero_to_cart(self):
@@ -1116,10 +1166,7 @@ class ShoppingState(rx.State):
         self.is_history_loading = True
         try:
             with httpx.Client(timeout=5.0) as client:
-                resp = client.get(
-                    f"{API_BASE_URL}/shopper/history",
-                    headers={"Authorization": f"Bearer {self.auth_token}"}
-                )
+                resp = client.get(f"{API_BASE_URL}/shopper/history", headers={"Authorization": f"Bearer {self.auth_token}"})
                 if resp.status_code == 200:
                     raw_purchases = resp.json().get("purchases", [])
                     entries = []
@@ -1127,13 +1174,15 @@ class ShoppingState(rx.State):
                         p_usd = float(r.get("predicted_usd", 0.0))
                         dt = str(r.get("purchased_at", ""))
                         date_str = dt[:10] if len(dt) >= 10 else dt
-                        entries.append(PurchaseEntry(
-                            id=int(r.get("id", 0)),
-                            product_id=str(r.get("product_id", "")),
-                            predicted_usd=p_usd,
-                            price_display=f"${p_usd:.2f}",
-                            purchased_at_display=date_str,
-                        ))
+                        entries.append(
+                            PurchaseEntry(
+                                id=int(r.get("id", 0)),
+                                product_id=str(r.get("product_id", "")),
+                                predicted_usd=p_usd,
+                                price_display=f"${p_usd:.2f}",
+                                purchased_at_display=date_str,
+                            )
+                        )
                     self.purchase_history = entries
         except Exception:
             pass
@@ -1167,13 +1216,15 @@ class ShoppingState(rx.State):
                             avg_p_usd = float(r.get("avg_purchase", 0.0)) / INR_TO_USD_RATE
                             pct = round(cnt / total * 100, 1)
                             group_name = _format_demographic_group(dim, r.get("category", "-"))
-                            rows.append(DemographicRow(
-                                group=group_name,
-                                total_orders=cnt,
-                                avg_purchase_display=f"${avg_p_usd:.2f}",
-                                pct_display=f"{pct:.1f}%",
-                                pct_width=f"{min(100.0, pct):.1f}%",
-                            ))
+                            rows.append(
+                                DemographicRow(
+                                    group=group_name,
+                                    total_orders=cnt,
+                                    avg_purchase_display=f"${avg_p_usd:.2f}",
+                                    pct_display=f"{pct:.1f}%",
+                                    pct_width=f"{min(100.0, pct):.1f}%",
+                                )
+                            )
                         new_cache[dim] = rows
                 self.dashboard_cache = new_cache
                 if self.dashboard_dimension in new_cache:
@@ -1209,7 +1260,7 @@ class ShoppingState(rx.State):
             self.bot_auth_warning = "Please sign in to unlock your personal AI shopping assistant and member deals."
             self.show_auth = True
             return False
-        
+
         self.bot_auth_warning = ""
         self.is_bot_open = True
         if not self.bot_messages:
@@ -1218,7 +1269,7 @@ class ShoppingState(rx.State):
             self.bot_messages = [
                 {
                     "role": "assistant",
-                    "content": f"Welcome back, {name}! ({persona})\nHow can I assist you with our curated archives and personalized member pricing today?"
+                    "content": f"Welcome back, {name}! ({persona})\nHow can I assist you with our curated archives and personalized member pricing today?",
                 }
             ]
         return True
@@ -1247,7 +1298,9 @@ class ShoppingState(rx.State):
         """Toggles real-time audio capture in voice mode."""
         self.bot_is_listening = not self.bot_is_listening
         if self.bot_is_listening:
-            self.bot_messages.append({"role": "assistant", "content": "🎙️ Listening... Speak naturally to search archives or inquire about styles."})
+            self.bot_messages.append(
+                {"role": "assistant", "content": "🎙️ Listening... Speak naturally to search archives or inquire about styles."}
+            )
         else:
             self.bot_messages.append({"role": "assistant", "content": "🎙️ Audio stream closed."})
 
@@ -1372,7 +1425,9 @@ class ShoppingState(rx.State):
                                                 formatted_cites.append(str(c))
                                         else:
                                             formatted_cites.append(str(c))
-                                    cite_str = "\n\nSources & Catalog Grounding:\n" + "\n".join(f"- {fc}" for fc in formatted_cites)
+                                    cite_str = "\n\nSources & Catalog Grounding:\n" + "\n".join(
+                                        f"- {fc}" for fc in formatted_cites
+                                    )
                                     if self.bot_messages and self.bot_messages[-1].get("role") == "assistant":
                                         self.bot_messages[-1]["content"] = "".join(tokens) + cite_str
                                     else:
@@ -1423,6 +1478,3 @@ class ShoppingState(rx.State):
         yield
         async for _ in self._execute_bot_query(msg):
             yield
-
-
-

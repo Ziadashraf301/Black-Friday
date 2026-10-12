@@ -2,6 +2,7 @@
 Header navigation — dark forest green, brand logo, nav links,
 pill search, dynamic cart counter, and contextual Log In / member persona button.
 """
+
 import reflex as rx
 from reflex_app.state import ShoppingState
 
@@ -30,13 +31,30 @@ def header() -> rx.Component:
             rx.hstack(
                 rx.box(rx.icon(tag="recycle", size=22, color="#25a244"), display="flex", align_items="center"),
                 rx.vstack(
-                    rx.text("THE Second Hand", font_family="Georgia, serif", font_size="1.05rem",
-                            font_weight="700", color="#ffffff", line_height="1.1", letter_spacing="0.02em"),
-                    rx.text("STORE", font_family="Georgia, serif", font_size="0.75rem",
-                            font_weight="600", color="#f59b38", letter_spacing="0.25em", line_height="1"),
-                    spacing="0", align_items="flex-start",
+                    rx.text(
+                        "THE Second Hand",
+                        font_family="Georgia, serif",
+                        font_size="1.05rem",
+                        font_weight="700",
+                        color="#ffffff",
+                        line_height="1.1",
+                        letter_spacing="0.02em",
+                    ),
+                    rx.text(
+                        "STORE",
+                        font_family="Georgia, serif",
+                        font_size="0.75rem",
+                        font_weight="600",
+                        color="#f59b38",
+                        letter_spacing="0.25em",
+                        line_height="1",
+                    ),
+                    spacing="0",
+                    align_items="flex-start",
                 ),
-                spacing="2", align_items="center", cursor="pointer",
+                spacing="2",
+                align_items="center",
+                cursor="pointer",
                 on_click=ShoppingState.reset_filters,
             ),
             # Nav Links (wired to filter actions)
@@ -102,7 +120,9 @@ def header() -> rx.Component:
                         rx.box(
                             rx.hstack(
                                 rx.icon(tag="star", size=13, color="#f59b38"),
-                                rx.text(ShoppingState.user_persona_label, font_size="0.75rem", font_weight="700", color="#07281e"),
+                                rx.text(
+                                    ShoppingState.user_persona_label, font_size="0.75rem", font_weight="700", color="#07281e"
+                                ),
                                 spacing="1",
                                 align_items="center",
                             ),
@@ -159,7 +179,9 @@ def header() -> rx.Component:
                         rx.icon(tag="shopping-bag", size=16, color="#07281e"),
                         rx.text("Cart", font_size="0.88rem", font_weight="600", color="#07281e"),
                         rx.box(
-                            rx.text(ShoppingState.cart_count.to_string(), font_size="0.78rem", font_weight="700", color="#ffffff"),
+                            rx.text(
+                                ShoppingState.cart_count.to_string(), font_size="0.78rem", font_weight="700", color="#ffffff"
+                            ),
                             background="#f59b38",
                             border_radius="9999px",
                             padding="0.1rem 0.45rem",

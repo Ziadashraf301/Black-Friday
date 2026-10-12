@@ -7,6 +7,7 @@ Uses AST inspection to statically verify architectural dependency boundaries:
 - evaluation/ may import core/, ml/, ai/, but nothing imports evaluation/ (except allow-listed training pipelines)
 - mlflow is configured and imported ONLY in core/tracking/
 """
+
 import ast
 from pathlib import Path
 from typing import List, Tuple
@@ -69,16 +70,12 @@ def scan_architectural_imports() -> List[str]:
                 # Check Rule: MLflow imported strictly inside core/tracking/
                 if top_module == "mlflow":
                     if not (top_dir == "core" and sub_dir == "tracking"):
-                        violations.append(
-                            f"{norm_path}:{lineno}: Forbidden direct import of 'mlflow' outside core/tracking/"
-                        )
+                        violations.append(f"{norm_path}:{lineno}: Forbidden direct import of 'mlflow' outside core/tracking/")
 
                 # Check Rule: core/ imports nothing from ml, ai, apps, evaluation
                 if top_dir == "core":
                     if top_module in ("ml", "ai", "apps", "evaluation"):
-                        violations.append(
-                            f"{norm_path}:{lineno}: Forbidden import of '{mod_name}' inside core/"
-                        )
+                        violations.append(f"{norm_path}:{lineno}: Forbidden import of '{mod_name}' inside core/")
 
                 # Check Rule: ml/ imports core only (never apps, ai, evaluation)
                 if top_dir == "ml":
@@ -88,23 +85,17 @@ def scan_architectural_imports() -> List[str]:
                         )
                     elif top_module == "evaluation":
                         if (norm_path, mod_name) not in ALLOW_LISTED_VIOLATIONS:
-                            violations.append(
-                                f"{norm_path}:{lineno}: Forbidden import of '{mod_name}' inside ml/"
-                            )
+                            violations.append(f"{norm_path}:{lineno}: Forbidden import of '{mod_name}' inside ml/")
 
                 # Check Rule: ai/ imports core only (never apps, ml, evaluation)
                 if top_dir == "ai":
                     if top_module in ("apps", "ml", "evaluation"):
-                        violations.append(
-                            f"{norm_path}:{lineno}: Forbidden cross-domain import of '{mod_name}' inside ai/"
-                        )
+                        violations.append(f"{norm_path}:{lineno}: Forbidden cross-domain import of '{mod_name}' inside ai/")
 
                 # Check Rule: apps/ imports core, ai, ml (never evaluation)
                 if top_dir == "apps":
                     if top_module == "evaluation":
-                        violations.append(
-                            f"{norm_path}:{lineno}: Forbidden import of '{mod_name}' inside apps/"
-                        )
+                        violations.append(f"{norm_path}:{lineno}: Forbidden import of '{mod_name}' inside apps/")
 
     return violations
 

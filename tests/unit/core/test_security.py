@@ -27,7 +27,7 @@ def test_hash_password_unicode():
 def test_verify_password_with_upgrade_for_legacy():
     pw = "legacyPassword123!"
     legacy_hash = legacy_hash_password(pw)
-    
+
     valid, needs_upgrade = verify_password_with_upgrade(pw, legacy_hash)
     assert valid is True
     assert needs_upgrade is True
@@ -36,7 +36,7 @@ def test_verify_password_with_upgrade_for_legacy():
 def test_verify_password_with_upgrade_for_new_hash():
     pw = "newPassword123!"
     new_hash = hash_password(pw)
-    
+
     valid, needs_upgrade = verify_password_with_upgrade(pw, new_hash)
     assert valid is True
     assert needs_upgrade is False
@@ -45,7 +45,7 @@ def test_verify_password_with_upgrade_for_new_hash():
 def test_verify_password_with_upgrade_invalid_password():
     pw = "correct_password"
     new_hash = hash_password(pw)
-    
+
     valid, needs_upgrade = verify_password_with_upgrade("wrong_password", new_hash)
     assert valid is False
     assert needs_upgrade is False

@@ -1,4 +1,5 @@
 """Login throttling through the real auth route (the login reaches PostgreSQL)."""
+
 import time
 
 import pytest

@@ -5,9 +5,11 @@ Regression test for Batch Purchase Endpoint (POST /shopper/purchase/batch):
 - Single-item endpoint continues working
 - Partial failure rolls back everything (atomic rollback)
 """
+
 import uuid
-import pytest
 from unittest.mock import patch
+
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import text
 

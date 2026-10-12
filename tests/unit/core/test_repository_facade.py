@@ -4,14 +4,16 @@ Regression test for Fix 8.1:
 - Verify domain repository sub-instances are exposed
 - Verify every public method of the old facade resolves and is callable
 """
+
 import pytest
-from core.db.repository import BlackFridayRepository
-from core.db.repositories.base import BaseRepository
-from core.db.repositories.warehouse_repo import WarehouseRepository
+
 from core.db.repositories.analytics_repo import AnalyticsRepository
-from core.db.repositories.segmentation_repo import SegmentationRepository
+from core.db.repositories.base import BaseRepository
 from core.db.repositories.recommendation_repo import RecommendationRepository
+from core.db.repositories.segmentation_repo import SegmentationRepository
 from core.db.repositories.user_repo import UserRepository
+from core.db.repositories.warehouse_repo import WarehouseRepository
+from core.db.repository import BlackFridayRepository
 
 
 def test_black_friday_repository_composition_structure():

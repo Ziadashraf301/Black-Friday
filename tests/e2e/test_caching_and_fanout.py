@@ -6,12 +6,13 @@ Validates:
   3. Tier-1 semantic cache for product details (24h TTL) and policies (30d TTL).
   4. Multi-intent concurrent specialist execution through StateGraph join aggregator.
 """
+
 import pytest
+from langchain_core.messages import HumanMessage
+
 from ai.services.cache_service import TwoTierCacheService, cache_service
 from ai.workflow.graph import shopping_graph
 from ai.workflow.state import AgentState
-from langchain_core.messages import HumanMessage
-
 
 pytestmark = pytest.mark.slow
 

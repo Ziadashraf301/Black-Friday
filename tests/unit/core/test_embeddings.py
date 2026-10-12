@@ -6,14 +6,16 @@ Validates:
 3. Missing API key degrades gracefully to DeterministicSemanticProvider without import crash.
 4. google-genai is present in requirements.txt and google-generativeai is absent.
 """
+
 from pathlib import Path
 from unittest.mock import MagicMock
+
 import pytest
 
 from core.embeddings.service import (
-    GeminiEmbeddingProvider,
     DeterministicSemanticProvider,
     EmbeddingService,
+    GeminiEmbeddingProvider,
 )
 
 

@@ -5,12 +5,14 @@ Validates:
 2. Running a specialist node outputs logs through the standard library / core logger.
 3. loguru is not imported across the ai/ package.
 """
+
 import logging
 from unittest.mock import patch
+
 import pytest
 
-import ai.nodes.cart_node as cart_node_mod
 import ai.nodes.bundle_node as bundle_node_mod
+import ai.nodes.cart_node as cart_node_mod
 import ai.nodes.support_node as support_node_mod
 from core.logging import get_logger
 

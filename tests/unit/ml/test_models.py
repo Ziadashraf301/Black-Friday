@@ -34,19 +34,21 @@ pytestmark = pytest.mark.slow
 
 @pytest.fixture
 def train_data():
-    return pd.DataFrame({
-        "gender": ["F", "F", "M", "M", "F", "F", "M", "M"],
-        "age": ["0-17", "0-17", "26-35", "26-35", "36-45", "36-45", "55+", "55+"],
-        "occupation": [10, 10, 16, 16, 10, 10, 16, 16],
-        "city_category": ["A", "A", "C", "C", "A", "A", "C", "C"],
-        "stay_in_current_city_years": ["2", "2", "4+", "4+", "2", "2", "4+", "4+"],
-        "marital_status": [0, 0, 1, 1, 0, 0, 1, 1],
-        "product_category_1": [1, 2, 3, 1, 2, 3, 1, 2],
-        "product_category_2": [4, 5, 6, 4, 5, 6, 4, 5],
-        "product_category_3": [7, 8, 9, 7, 8, 9, 7, 8],
-        "product_id": ["P1", "P2", "P3", "P1", "P2", "P3", "P1", "P2"],
-        "target": [0.4, 0.5, 0.6, 0.42, 0.49, 0.61, 0.39, 0.51]
-    })
+    return pd.DataFrame(
+        {
+            "gender": ["F", "F", "M", "M", "F", "F", "M", "M"],
+            "age": ["0-17", "0-17", "26-35", "26-35", "36-45", "36-45", "55+", "55+"],
+            "occupation": [10, 10, 16, 16, 10, 10, 16, 16],
+            "city_category": ["A", "A", "C", "C", "A", "A", "C", "C"],
+            "stay_in_current_city_years": ["2", "2", "4+", "4+", "2", "2", "4+", "4+"],
+            "marital_status": [0, 0, 1, 1, 0, 0, 1, 1],
+            "product_category_1": [1, 2, 3, 1, 2, 3, 1, 2],
+            "product_category_2": [4, 5, 6, 4, 5, 6, 4, 5],
+            "product_category_3": [7, 8, 9, 7, 8, 9, 7, 8],
+            "product_id": ["P1", "P2", "P3", "P1", "P2", "P3", "P1", "P2"],
+            "target": [0.4, 0.5, 0.6, 0.42, 0.49, 0.61, 0.39, 0.51],
+        }
+    )
 
 
 def test_linear_regression_model(train_data):
@@ -117,11 +119,7 @@ def test_serving_onnx_predictor(tmp_path, train_data):
     model.fit(train_data, train_data["target"])
 
     onnx_file = str(tmp_path / "dt_model.onnx")
-    ONNXExporter.export_regression_pipeline(
-        pipeline=model.pipeline,
-        feature_names=model.features,
-        output_filepath=onnx_file
-    )
+    ONNXExporter.export_regression_pipeline(pipeline=model.pipeline, feature_names=model.features, output_filepath=onnx_file)
 
     predictor = ONNXPredictor(onnx_model_path=onnx_file)
     preds = predictor.predict(train_data[model.features])
@@ -217,21 +215,23 @@ def test_lightgbm_subsample_freq_defaults_to_no_bagging():
 @pytest.fixture
 def sample_batch():
     """Generates a representative sample batch for regression inference."""
-    return pd.DataFrame([
-        {
-            "gender": "M" if i % 2 == 0 else "F",
-            "age": "26-35" if i % 3 == 0 else "36-45",
-            "occupation": (i % 20) + 1,
-            "city_category": ["A", "B", "C"][i % 3],
-            "stay_in_current_city_years": str(i % 5),
-            "marital_status": i % 2,
-            "product_category_1": (i % 18) + 1,
-            "product_category_2": (i % 15) + 1,
-            "product_category_3": (i % 12) + 1,
-            "product_id": f"P{i:08d}",
-        }
-        for i in range(50)
-    ])
+    return pd.DataFrame(
+        [
+            {
+                "gender": "M" if i % 2 == 0 else "F",
+                "age": "26-35" if i % 3 == 0 else "36-45",
+                "occupation": (i % 20) + 1,
+                "city_category": ["A", "B", "C"][i % 3],
+                "stay_in_current_city_years": str(i % 5),
+                "marital_status": i % 2,
+                "product_category_1": (i % 18) + 1,
+                "product_category_2": (i % 15) + 1,
+                "product_category_3": (i % 12) + 1,
+                "product_id": f"P{i:08d}",
+            }
+            for i in range(50)
+        ]
+    )
 
 
 def test_onnx_predictions_match_between_opt_levels(sample_batch):
@@ -279,9 +279,9 @@ def test_onnx_predictions_match_between_opt_levels(sample_batch):
     lat_on = (time.perf_counter() - t0) / n_iters * 1000
 
     # Numerical equivalence verification
-    assert np.allclose(preds_off, preds_on, rtol=1e-4, atol=1e-5), (
-        f"Predictions differ between optimization levels: max diff = {np.max(np.abs(preds_off - preds_on))}"
-    )
+    assert np.allclose(
+        preds_off, preds_on, rtol=1e-4, atol=1e-5
+    ), f"Predictions differ between optimization levels: max diff = {np.max(np.abs(preds_off - preds_on))}"
 
     # Verify ONNXPredictor uses ORT_ENABLE_ALL
     predictor = ONNXPredictor(model_path)

@@ -1,10 +1,13 @@
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 from fastapi.testclient import TestClient
-from apps.api.main import app
+
 from apps.api.dependencies import get_repository
+from apps.api.main import app
 from apps.api.services.model_service import model_service
 from core.security import hash_password
+
 
 @pytest.fixture
 def mock_repo():
@@ -14,7 +17,7 @@ def mock_repo():
         "total_users": 5891,
         "total_products": 3631,
         "avg_order_value": 9263.97,
-        "total_revenue": 5095812740.0
+        "total_revenue": 5095812740.0,
     }
     repo.get_dimension_distribution.return_value = [
         {"category": "M", "order_count": 414259, "avg_purchase": 9437.53, "total_purchase": 3909590000.0},
@@ -22,11 +25,11 @@ def mock_repo():
     ]
     repo.get_dimension_stats.return_value = {
         "male": {"count": 414259, "mean": 9437.53, "std": 5000.0, "var": 25000000.0},
-        "female": {"count": 135809, "mean": 8734.57, "std": 4800.0, "var": 23040000.0}
+        "female": {"count": 135809, "mean": 8734.57, "std": 4800.0, "var": 23040000.0},
     }
     repo.get_all_personas_summary.return_value = [
         {"cluster_id": 1, "cluster_persona": "Single females <= 50", "recommended_action": "Lifestyle deals."},
-        {"cluster_id": 2, "cluster_persona": "Single males <= 50", "recommended_action": "Tech deals."}
+        {"cluster_id": 2, "cluster_persona": "Single males <= 50", "recommended_action": "Tech deals."},
     ]
     repo.get_top_network_products.return_value = [
         {
@@ -36,7 +39,7 @@ def mock_repo():
             "hub_score": 0.884,
             "authority_score": 1.0,
             "top_associated_product": "P00025442",
-            "highest_lift_rule": 1.58
+            "highest_lift_rule": 1.58,
         }
     ]
     repo.get_product_recommendations.return_value = {
@@ -48,13 +51,9 @@ def mock_repo():
         "top_associated_product": "P00025442",
         "highest_lift_rule": 1.58,
         "top_bundle_recommendations": [{"product_id": "P00025442", "confidence": 0.48, "lift": 1.58}],
-        "item2vec_recommendations": '["P00057642"]'
+        "item2vec_recommendations": '["P00057642"]',
     }
-    repo.get_product_categories.return_value = {
-        "product_category_1": 3,
-        "product_category_2": 4,
-        "product_category_3": 12
-    }
+    repo.get_product_categories.return_value = {"product_category_1": 3, "product_category_2": 4, "product_category_3": 12}
     repo.get_curated_products.return_value = [{"product_id": "P00110742", "name": "Test Product"}]
     repo.get_user_by_email.return_value = None
     repo.create_user.return_value = {
@@ -70,7 +69,7 @@ def mock_repo():
         "marital_status": 0,
         "occupation": 1,
         "stay_in_current_city_years": "2",
-        "recommended_action": "Targeted lifestyle promotions"
+        "recommended_action": "Targeted lifestyle promotions",
     }
     repo.get_user_by_id.return_value = {
         "user_id": 1,
@@ -84,7 +83,7 @@ def mock_repo():
         "marital_status": 0,
         "occupation": 1,
         "stay_in_current_city_years": "2",
-        "recommended_action": "Targeted lifestyle promotions"
+        "recommended_action": "Targeted lifestyle promotions",
     }
     repo.record_purchase.return_value = {
         "id": 101,
@@ -95,7 +94,7 @@ def mock_repo():
         "product_category_3": 12,
         "predicted_usd": 9437.53,
         "model_used": "random_forest@champion",
-        "purchased_at": "2026-09-26 12:00:00"
+        "purchased_at": "2026-09-26 12:00:00",
     }
     repo.get_user_purchase_history.return_value = [
         {
@@ -106,24 +105,24 @@ def mock_repo():
             "product_category_3": 12,
             "predicted_usd": 9437.53,
             "model_used": "random_forest@champion",
-            "purchased_at": "2026-09-26 12:00:00"
+            "purchased_at": "2026-09-26 12:00:00",
         }
     ]
     return repo
+
 
 @pytest.fixture
 def client(mock_repo):
     app.dependency_overrides[get_repository] = lambda: mock_repo
     # Mock model_service predict_price
     orig_predict = model_service.predict_price
-    model_service.predict_price = MagicMock(return_value={
-        "usd": 9437.53,
-        "normalized": 0.441,
-        "model_used": "random_forest (local)"
-    })
+    model_service.predict_price = MagicMock(
+        return_value={"usd": 9437.53, "normalized": 0.441, "model_used": "random_forest (local)"}
+    )
     yield TestClient(app)
     app.dependency_overrides.clear()
     model_service.predict_price = orig_predict
+
 
 def test_health_check(client):
     response = client.get("/health")
@@ -132,13 +131,13 @@ def test_health_check(client):
     assert data["status"] == "healthy"
     assert data["service"] == "Black-Friday-v2"
 
+
 def test_analytics_summary(client):
     response = client.get("/analytics/summary")
     assert response.status_code == 200
     data = response.json()
     assert data["total_orders"] == 550068
     assert data["total_revenue"] == 5095812740.0
-
 
 
 def test_auth_signup_and_me(client, mock_repo):
@@ -151,7 +150,7 @@ def test_auth_signup_and_me(client, mock_repo):
         "city_category": "A",
         "marital_status": 0,
         "occupation": 1,
-        "stay_in_current_city_years": "2"
+        "stay_in_current_city_years": "2",
     }
     res = client.post("/auth/signup", json=signup_payload)
     assert res.status_code == 201
@@ -167,6 +166,7 @@ def test_auth_signup_and_me(client, mock_repo):
     assert user_me["name"] == "Jane Doe"
     assert user_me["cluster_id"] == 1
 
+
 def test_shopper_catalog_and_browse(client):
     res_cat = client.get("/shopper/catalog?limit=5")
     assert res_cat.status_code == 200
@@ -180,6 +180,7 @@ def test_shopper_catalog_and_browse(client):
     assert browse_data["product_id"] == "P00110742"
     assert "P00025442" in browse_data["apriori_bundles"]
 
+
 def test_shopper_predict_and_purchase_flow(client):
     # Register/get token
     signup_payload = {
@@ -191,19 +192,14 @@ def test_shopper_predict_and_purchase_flow(client):
         "city_category": "A",
         "marital_status": 0,
         "occupation": 1,
-        "stay_in_current_city_years": "2"
+        "stay_in_current_city_years": "2",
     }
     signup_res = client.post("/auth/signup", json=signup_payload)
     token = signup_res.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
 
     # Predict price
-    predict_payload = {
-        "product_id": "P00110742",
-        "product_category_1": 3,
-        "product_category_2": 4,
-        "product_category_3": 12
-    }
+    predict_payload = {"product_id": "P00110742", "product_category_1": 3, "product_category_2": 4, "product_category_3": 12}
     res_pred = client.post("/shopper/predict-price", json=predict_payload, headers=headers)
     assert res_pred.status_code == 200
     pred_data = res_pred.json()

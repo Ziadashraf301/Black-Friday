@@ -4,11 +4,14 @@ Regression test for Fix 2.1:
 - Elimination of destructive float -> Int64 heuristic
 - VALID_TABLES contains user_carts and semantic_query_cache
 """
+
 import io
 import uuid
 from unittest.mock import patch
+
 import pandas as pd
-from sqlalchemy import create_engine, text, inspect
+from sqlalchemy import create_engine, inspect, text
+
 from core.config import settings
 from core.db.repositories.base import BaseRepository
 
@@ -21,11 +24,7 @@ def test_valid_tables_includes_user_carts_and_semantic_cache():
 
 def test_dataframe_with_whole_number_floats_preserves_dtype():
     """Verify float columns with whole numbers are NOT mutated to Int64 by insert_dataframe."""
-    df = pd.DataFrame({
-        "product_id": ["P001", "P002"],
-        "predicted_usd": [100.0, 250.0],
-        "category_float": [1.0, 2.0]
-    })
+    df = pd.DataFrame({"product_id": ["P001", "P002"], "predicted_usd": [100.0, 250.0], "category_float": [1.0, 2.0]})
     repo = BaseRepository()
     captured_data = []
 
@@ -33,8 +32,10 @@ def test_dataframe_with_whole_number_floats_preserves_dtype():
     with patch.object(repo.engine, "begin") as mock_begin:
         mock_conn = mock_begin.return_value.__enter__.return_value
         mock_dbapi = mock_conn.connection.dbapi_connection
+
         def fake_copy_expert(sql, file):
             captured_data.append(file.getvalue())
+
         mock_dbapi.cursor.return_value.__enter__.return_value.copy_expert.side_effect = fake_copy_expert
 
         repo.insert_dataframe("curated_products", df)
@@ -63,7 +64,9 @@ def test_copy_fallback_preserves_table_and_indexes():
         # Create extension and a test table with an index
         with scratch_engine.begin() as conn:
             conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
-            conn.execute(text("""
+            conn.execute(
+                text(
+                    """
                 CREATE TABLE curated_products (
                     product_id VARCHAR(32) PRIMARY KEY,
                     name TEXT,
@@ -72,14 +75,18 @@ def test_copy_fallback_preserves_table_and_indexes():
                 );
                 CREATE INDEX idx_curated_embedding_hnsw 
                 ON curated_products USING hnsw (embedding vector_cosine_ops);
-            """))
+            """
+                )
+            )
 
         repo = BaseRepository(engine=scratch_engine)
 
-        df = pd.DataFrame([
-            {"product_id": "P001", "name": "Test Item 1", "discounted_price": 49.99},
-            {"product_id": "P002", "name": "Test Item 2", "discounted_price": 89.99},
-        ])
+        df = pd.DataFrame(
+            [
+                {"product_id": "P001", "name": "Test Item 1", "discounted_price": 49.99},
+                {"product_id": "P002", "name": "Test Item 2", "discounted_price": 89.99},
+            ]
+        )
 
         # Force COPY path to fail by patching io.StringIO, triggering to_sql fallback
         with patch("core.db.repositories.base.io.StringIO", side_effect=RuntimeError("Simulated COPY error")):

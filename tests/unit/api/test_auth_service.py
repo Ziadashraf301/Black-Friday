@@ -38,8 +38,7 @@ def test_signup_race_integrity_error_becomes_conflict():
 
 
 def test_login_falls_back_to_legacy_mixed_case_account():
-    legacy = {"user_id": 3, "name": "L", "email": "Old@Mail.com",
-              "password_hash": AuthService.hash_password("pw123456")}
+    legacy = {"user_id": 3, "name": "L", "email": "Old@Mail.com", "password_hash": AuthService.hash_password("pw123456")}
     repo = MagicMock()
     repo.get_user_by_email.side_effect = lambda e: legacy if e == "Old@Mail.com" else None
     out = AuthService.authenticate_user("Old@Mail.com", "pw123456", repo)

@@ -3,6 +3,7 @@ Auth modal — clean, elegant login/signup experience.
 Shows automatically when user clicks 'Log In' in the header.
 No technical jargon exposed to end users.
 """
+
 import reflex as rx
 from reflex_app.state import ShoppingState
 
@@ -181,18 +182,36 @@ def signup_panel() -> rx.Component:
         ),
         input_field("Password", "••••••••", ShoppingState.signup_password, ShoppingState.set_signup_password, "password"),
         rx.grid(
-            select_field("Gender", ShoppingState.signup_gender, ShoppingState.set_signup_gender,
-                         [("M", "Male"), ("F", "Female")]),
-            select_field("Age Bracket", ShoppingState.signup_age, ShoppingState.set_signup_age,
-                         [("0-17", "Under 18"), ("18-25", "18–25"), ("26-35", "26–35"),
-                          ("36-45", "36–45"), ("46-50", "46–50"), ("51-55", "51–55"), ("55+", "55+")]),
-            select_field("City Tier", ShoppingState.signup_city, ShoppingState.set_signup_city,
-                         [("A", "Metro City (A)"), ("B", "Large City (B)"), ("C", "Small City (C)")]),
+            select_field(
+                "Gender", ShoppingState.signup_gender, ShoppingState.set_signup_gender, [("M", "Male"), ("F", "Female")]
+            ),
+            select_field(
+                "Age Bracket",
+                ShoppingState.signup_age,
+                ShoppingState.set_signup_age,
+                [
+                    ("0-17", "Under 18"),
+                    ("18-25", "18–25"),
+                    ("26-35", "26–35"),
+                    ("36-45", "36–45"),
+                    ("46-50", "46–50"),
+                    ("51-55", "51–55"),
+                    ("55+", "55+"),
+                ],
+            ),
+            select_field(
+                "City Tier",
+                ShoppingState.signup_city,
+                ShoppingState.set_signup_city,
+                [("A", "Metro City (A)"), ("B", "Large City (B)"), ("C", "Small City (C)")],
+            ),
             columns="3",
             spacing="3",
             width="100%",
         ),
-        select_field("Occupation", ShoppingState.signup_occupation_str, ShoppingState.set_signup_occupation, OCCUPATION_LABELS),
+        select_field(
+            "Occupation", ShoppingState.signup_occupation_str, ShoppingState.set_signup_occupation, OCCUPATION_LABELS
+        ),
         auth_error_banner(),
         rx.button(
             rx.cond(

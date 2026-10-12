@@ -5,6 +5,7 @@ Validates:
   2. Custom trace spans execution: cache lookup, guardrail evaluation, search ladder, and bundle pricing.
   3. Safe fallback in offline mode.
 """
+
 import pytest
 
 from ai.observability.tracing import AgentTracer, agent_tracer

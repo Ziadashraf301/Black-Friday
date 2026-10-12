@@ -3,7 +3,9 @@ Product card component matching the 2x2 grid in the vintage mockup.
 Features the orange 'Newest' pill badge, editorial photo, serif typography,
 discounted pricing, and circular orange arrow CTA button.
 """
-from typing import Dict, Any
+
+from typing import Any, Dict
+
 import reflex as rx
 from reflex_app.state import ShoppingState
 

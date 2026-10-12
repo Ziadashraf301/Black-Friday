@@ -2,7 +2,6 @@
 
 import time
 
-
 LOCUST_PASSWORD = "LocustPassword123"
 AUTH_MAX_ATTEMPTS = 20
 AUTH_RETRY_SECONDS = 6.0

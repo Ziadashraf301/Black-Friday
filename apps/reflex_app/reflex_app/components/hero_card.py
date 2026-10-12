@@ -4,7 +4,9 @@ Features the deep forest green backdrop, floating circular orange 'Sale' badge,
 hanger photography, strikethrough & sale pricing, interactive size pills [S, M, L, XL],
 wide vibrant orange 'Shop Now' CTA, and bottom circled chevron indicator.
 """
-from typing import Dict, Any
+
+from typing import Any, Dict
+
 import reflex as rx
 from reflex_app.state import ShoppingState
 

@@ -67,8 +67,7 @@ def test_token_restored_into_state_on_load_populates_session():
             return mock_resp
         return mock_resp
 
-    with patch("httpx.Client.get", side_effect=mock_get), \
-         patch("httpx.Client.post", side_effect=mock_post):
+    with patch("httpx.Client.get", side_effect=mock_get), patch("httpx.Client.post", side_effect=mock_post):
         state.load_catalog()
 
     assert state.user_id == 99
@@ -120,6 +119,7 @@ def test_logout_clears_token_and_resets_session():
 def test_api_base_url_reads_from_environment():
     """Verify API_BASE_URL is dynamically configurable and has no static hardcoding."""
     from reflex_app.state import API_BASE_URL as CURRENT_URL
+
     expected = os.getenv("API_BASE_URL", "http://127.0.0.1:8000")
     assert CURRENT_URL == expected
 
@@ -132,12 +132,7 @@ def test_api_base_url():
 
 def test_analytics_fetch_in_reflex():
     """Verify state.load_dashboard() executes real method, calls /analytics/summary, and parses results."""
-    mock_summary = {
-        "total_orders": 550068,
-        "total_revenue": 5095812740.0,
-        "avg_order_value": 9264.12,
-        "user_count": 5891
-    }
+    mock_summary = {"total_orders": 550068, "total_revenue": 5095812740.0, "avg_order_value": 9264.12, "user_count": 5891}
     mock_demographics = [
         {"category": "M", "order_count": 3000, "avg_purchase": 8000.0},
         {"category": "F", "order_count": 2000, "avg_purchase": 7500.0},

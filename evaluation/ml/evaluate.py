@@ -2,16 +2,18 @@
 Evaluation entry point and reporting interface for ML models.
 Imports core metric computations from ml.models.metrics and provides CLI interface.
 """
+
 import numpy as np
+
 from core.logging import get_logger
 from ml.models.metrics import (
     ModelEvaluator,
-    evaluate_holdout,
     cross_validate,
     evaluate_fairness,
+    evaluate_holdout,
+    evaluate_hypothesis_welch,
     evaluate_imputation,
     evaluate_imputation_holdout,
-    evaluate_hypothesis_welch,
 )
 
 logger = get_logger(__name__)
@@ -29,7 +31,9 @@ __all__ = [
 
 if __name__ == "__main__":
     import os
+
     import pandas as pd
+
     from core.config import settings
     from ml.serving.predictor import ONNXPredictor
 
@@ -66,6 +70,7 @@ if __name__ == "__main__":
         else:
             logger.warning("Target column not found in test.csv. Evaluating sample from warehouse repository...")
             from core.db.repository import BlackFridayRepository
+
             repo = BlackFridayRepository()
             eval_df = repo.warehouse.get_cleaned_transactions(limit=10000)
             if not eval_df.empty and "normalized_purchase" in eval_df.columns:
@@ -86,4 +91,3 @@ if __name__ == "__main__":
         print("ModelEvaluator baseline verification:")
         for k, v in sample_metrics.items():
             print(f"  {k}: {v}")
-

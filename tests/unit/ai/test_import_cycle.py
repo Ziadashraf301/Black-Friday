@@ -1,4 +1,5 @@
 """AI-1: every ai.* entry point must import cleanly in a fresh interpreter, whatever is imported first."""
+
 import subprocess
 import sys
 from pathlib import Path
@@ -22,9 +23,7 @@ ENTRY_POINTS = [
 
 @pytest.mark.parametrize("module", ENTRY_POINTS)
 def test_module_imports_first(module):
-    proc = subprocess.run(
-        [sys.executable, "-c", f"import {module}"], capture_output=True, text=True, timeout=120, cwd=ROOT
-    )
+    proc = subprocess.run([sys.executable, "-c", f"import {module}"], capture_output=True, text=True, timeout=120, cwd=ROOT)
     assert proc.returncode == 0, proc.stderr[-800:]
 
 

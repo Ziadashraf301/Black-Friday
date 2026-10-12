@@ -5,8 +5,8 @@ UI-7: unknown products are skipped, a missing price is None (not 0.0), and the c
 import sys
 from unittest.mock import MagicMock, patch
 
-from reflex_app.state import ShoppingState  # noqa: E402
 from reflex_app.state import CartItem  # noqa: E402
+from reflex_app.state import ShoppingState  # noqa: E402
 
 from core.config import settings
 

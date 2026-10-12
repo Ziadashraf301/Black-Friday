@@ -1,4 +1,5 @@
 """Sliding-window rate limiter against the live Redis (DB 15)."""
+
 import pytest
 
 from apps.api.rate_limiting.rate_limiter import RedisRateLimiter

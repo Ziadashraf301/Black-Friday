@@ -5,11 +5,14 @@ Regression test for Fix 6.2:
 - Verify fresh register -> login works end to end
 - Capture SQL during login and assert NO DDL statements are executed
 """
+
 import uuid
+
 import pytest
 from sqlalchemy import event
-from core.db.repository import BlackFridayRepository
+
 from apps.api.services.auth_service import auth_service
+from core.db.repository import BlackFridayRepository
 
 
 @pytest.fixture
@@ -22,6 +25,7 @@ def repo():
 def test_startup_creates_all_tables(repo):
     """Verify create_app_tables on startup initializes application and warehouse tables."""
     from sqlalchemy import inspect
+
     repo.create_app_tables()
     insp = inspect(repo.engine)
     for table_name in ["app_users", "user_purchases", "user_carts"]:

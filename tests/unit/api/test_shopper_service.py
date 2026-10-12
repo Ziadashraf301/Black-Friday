@@ -14,8 +14,13 @@ def test_same_product_different_demographics_get_own_quotes(monkeypatch):
     monkeypatch.setattr(ShopperService, "estimate_price_batch", classmethod(lambda cls, **kw: quotes))
     repo = MagicMock()
     repo.record_purchases_batch.side_effect = lambda recs: [
-        {"id": i, "product_id": r["product_id"], "predicted_usd": r["predicted_usd"],
-         "model_used": r["model_used"], "purchased_at": "now"}
+        {
+            "id": i,
+            "product_id": r["product_id"],
+            "predicted_usd": r["predicted_usd"],
+            "model_used": r["model_used"],
+            "purchased_at": "now",
+        }
         for i, r in enumerate(recs)
     ]
     items = [
@@ -38,8 +43,16 @@ def test_estimate_price_batch_keeps_alignment_with_items(monkeypatch):
     monkeypatch.setattr(mod.cache_manager, "mset_json", lambda *a, **k: None)
     repo = MagicMock()
     items = [
-        {"product_id": "P1", "product_category_1": 1, "gender": "M", "age": "26-35", "occupation": 1,
-         "city_category": "A", "stay_in_current_city_years": "1", "marital_status": 0},
+        {
+            "product_id": "P1",
+            "product_category_1": 1,
+            "gender": "M",
+            "age": "26-35",
+            "occupation": 1,
+            "city_category": "A",
+            "stay_in_current_city_years": "1",
+            "marital_status": 0,
+        },
         {"product_id": "P2", "product_category_1": 1},
     ]
     out = ShopperService.estimate_price_batch(items=items, repo=repo, user_demographics={})

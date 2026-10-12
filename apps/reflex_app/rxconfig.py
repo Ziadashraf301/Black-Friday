@@ -1,4 +1,5 @@
 import os
+
 import reflex as rx
 
 config = rx.Config(
@@ -15,5 +16,5 @@ config = rx.Config(
                 accent_color="jade",
             )
         ),
-    ]
+    ],
 )

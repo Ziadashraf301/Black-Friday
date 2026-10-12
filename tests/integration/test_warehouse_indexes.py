@@ -31,17 +31,19 @@ def test_database_has_index_on_product_id():
     for idx in indexes:
         indexed_cols.extend(idx.get("column_names", []))
 
-    assert "product_id" in indexed_cols, (
-        f"product_id not found in indexes of black_friday_cleaned: {indexes}"
-    )
+    assert "product_id" in indexed_cols, f"product_id not found in indexes of black_friday_cleaned: {indexes}"
 
     # Also verify via pg_indexes query
     with engine.connect() as conn:
-        result = conn.execute(text("""
+        result = conn.execute(
+            text(
+                """
             SELECT indexname, indexdef 
             FROM pg_indexes 
             WHERE tablename = 'black_friday_cleaned' AND indexdef ILIKE '%product_id%';
-        """)).fetchall()
+        """
+            )
+        ).fetchall()
         assert len(result) > 0, "No index found in pg_indexes covering product_id"
 
 
@@ -71,7 +73,8 @@ def test_get_product_categories_without_session():
 def test_category_mode_query_uses_index_scan():
     """Verify category mode query against black_friday_cleaned uses an index scan rather than seq scan."""
     engine = get_db_engine()
-    explain_sql = text("""
+    explain_sql = text(
+        """
         EXPLAIN
         SELECT
             MODE() WITHIN GROUP (ORDER BY product_category_1) AS product_category_1,
@@ -79,7 +82,8 @@ def test_category_mode_query_uses_index_scan():
             MODE() WITHIN GROUP (ORDER BY product_category_3) AS product_category_3
         FROM black_friday_cleaned
         WHERE product_id = :pid
-    """)
+    """
+    )
     with engine.connect() as conn:
         # Check row count first
         count = conn.execute(text("SELECT COUNT(*) FROM black_friday_cleaned;")).scalar()
@@ -87,13 +91,17 @@ def test_category_mode_query_uses_index_scan():
             plan_rows = conn.execute(explain_sql, {"pid": "P00025442"}).fetchall()
             plan_text = " ".join([r[0] for r in plan_rows])
             # Assert index scan was chosen
-            assert "Index Scan" in plan_text or "Bitmap Index Scan" in plan_text, (
-                f"Expected index scan in EXPLAIN plan, got: {plan_text}"
-            )
+            assert (
+                "Index Scan" in plan_text or "Bitmap Index Scan" in plan_text
+            ), f"Expected index scan in EXPLAIN plan, got: {plan_text}"
         else:
             # Table is empty in this test environment; verify index exists
-            indexes = conn.execute(text("""
+            indexes = conn.execute(
+                text(
+                    """
                 SELECT indexname FROM pg_indexes 
                 WHERE tablename = 'black_friday_cleaned' AND indexdef ILIKE '%product_id%';
-            """)).fetchall()
+            """
+                )
+            ).fetchall()
             assert len(indexes) > 0, "Index covering product_id does not exist"

@@ -17,40 +17,44 @@ def sample_datasets():
     np.random.seed(42)
     n = 200
 
-    old_df = pd.DataFrame({
-        "product_category_1": np.random.randint(1, 5, size=n),
-        "product_category_2": np.random.randint(1, 10, size=n),
-        "product_category_3": np.random.randint(1, 15, size=n),
-        "product_id": [f"P_{i % 20}" for i in range(n)],
-        "normalized_purchase": np.random.normal(loc=0.5, scale=0.1, size=n),
-        "user_id": np.random.randint(1000, 2000, size=n),
-        "gender": np.random.choice(["M", "F"], size=n),
-        "age": np.random.choice(["26-35", "36-45"], size=n),
-        "occupation": np.random.randint(0, 10, size=n),
-        "city_category": np.random.choice(["A", "B", "C"], size=n),
-        "stay_in_current_city_years": np.random.choice(["1", "2", "3"], size=n),
-        "marital_status": np.random.choice([0, 1], size=n),
-        "purchase": np.random.normal(loc=9000, scale=2000, size=n),
-        "is_outlier": False
-    })
+    old_df = pd.DataFrame(
+        {
+            "product_category_1": np.random.randint(1, 5, size=n),
+            "product_category_2": np.random.randint(1, 10, size=n),
+            "product_category_3": np.random.randint(1, 15, size=n),
+            "product_id": [f"P_{i % 20}" for i in range(n)],
+            "normalized_purchase": np.random.normal(loc=0.5, scale=0.1, size=n),
+            "user_id": np.random.randint(1000, 2000, size=n),
+            "gender": np.random.choice(["M", "F"], size=n),
+            "age": np.random.choice(["26-35", "36-45"], size=n),
+            "occupation": np.random.randint(0, 10, size=n),
+            "city_category": np.random.choice(["A", "B", "C"], size=n),
+            "stay_in_current_city_years": np.random.choice(["1", "2", "3"], size=n),
+            "marital_status": np.random.choice([0, 1], size=n),
+            "purchase": np.random.normal(loc=9000, scale=2000, size=n),
+            "is_outlier": False,
+        }
+    )
 
     # Strongly drifted new data: shifted categories and shifted target
-    new_df = pd.DataFrame({
-        "product_category_1": np.random.randint(15, 20, size=n),  # completely drifted categories
-        "product_category_2": np.random.randint(20, 30, size=n),
-        "product_category_3": np.random.randint(25, 40, size=n),
-        "product_id": [f"P_NEW_{i % 20}" for i in range(n)],
-        "normalized_purchase": np.random.normal(loc=0.9, scale=0.05, size=n),  # strongly drifted target
-        "user_id": np.random.randint(5000, 6000, size=n),
-        "gender": np.random.choice(["M", "F"], size=n),
-        "age": np.random.choice(["46-50", "51-55"], size=n),
-        "occupation": np.random.randint(15, 20, size=n),
-        "city_category": np.random.choice(["B", "C"], size=n),
-        "stay_in_current_city_years": np.random.choice(["3", "4+"], size=n),
-        "marital_status": np.random.choice([0, 1], size=n),
-        "purchase": np.random.normal(loc=18000, scale=1000, size=n),
-        "is_outlier": False
-    })
+    new_df = pd.DataFrame(
+        {
+            "product_category_1": np.random.randint(15, 20, size=n),  # completely drifted categories
+            "product_category_2": np.random.randint(20, 30, size=n),
+            "product_category_3": np.random.randint(25, 40, size=n),
+            "product_id": [f"P_NEW_{i % 20}" for i in range(n)],
+            "normalized_purchase": np.random.normal(loc=0.9, scale=0.05, size=n),  # strongly drifted target
+            "user_id": np.random.randint(5000, 6000, size=n),
+            "gender": np.random.choice(["M", "F"], size=n),
+            "age": np.random.choice(["46-50", "51-55"], size=n),
+            "occupation": np.random.randint(15, 20, size=n),
+            "city_category": np.random.choice(["B", "C"], size=n),
+            "stay_in_current_city_years": np.random.choice(["3", "4+"], size=n),
+            "marital_status": np.random.choice([0, 1], size=n),
+            "purchase": np.random.normal(loc=18000, scale=1000, size=n),
+            "is_outlier": False,
+        }
+    )
 
     return old_df, new_df
 
@@ -103,7 +107,7 @@ def test_retrain_on_old_plus_new_data(mock_tracker_class, sample_datasets):
         prediction_drift_detected=False,
         report_path=None,
         engine="evidently",
-        drifted_columns=["product_category_1", "product_category_2", "normalized_purchase"]
+        drifted_columns=["product_category_1", "product_category_2", "normalized_purchase"],
     )
 
     result = run_champion_challenger_retrain(
@@ -113,7 +117,7 @@ def test_retrain_on_old_plus_new_data(mock_tracker_class, sample_datasets):
         drift_result=drift_result,
         trigger_reason="drift_detected",
         min_r2_threshold=0.0,
-        min_improvement_delta=0.0
+        min_improvement_delta=0.0,
     )
 
     assert isinstance(result, RetrainResult)
@@ -155,7 +159,7 @@ def test_production_drift_monitor_triggers_retrain(mock_retrain_tracker, mock_mo
         reference_df=old_df,
         candidate_model_name="linear_regression",
         dataset_drift_threshold=0.20,
-        auto_trigger_retrain=True
+        auto_trigger_retrain=True,
     )
 
     assert drift_res.should_trigger_retrain(dataset_threshold=0.20) is True
@@ -181,7 +185,7 @@ def test_production_drift_monitor_without_target_does_not_trigger_retrain(mock_m
         reference_df=old_df,
         candidate_model_name="linear_regression",
         dataset_drift_threshold=0.20,
-        auto_trigger_retrain=True
+        auto_trigger_retrain=True,
     )
 
     # Drift is detected on features/prediction, BUT retraining cannot proceed without labels
@@ -194,16 +198,10 @@ def test_retrain_fails_without_required_inputs(sample_datasets):
 
     # Missing old_data_df or new_data_df
     with pytest.raises(ValueError, match="old_data_df is required"):
-        run_champion_challenger_retrain(
-            old_data_df=None,
-            new_data_df=new_df
-        )
+        run_champion_challenger_retrain(old_data_df=None, new_data_df=new_df)
 
     with pytest.raises(ValueError, match="new_data_df is required"):
-        run_champion_challenger_retrain(
-            old_data_df=old_df,
-            new_data_df=None
-        )
+        run_champion_challenger_retrain(old_data_df=old_df, new_data_df=None)
 
     # Missing target column (neither normalized_purchase nor raw purchase present)
     unlabeled_df = new_df.drop(columns=["normalized_purchase"])
@@ -217,11 +215,7 @@ def test_retrain_fails_without_required_inputs(sample_datasets):
         total_features=4,
         target_drift_detected=False,
         prediction_drift_detected=False,
-        report_path=None
+        report_path=None,
     )
     with pytest.raises(ValueError, match="must contain ground-truth 'normalized_purchase'"):
-        run_champion_challenger_retrain(
-            old_data_df=old_df,
-            new_data_df=unlabeled_df,
-            drift_result=fake_drift
-        )
+        run_champion_challenger_retrain(old_data_df=old_df, new_data_df=unlabeled_df, drift_result=fake_drift)

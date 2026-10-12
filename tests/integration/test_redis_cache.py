@@ -6,9 +6,12 @@ Validates:
 3. Non-blocking delete_pattern using scan_iter in batches (removes only matching keys in real Redis).
 4. Concurrent access from multiple threads does not crash or raise exceptions.
 """
-import time
+
 import concurrent.futures
+import time
+
 import pytest
+
 from core.cache.redis_client import RedisCacheManager, cache_manager
 
 

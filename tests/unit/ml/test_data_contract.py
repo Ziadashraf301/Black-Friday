@@ -4,6 +4,7 @@ Regression test for Fix 3.4:
 - First verify valid values accepted by RawTransactionSchema and CleanedTransactionSchema
 - Verify invalid values raise pandera SchemaError
 """
+
 import pandas as pd
 import pytest
 from pandera.errors import SchemaError

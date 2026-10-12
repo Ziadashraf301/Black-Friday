@@ -23,7 +23,7 @@ class BlackFridayAPIUser(HttpUser):
             "city_category": random.choice(["A", "B", "C"]),
             "marital_status": random.randint(0, 1),
             "occupation": random.randint(0, 20),
-            "stay_in_current_city_years": "2"
+            "stay_in_current_city_years": "2",
         }
         token = acquire_token(self.client, signup_payload)
         if token:
@@ -57,7 +57,7 @@ class BlackFridayAPIUser(HttpUser):
             "product_category_1": random.randint(1, 18),
             "product_category_2": random.randint(1, 18),
             "product_category_3": random.randint(1, 18),
-            "product_id": f"P000{random.randint(10000, 99999)}"
+            "product_id": f"P000{random.randint(10000, 99999)}",
         }
         self.client.post("/shopper/predict-price", json=payload)
 
@@ -66,12 +66,14 @@ class BlackFridayAPIUser(HttpUser):
         """ML Endpoint: Batch item ONNX price prediction."""
         items = []
         for _ in range(5):
-            items.append({
-                "product_category_1": random.randint(1, 18),
-                "product_category_2": random.randint(1, 18),
-                "product_category_3": random.randint(1, 18),
-                "product_id": f"P000{random.randint(10000, 99999)}"
-            })
+            items.append(
+                {
+                    "product_category_1": random.randint(1, 18),
+                    "product_category_2": random.randint(1, 18),
+                    "product_category_3": random.randint(1, 18),
+                    "product_id": f"P000{random.randint(10000, 99999)}",
+                }
+            )
         self.client.post("/shopper/predict-price-batch", json={"items": items})
 
     # =========================================================================
@@ -103,4 +105,3 @@ class BlackFridayAPIUser(HttpUser):
             json={"query": fixed_query, "user_id": "locust_cached_user", "mode": "text"},
             headers={"Accept": "text/event-stream"},
         )
-
