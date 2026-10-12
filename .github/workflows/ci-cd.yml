@@ -15,34 +15,9 @@ concurrency:
 
 jobs:
   test:
-    name: Run Pytest Suite
+    name: Unit and architecture tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
-
-    services:
-      postgres:
-        image: pgvector/pgvector:pg16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres_password123
-          POSTGRES_DB: fridayblack
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
       - name: Checkout Code
@@ -66,17 +41,14 @@ jobs:
       - name: Lint (flake8, black, isort on clean paths)
         run: make lint-ci
 
-      - name: Run Pytest Suite
+      # tests/integration and tests/e2e need the live stack (PostgreSQL, Redis, MLflow, the API and the LLM),
+      # so they run locally with `make test-integration` and `make test-e2e`, not on every push.
+      - name: Unit tests
         env:
           PYTHONPATH: .
-          POSTGRES_HOST: localhost
-          POSTGRES_PORT: 5432
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres_password123
-          APP_DB_NAME: fridayblack
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
-        run: |
-          python -m pytest tests/ -v --timeout=60
+        run: python -m pytest tests/unit tests/load -v --timeout=60
 
-
+      - name: Architecture tests
+        env:
+          PYTHONPATH: .
+        run: python -m pytest tests/architecture -v --timeout=60

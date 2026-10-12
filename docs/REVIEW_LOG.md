@@ -156,6 +156,128 @@ Result: **299 passed, 1 failed, 1 deselected (the hang)**, 301 tests, ~8 min. Co
 
 - Housekeeping: 4145d34 untracked the 12 committed `.pyc` files and added `*.py[cod]` to `.gitignore` (`__pycache__/` was already listed).
 
+## Test reorganization (step 9.5)
+
+Flat `tests/test_*.py` split into `tests/unit/{core,ml,ai,api,ui}`, `tests/integration`, `tests/e2e`, `tests/architecture`, `tests/load`. Files moved with `git mv`; test logic untouched except imports, `Path(__file__)` depth, and the cases listed below. Markers `unit`/`integration`/`e2e`/`slow` are applied per folder (conftest hook), `slow` also on the slow files; default timeout 60s (`pyproject.toml`, `pytest.ini` removed). `tests/unit` has an autouse guard that refuses socket/PostgreSQL connections to the project's services, so a test that needs a live service cannot stay there.
+
+**Count:** baseline `pytest --collect-only` = 531; after = 530 (531 minus 1 exact duplicate). Per marker: 414 unit (incl. architecture and load), 86 integration, 30 e2e at the first count; a few tests moved between folders afterwards (e.g. the JEV router pipeline to e2e), the total is unchanged.
+
+**Removed duplicate:** `test_core12_custom_service_passwords_allowed_in_production` (`test_sec1_secret_key.py`) had a body identical to `test_custom_secret_allowed_in_production`. An AST scan of all test bodies found no other exact duplicates.
+
+**Changes beyond a pure move**
+- `test_pytest_ini_registers_benchmark_marker` is now `test_pyproject_registers_benchmark_marker` in `tests/architecture/test_pytest_config.py` (reads `pyproject.toml`).
+- `test_redis_rate_limit_5_min_20_day` (now `tests/integration/test_rate_limiter_redis.py`): expects `RateLimitExceededError` (it was `HTTPException`, stale since the limiter raises the domain error) and resets its Redis keys in `finally`.
+- Tests that need live services were cut out of mixed files into `tests/integration`: the Lua execution and login-throttling tests (from the rate limiter file), the spoofed-header ban test (from the client identity file), the PostgreSQL replace-load test (from the pipelines file), the bot drawer test (from the phase 1 file).
+- UI tests: the repeated `sys.path.insert(... reflex_app)` lines moved into `tests/unit/ui/conftest.py`.
+
+**Baseline vs now (each file run separately):** baseline 520 passed, 2 failed, and `test_phase3_langgraph_agent.py` hit the 45s per-file timeout (the Gemini model `gemini-2.0-flash` returns 404 and the LLM falls back to the template). Now every file in `integration`, `e2e`, `architecture` and `load` passes, and `tests/unit` in one command gives 382 passed, 1 failed (about 5 min with the slow tests, about 2.5 min with `-m "not slow"`).
+
+**Still failing (pre-existing, not fixed, not caused by the move)**
+
+| Test | Cause |
+|---|---|
+| `tests/unit/ui/test_bot_chat.py::test_bot_stream_timeout_leaves_ui_usable` | Stale assertion: it expects "deal"/"offline" in the bot message, but UI-5 changed it to "The shopping assistant is unavailable right now." Failed in the baseline too. |
+
+**Depends on the API / UI containers (moved, not fixed; Docker files untouched, no images built)**
+
+| Test | Dependency |
+|---|---|
+| `tests/integration/test_bot_drawer.py::test_frontend_bot_auth_check` | The action chips call the bot endpoint of the running API; it passes only while the API container is up. |
+
+No test failed because the API or UI image was missing or stale. The e2e tests use the in-process app plus the live Redis/PostgreSQL; their LLM calls fall back to templates because the Gemini model is retired (external cause).
+
+**Old file → new file**
+
+| New file | Old file(s) |
+|---|---|
+| `architecture/test_architecture.py` | `test_architecture.py` |
+| `architecture/test_evaluation_layering.py` | `test_evaluation_layering.py` |
+| `architecture/test_pytest_config.py` | `test_fix_wp7_jev_router_benchmark.py` (one test) |
+| `load/locustfile.py`, `load/locust_auth.py`, `load/test_locust_auth.py` | same names in `tests/` |
+| `unit/core/test_redis_client.py` | `test_core1_json_serializer.py`, `test_core3_redis_reconnect.py` |
+| `unit/core/test_cache_decorators.py` | `test_core2_cache_key_fallback.py` |
+| `unit/core/test_logging.py` | `test_core6_shared_file_handler.py`, `test_fix_1_3_logging.py` |
+| `unit/core/test_config.py` | `test_fix_1_2_config.py`, `test_sec1_secret_key.py` |
+| `unit/core/test_security.py` | `test_fix_2_3_passwords.py` |
+| `unit/core/test_warehouse_repo.py` | `test_core11_size_offered.py` |
+| `unit/core/test_user_repo.py` | `test_core14_stay_years_default.py` |
+| `unit/core/test_embeddings.py` | `test_fix_wp7_embeddings.py` |
+| `unit/core/test_db_and_embedding_guards.py` | `test_core7_low_fixes.py` |
+| `unit/core/test_repository_facade.py` | `test_fix_8_1_composition.py` |
+| `unit/core/test_session.py` | `test_fix_9_3_session.py` |
+| `unit/ml/test_segmentation_and_market_basket.py` | `test_anl_step6.py`, `test_segmentation.py` |
+| `unit/ml/test_pipelines.py` | `test_pipe_step5.py`, `test_fix_5_5_monitor_target.py` |
+| `unit/ml/test_model_registry.py` | `test_fix_2_5_model_registry_export.py`, `test_fix_3_5_train_aliases.py` |
+| `unit/ml/test_data_contract.py` | `test_fix_3_4_data_contract_stay_years.py` |
+| `unit/ml/test_champion_gate.py` | `test_fix_2_4_champion_gate.py` |
+| `unit/ml/test_model_card.py` | `test_fix_10_3_model_card_features.py` |
+| `unit/ml/test_drift_retrain.py` | `test_drift_retrain.py` |
+| `unit/ml/test_features.py` | `test_features.py`, `test_fix_4_2_preprocessor_dedup.py` |
+| `unit/ml/test_imputer.py` | `test_fix_wp11_imputer.py` |
+| `unit/ml/test_models.py` | `test_models.py`, `test_srv_step4.py`, `test_fix_4_3_onnx_optimization.py` |
+| `unit/ai/test_import_cycle.py` | `test_ai1_import_cycle.py` |
+| `unit/ai/test_node_logging.py` | `test_fix_wp7_logging.py` |
+| `unit/ai/test_synthesis_prompts.py` | `test_ai10_rag_prompt_untrusted.py` |
+| `unit/ai/test_guardrails.py` | `test_ai11_jev_outage_fallback.py` |
+| `unit/ai/test_routers.py` | `test_ai3_adversarial_routing.py`, `test_fix_wp7_jev_router_benchmark.py` |
+| `unit/ai/test_memory_removed.py` | `test_ai12_memory_removed.py` |
+| `unit/ai/test_cart_tools.py` | `test_ui4_cart_tool_no_invented_prices.py`, `test_ai4_cart_action_detection.py` |
+| `unit/ai/test_guest_identity.py` | `test_ai14_guest_user_constant.py` |
+| `unit/ai/test_response_caching.py` | `test_ai5_banned_user_cache.py`, `test_ai6_personal_answers_not_cached.py`, `test_ai7_bypass_cache_state.py`, `test_ai8_cache_failures_logged.py` |
+| `unit/ai/test_extractor.py` | `test_fix_wp7_extractor.py` |
+| `unit/ai/test_policy_kb.py` | `test_fix_wp7_policy_kb.py` |
+| `unit/ai/test_ui_payload.py` | `test_fix_wp7_ui_payload.py` |
+| `unit/ai/test_tracing.py` | `test_phase4_tracing.py` |
+| `unit/api/test_rate_limiter.py` | `test_fix_5_3_rate_limiter.py`, `test_sec4_auth_rate_limit.py` |
+| `unit/api/test_client_identity.py` | `test_sec2_3_client_identity.py`, `test_sec8_guest_identity.py` |
+| `unit/api/test_bot_routes.py` | `test_sec5_bot_identity.py`, `test_fix_7_1_bot_stream.py`, `test_api7_ws_robustness.py` |
+| `unit/api/test_ban_middleware.py` | `test_fix_5_2_ban_middleware.py` |
+| `unit/api/test_auth_dependencies.py` | `test_fix_4_4_optional_user.py`, `test_sec6_token_error_leak.py` |
+| `unit/api/test_jwt_claims_and_cors.py` | `test_sec7_jwt_claims_cors.py` |
+| `unit/api/test_shopper_routes.py` | `test_api1_batch_limits.py`, `test_api2_3_shopper_routes.py`, `test_fix_6_1_shopper_routes.py` |
+| `unit/api/test_account_demographics.py` | `test_api5_account_demographics.py` |
+| `unit/api/test_error_handlers.py` | `test_fix_5_1_cors_errors.py`, `test_api8_domain_error.py` |
+| `unit/api/test_auth_service.py` | `test_api6_email_normalization.py` |
+| `unit/api/test_shopper_service.py` | `test_api4_batch_quote_alignment.py` |
+| `unit/api/test_currency_conversion.py` | `test_fix_9_4_currency_conversion.py` |
+| `unit/ui/test_session_id.py` | `test_ui1_session_id.py` |
+| `unit/ui/test_hero_product.py` | `test_ui2_hero_product.py` |
+| `unit/ui/test_price_display.py` | `test_ui3_no_invented_prices.py`, `test_ui7_no_invented_product_data.py` |
+| `unit/ui/test_cart_checkout.py` | `test_fix_wp8a_cart_checkout.py`, `test_ui6_checkout_error.py` |
+| `unit/ui/test_bot_chat.py` | `test_fix_wp8b_bot_streaming.py`, `test_ui5_bot_offline_message.py` |
+| `unit/ui/test_auth_state.py` | `test_fix_wp8c_auth_persistence.py`, `test_api_client.py` |
+| `unit/ui/test_components.py` | `test_fix_wp9_frontend_components.py` |
+| `integration/test_redis_cache.py` | `test_fix_2_2_redis_client.py` |
+| `integration/test_base_repo.py` | `test_fix_2_1_base_repo.py` |
+| `integration/test_create_app_tables.py` | `test_fix_3_1_mro_and_tables.py` |
+| `integration/test_warehouse_indexes.py` | `test_fix_3_2_warehouse_index.py`, `test_fix_9_1_recommendation_repo.py` |
+| `integration/test_bulk_copy.py` | `test_core4_copy_format.py` (+ the replace-load test from `test_pipe_step5.py`) |
+| `integration/test_rrf_search.py` | `test_core5_rrf_candidates.py` |
+| `integration/test_schema_alignment.py` | `test_core13_schema_alignment.py` |
+| `integration/test_semantic_cache.py` | `test_core15_semantic_cache.py` |
+| `integration/test_warehouse_repo.py` | `test_fix_4_1_param_and_ddl.py` |
+| `integration/test_analytics_cache.py` | `test_fix_9_2_analytics_cache.py` |
+| `integration/test_auth_tables.py` | `test_fix_6_2_auth_no_ddl.py` |
+| `integration/test_shopper_service.py` | `test_fix_7_2_shopper_performance.py` |
+| `integration/test_batch_purchase.py` | `test_fix_batch_purchase.py` |
+| `integration/test_strike_tracker.py` | `test_fix_3_7_strike_tracker.py`, `test_ai9_strike_counter_expiry.py` |
+| `integration/test_cart_persistence.py` | `test_fix_4_5_cart_tools.py`, `test_phase4_cart_durability.py` |
+| `integration/test_bundle_tools.py` | `test_fix_8_3_bundle_tools.py`, `test_phase4_bundles.py` |
+| `integration/test_search_relaxation.py` | `test_phase4_search_relaxation.py` |
+| `integration/test_no_invented_products.py` | `test_ai13_no_invented_products.py` |
+| `integration/test_order_tools.py` | `test_ai2_order_ownership.py` |
+| `integration/test_curated_catalog.py` | `test_phase1_infra_frontend.py` (catalog tests) |
+| `integration/test_rate_limiter_redis.py` | `test_phase1_infra_frontend.py` (rate limit test, fixed) |
+| `integration/test_bot_drawer.py` | `test_phase1_infra_frontend.py` (bot drawer test) |
+| `integration/test_rate_limiter_lua.py`, `test_auth_rate_limit.py` | cut from `test_fix_5_3_rate_limiter.py`, `test_sec4_auth_rate_limit.py` |
+| `integration/test_banned_identity.py` | cut from `test_sec2_3_client_identity.py` |
+| `e2e/test_api_flows.py` | `test_api.py` |
+| `e2e/test_langgraph_agent.py` | `test_phase3_langgraph_agent.py` |
+| `e2e/test_production_flows.py` | `test_phase4_e2e_production.py` |
+| `e2e/test_caching_and_fanout.py` | `test_phase4_caching_and_fanout.py` |
+| `e2e/test_security_strikes.py` | `test_phase4_security_strikes.py` |
+| `e2e/test_jev_router_pipeline.py` | `test_phase2_jev_router.py` (calls the real JEV LLM API) |
+
 ## Refactors (step 8)
 
 - 06ffb2e one blank-when-missing path for the original price, hero image url without the unreachable branch

@@ -56,10 +56,13 @@ Black Friday/
 │   │   └── rate_limiting/       # Rate limiter dependency
 │   └── reflex_app/    # Reflex interactive frontend (consumes FastAPI via HTTP only)
 │
-├── tests/             # Pytest suite + Locust load tests + architecture enforcement
-│   ├── test_architecture.py  # AST-based layering boundary enforcement
-│   └── locustfile.py          # Load testing (50 concurrent users benchmark)
-│
+├── tests/             # Pytest suite, split by what each test needs (markers: unit, integration, e2e, slow)
+│   ├── conftest.py    # Shared setup (forces Redis DB 15); integration/ and e2e/ add per-test Redis/DB cleanup
+│   ├── unit/          # Fast, mocks only, no network: core/, ml/, ai/, api/, ui/
+│   ├── integration/   # Needs live PostgreSQL / Redis / MLflow (some also need the running API container)
+│   ├── e2e/           # Full API / LangGraph flows (real LLM calls, slow)
+│   ├── architecture/  # AST layering enforcement (test_architecture.py, test_evaluation_layering.py)
+│   └── load/          # Locust load test (locustfile.py) and its auth helper
 ├── docker/            # Dockerfiles & init scripts
 │   ├── Dockerfile.api
 │   ├── Dockerfile.ui
@@ -81,7 +84,7 @@ Black Friday/
 
 ## Strict Architectural Layering Rules
 
-These rules are **enforced by AST analysis** in `tests/test_architecture.py`. All changes MUST comply:
+These rules are **enforced by AST analysis** in `tests/architecture/test_architecture.py`. All changes MUST comply:
 
 | Layer | May Import | NEVER Imports |
 |:------|:-----------|:--------------|
@@ -154,7 +157,11 @@ make cron                 # Start 6-hour automated pipeline scheduler
 make eval                 # Run full evaluation (ML + AI)
 make eval-ml              # Standalone ML regression/imputer evaluation
 make eval-ai              # AI System-1 router benchmarks
-make test                 # pytest tests/ -v
+make test                 # unit + architecture + integration + e2e
+make test-unit            # fast, mocks only: tests/unit, tests/architecture, tests/load (skips @slow)
+make test-slow            # the slow unit tests; CI runs them together with test-unit
+make test-integration     # needs live PostgreSQL / Redis / MLflow
+make test-e2e             # full API / graph flows
 make lint                 # flake8 + black --check + isort --check
 make clean                # Remove __pycache__, .pytest_cache, etc.
 ```
@@ -163,10 +170,10 @@ make clean                # Remove __pycache__, .pytest_cache, etc.
 
 ```bash
 # Interactive (web UI at localhost:8089)
-locust -f tests/locustfile.py --host http://127.0.0.1:8000
+locust -f tests/load/locustfile.py --host http://127.0.0.1:8000
 
 # Headless (50 users, 10 spawn rate, 15s duration)
-locust -f tests/locustfile.py --headless -u 50 -r 10 --run-time 15s --host http://127.0.0.1:8000 --csv=reports/locust_summary
+locust -f tests/load/locustfile.py --headless -u 50 -r 10 --run-time 15s --host http://127.0.0.1:8000 --csv=reports/locust_summary
 ```
 
 ---
@@ -252,15 +259,14 @@ All share the same SQLAlchemy engine via dependency injection.
 
 GitHub Actions workflow (`.github/workflows/ci-cd.yml`):
 - Triggers on push/PR to `main`/`master`
-- Spins up PostgreSQL 16 + Redis 7 service containers
 - Installs Python 3.11 + `requirements-dev.txt`
-- Runs `pytest tests/ -v`
+- Runs `make lint-ci`, then the unit tests (`tests/unit`, `tests/load`) and the architecture tests; integration and e2e run locally
 
 ---
 
 ## Common Pitfalls
 
-1. **Architecture violations** — `tests/test_architecture.py` uses AST parsing to enforce layering. Any forbidden cross-layer import will fail CI.
+1. **Architecture violations** — `tests/architecture/test_architecture.py` uses AST parsing to enforce layering. Any forbidden cross-layer import will fail CI.
 2. **MLflow imports** — Only allowed in `core/tracking/`. Importing `mlflow` anywhere else breaks the architecture test.
 3. **Data leakage** — Preprocessing splits train/test BEFORE fitting any transformers. Never fit on the full dataset.
 4. **Redis cache invalidation** — The cron scheduler flushes `shopper:*`, `analytics:*`, `price:*` patterns every 6 hours. Manual cache clearing may be needed during development.

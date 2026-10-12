@@ -1,10 +1,14 @@
-import pytest
+from unittest.mock import MagicMock, patch
+
 import numpy as np
 import pandas as pd
-from unittest.mock import MagicMock, patch
-from ml.tracking.drift_monitor import DriftMonitor, DriftResult
-from ml.pipelines.retrain import run_champion_challenger_retrain, RetrainResult
+import pytest
+
 from ml.pipelines.monitor import run_production_drift_monitor
+from ml.pipelines.retrain import RetrainResult, run_champion_challenger_retrain
+from ml.tracking.drift_monitor import DriftMonitor, DriftResult
+
+pytestmark = pytest.mark.slow
 
 
 @pytest.fixture

@@ -228,7 +228,7 @@ The platform features an interactive, reactive web UI built entirely in Python u
 
 ## Architectural Layering Rules & Guidelines
 
-To maintain decoupling and production maintainability, the codebase enforces strict layering verified via AST analysis (`pytest tests/test_architecture.py`):
+To maintain decoupling and production maintainability, the codebase enforces strict layering verified via AST analysis (`pytest tests/architecture/test_architecture.py`):
 
 ```
 core/        config, logging, security, exceptions, cache/, db/, tracking/ (MLflow SSOT), embeddings/

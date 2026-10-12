@@ -1,4 +1,4 @@
-.PHONY: help up down restart ps logs ingest preprocess segmentation basket train monitor retrain cron eval eval-ml eval-ai test lint lint-ci clean
+.PHONY: help up down restart ps logs ingest preprocess segmentation basket train monitor retrain cron eval eval-ml eval-ai test test-unit test-slow test-integration test-e2e lint lint-ci clean
 
 # Default target: display help
 help:
@@ -26,7 +26,11 @@ help:
 	@echo "  make eval         - Run regression and router evaluation suites"
 	@echo "  make eval-ml      - Run standalone ML regression/imputation evaluation"
 	@echo "  make eval-ai      - Run AI System-1 router and extractor benchmarks"
-	@echo "  make test         - Run the pytest suite"
+	@echo "  make test         - Run every test folder (unit, architecture, load helpers, integration, e2e)"
+	@echo "  make test-unit    - Fast tests, mocks only (tests/unit, tests/architecture, tests/load; skips @slow)"
+	@echo "  make test-slow    - The slow unit tests (subprocess imports, drift/retrain, ONNX imputer)"
+	@echo "  make test-integration - Needs live PostgreSQL / Redis / MLflow (tests/integration)"
+	@echo "  make test-e2e     - Full API / graph flows (tests/e2e)"
 	@echo "  make lint         - Run flake8, black and isort on everything (all three always run)"
 	@echo "  make lint-ci      - Same, limited to LINT_CLEAN_PATHS (what CI enforces)"
 	@echo "  make clean        - Remove temporary cache files and __pycache__"
@@ -84,8 +88,21 @@ eval: eval-ml eval-ai
 
 
 # Quality Assurance & Code Standards
-test:
-	pytest tests/ -v
+# Test layout: tests/unit (mocks only), tests/integration (live services), tests/e2e (full flows),
+# tests/architecture (layering), tests/load (locust). Each test has a 60s timeout (pyproject.toml).
+test: test-unit test-slow test-integration test-e2e
+
+test-unit:
+	pytest tests/unit tests/architecture tests/load -m "not slow" -v
+
+test-slow:
+	pytest tests/unit tests/load -m slow -v
+
+test-integration:
+	pytest tests/integration -v
+
+test-e2e:
+	pytest tests/e2e -v
 
 # Everything is checked by `make lint`; most of apps/, evaluation/, ml/ and tests/ predates the black/isort
 # config in pyproject.toml, so CI enforces only the directories that are already clean. Add a directory to

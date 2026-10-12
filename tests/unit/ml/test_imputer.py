@@ -5,6 +5,8 @@ import pytest
 from ml.features.imputation import MissForestImputer
 from ml.serving.imputer import ONNXMissForestImputer
 
+pytestmark = pytest.mark.slow
+
 
 def test_missforest_no_purchase_leakage():
     # Verify purchase is not in FEATURE_COLS
