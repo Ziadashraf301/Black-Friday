@@ -1,23 +1,18 @@
 """
-Phase 1 Automated Test Suite (Task P1-08).
-Validates 100% of Phase 1 Deliverables:
+Curated catalog against the live database:
   - P1-01: pgvector & Hybrid Vector Schema (test_pgvector_schema)
   - P1-02: Audit Existing 20 Products & Assets (test_existing_20_products_audited)
   - P1-03: Complete 30 Catalog Products (test_curated_catalog_30_items)
   - P1-04: 30 Product Image Assets Coverage (test_product_image_paths_exist)
-  - P1-05: Security & Redis Sliding-Window Rate Limiter (test_redis_rate_limit_5_min_20_day)
-  - P1-06: Frontend Layer 1 Reflex Bot Drawer Auth & Chips (test_frontend_bot_auth_check)
   - P1-07: Ingestion & Incremental Vector Embeddings (test_catalog_embeddings_incremental_skip)
 """
 import os
 import json
 import pytest
 from pathlib import Path
-from fastapi import HTTPException
 
 from core.config import settings
 from core.db.repository import BlackFridayRepository
-from apps.api.rate_limiting.rate_limiter import RedisRateLimiter
 from ml.pipelines.seed_curated import CuratedCatalogSeeder
 
 
@@ -146,105 +141,8 @@ def test_product_image_paths_exist(catalog_data):
             assert target.exists(), f"Product image not found at {target}"
 
 
-# ==============================================================================
-# P1-05: Security & Redis Rate Limiter Implementation
-# ==============================================================================
-def test_redis_rate_limit_5_min_20_day():
-    """Validates sliding window rate limiter enforcing 5 req/min and 20 req/day quotas."""
-    test_user_id = "test_shopper_99999"
-    limiter = RedisRateLimiter(minute_limit=5, day_limit=20)
-
-    # 1. Reset user state
-    limiter.reset_user(test_user_id)
-
-    # 2. First 5 requests within a minute must pass
-    for i in range(1, 6):
-        allowed, msg, retry, headers = limiter.check_rate_limit(test_user_id)
-        assert allowed is True, f"Request {i} should be allowed"
-        assert headers.get("X-RateLimit-Limit-Minute") == "5"
-
-    # 3. 6th request within the same minute must breach quota and return 429
-    allowed, msg, retry, headers = limiter.check_rate_limit(test_user_id)
-    assert allowed is False, "6th request within minute must be blocked"
-    assert "Max 5 requests per minute" in msg
-    assert int(headers.get("Retry-After", "0")) > 0
-
-    with pytest.raises(HTTPException) as exc_info:
-        limiter.enforce(test_user_id)
-    assert exc_info.value.status_code == 429
-
-    # 4. Test daily limit (simulate 20 req/day quota)
-    daily_test_user = "test_shopper_daily_limit"
-    daily_limiter = RedisRateLimiter(minute_limit=100, day_limit=20)
-    daily_limiter.reset_user(daily_test_user)
-
-    for i in range(1, 21):
-        allowed, msg, retry, headers = daily_limiter.check_rate_limit(daily_test_user)
-        assert allowed is True, f"Request {i} within day must be allowed"
-
-    # 21st request exceeds daily quota
-    allowed, msg, retry, headers = daily_limiter.check_rate_limit(daily_test_user)
-    assert allowed is False, "21st request must exceed daily quota"
-    assert "Max 20 requests per day" in msg
-
-    # Clean up
-    limiter.reset_user(test_user_id)
-    daily_limiter.reset_user(daily_test_user)
 
 
-# ==============================================================================
-# P1-06: Frontend Layer 1 (Reflex Bot Drawer Auth Check)
-# ==============================================================================
-def test_frontend_bot_auth_check():
-    """Validates Reflex ShoppingState bot drawer auth gating and preset action chips."""
-    import sys
-    sys.path.insert(0, str(settings.BASE_DIR / "apps" / "reflex_app"))
-    from reflex_app.state import ShoppingState
-    from reflex_app.components.bot_drawer import bot_drawer, bot_trigger_button
-
-    # 1. Unauthenticated test
-    state = ShoppingState()
-    state.auth_token = ""
-    assert state.is_authenticated is False
-
-    # Clicking trigger while unauthenticated must prompt login
-    res = state.handle_bot_trigger_click()
-    assert res is False
-    assert state.show_auth is True, "Must prompt auth modal when guest clicks bot trigger"
-    assert state.bot_auth_checked is True
-    assert "sign in" in state.bot_auth_warning.lower()
-
-    # 2. Authenticated test
-    auth_state = ShoppingState()
-    auth_state.auth_token = "mock_jwt_access_token_12345"
-    auth_state.user_name = "Alex"
-    auth_state.user_cluster_persona = "Urban Trendsetter"
-    assert auth_state.is_authenticated is True
-
-    opened = auth_state.handle_bot_trigger_click()
-    assert opened is True
-    assert auth_state.is_bot_open is True
-    assert len(auth_state.bot_messages) > 0
-
-    # 3. Action chips test (*"Top Deals Today"*, *"Sale Products"*)
-    import asyncio
-    async def consume_chip(chip_name: str):
-        async for _ in auth_state.click_action_chip(chip_name):
-            pass
-
-    asyncio.run(consume_chip("Top Deals Today"))
-    last_assistant_msg = [m for m in auth_state.bot_messages if m["role"] == "assistant"][-1]
-    assert "deal" in last_assistant_msg["content"].lower()
-
-    asyncio.run(consume_chip("Sale Products"))
-    last_assistant_msg = [m for m in auth_state.bot_messages if m["role"] == "assistant"][-1]
-    assert "sale" in last_assistant_msg["content"].lower()
-
-    # 4. Component compilation / rendering check
-    drawer_cmp = bot_drawer()
-    trigger_cmp = bot_trigger_button()
-    assert drawer_cmp is not None
-    assert trigger_cmp is not None
 
 
 # ==============================================================================

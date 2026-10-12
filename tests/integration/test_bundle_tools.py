@@ -1,13 +1,25 @@
-"""
+"""Regression tests for Fix 8.3: BundleRecommendationsTool cache singleton reuse.
+Validates:
+1. BundleRecommendationsTool reuses singleton cache_manager by default.
+2. No unnecessary unpooled RedisCacheManager() instances are created.
+
 Unit and Integration Tests for Live Database & Redis Bundle Subsystem (Phase 4 - Task P4-05).
 Validates:
   1. Live database retrieval of apriori_bundles and item2vec_similars from curated_products.
   2. Redis 24-hour bundle caching and sub-millisecond cache hit.
-  3. Dynamic pricing calculations and savings percentages.
-"""
+  3. Dynamic pricing calculations and savings percentages."""
+
 import pytest
-from ai.tools.bundle_tools import bundle_tool, BundleRecommendationsTool
-from core.cache.redis_client import RedisCacheManager
+
+from ai.tools.bundle_tools import BundleRecommendationsTool, bundle_tool
+from core.cache.redis_client import RedisCacheManager, cache_manager
+
+
+def test_fix_8_3_bundle_recommendations_tool_reuses_singleton_cache():
+    """Validates that BundleRecommendationsTool defaults to singleton cache_manager."""
+    tool = BundleRecommendationsTool()
+    assert tool._cache is cache_manager
+    assert bundle_tool._cache is cache_manager
 
 
 class TestBundleEngine:

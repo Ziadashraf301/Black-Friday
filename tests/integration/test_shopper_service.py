@@ -15,6 +15,9 @@ from apps.api.services.model_service import model_service
 from core.cache import cache_manager
 
 
+pytestmark = pytest.mark.slow
+
+
 @pytest.fixture(autouse=True)
 def setup_models_and_tables():
     model_service.load_models()

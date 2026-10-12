@@ -9,7 +9,7 @@ from core.config import settings
 from core.db.models import Base
 from core.db.repositories.user_repo import UserRepository
 
-SCHEMA_SQL = Path(__file__).resolve().parent.parent / "docker" / "postgres" / "init_schema.sql"
+SCHEMA_SQL = Path(__file__).resolve().parents[2] / "docker" / "postgres" / "init_schema.sql"
 SCRATCH = "core13_schema_scratch"
 NULLABLE_QUERY = text(
     "SELECT table_name, column_name, is_nullable FROM information_schema.columns WHERE table_schema = 'public'"
