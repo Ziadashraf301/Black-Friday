@@ -120,7 +120,7 @@ def test_onnx_imputer_export_and_inference(tmp_path):
 
     # Export to ONNX in temp dir
     export_dir = str(tmp_path / "onnx_imputer")
-    saved_files = ONNXExporter.export_imputer(imputer, output_dir=export_dir)
+    ONNXExporter.export_imputer(imputer, output_dir=export_dir)
     assert os.path.exists(os.path.join(export_dir, "imputer_product_category_2.onnx"))
     assert os.path.exists(os.path.join(export_dir, "imputer_product_category_3.onnx"))
     assert os.path.exists(os.path.join(export_dir, "imputer_metadata.json"))

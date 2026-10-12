@@ -5,8 +5,6 @@ hanger photography, strikethrough & sale pricing, interactive size pills [S, M, 
 wide vibrant orange 'Shop Now' CTA, and bottom circled chevron indicator.
 """
 
-from typing import Any, Dict
-
 import reflex as rx
 from reflex_app.state import ShoppingState
 

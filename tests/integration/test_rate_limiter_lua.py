@@ -3,12 +3,8 @@
 import time
 
 import pytest
-from fastapi import HTTPException
-from fastapi.testclient import TestClient
 
-from apps.api.main import app
-from apps.api.rate_limiting.rate_limiter import LUA_SLIDING_WINDOW_RATE_LIMIT, RedisRateLimiter, auth_rate_limiter
-from core.config import settings
+from apps.api.rate_limiting.rate_limiter import RedisRateLimiter
 
 
 def test_lua_script_real_execution_integration():
@@ -30,7 +26,6 @@ def test_lua_script_real_execution_integration():
         pytest.skip("Local Redis server not reachable for Lua script integration test.")
 
     test_uid = f"lua-test-{int(time.time())}"
-    now_ts = time.time()
     limiter = RedisRateLimiter(redis_client=r, minute_limit=5, day_limit=20)
 
     try:

@@ -2,8 +2,6 @@
 
 The action chips call the bot endpoint of the running API, so this test needs the API container."""
 
-import sys
-
 from core.config import settings
 
 

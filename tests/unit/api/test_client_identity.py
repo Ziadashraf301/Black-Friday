@@ -2,7 +2,6 @@ import pytest
 from fastapi.testclient import TestClient
 from starlette.requests import Request
 
-from ai.guardrails.strike_tracker import strike_tracker
 from apps.api.client_identity import DEFAULT_SESSION_ID, guest_user_id, resolve_client_identity, sanitize_session_id
 from apps.api.main import app
 from apps.api.rate_limiting.rate_limiter import extract_client_identifier

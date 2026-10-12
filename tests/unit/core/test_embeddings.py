@@ -10,8 +10,6 @@ Validates:
 from pathlib import Path
 from unittest.mock import MagicMock
 
-import pytest
-
 from core.embeddings.service import (
     DeterministicSemanticProvider,
     EmbeddingService,
@@ -45,7 +43,7 @@ def test_gemini_embedding_provider_with_mocked_genai_client():
 def test_missing_api_key_degrades_gracefully_to_deterministic():
     """Verifies that when GEMINI_API_KEY is unset or None, EmbeddingService falls back safely without crashing."""
     # When initialized without key, resolves to DeterministicSemanticProvider
-    fallback_provider = EmbeddingService._resolve_default_provider()
+    EmbeddingService._resolve_default_provider()
     # If no valid key in environment, must be DeterministicSemanticProvider
     service = EmbeddingService(provider=DeterministicSemanticProvider())
     assert service.provider_name == "DeterministicSemanticProvider"

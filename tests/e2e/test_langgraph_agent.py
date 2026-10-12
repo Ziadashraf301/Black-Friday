@@ -2,7 +2,8 @@
 Phase 3 Automated Test Suite: LangGraph Multi-Agent Architecture, Tools & Memory.
 Validates 100% of Phase 3 Requirements:
   - P3-01: AgentState & Typed Contracts (test_agent_state_and_schemas)
-  - P3-02: Router Entry Node & Refusal/Steering (test_guardrail_router_blocks_adversarial, test_guardrail_router_steers_out_of_domain)
+  - P3-02: Router Entry Node & Refusal/Steering
+  (test_guardrail_router_blocks_adversarial, test_guardrail_router_steers_out_of_domain)
   - P3-03: Hybrid Search Tool (test_search_agent_node_hybrid_execution)
   - P3-04: Catalog Specs & Bundle Recommendations (test_details_agent_node_retrieval, test_bundle_agent_node_apriori)
   - P3-05: Cart Actions & Size Mutation (test_cart_agent_node_size_mutation)
@@ -13,18 +14,11 @@ Validates 100% of Phase 3 Requirements:
 import pytest
 
 from ai.schemas import (
-    BundleItem,
     CartItem,
     CartState,
-    OrderStatus,
-    ProductDetails,
     ProductSearchResult,
 )
 from ai.tools.bundle_tools import bundle_tool
-from ai.tools.cart_tools import cart_tool
-from ai.tools.catalog_tools import catalog_details_tool
-from ai.tools.order_tools import order_tool
-from ai.tools.search_tools import search_tool
 from ai.workflow.graph import shopping_graph
 from ai.workflow.state import AgentState
 

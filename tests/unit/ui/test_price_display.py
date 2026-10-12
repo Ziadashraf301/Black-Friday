@@ -2,13 +2,10 @@
 
 UI-7: unknown products are skipped, a missing price is None (not 0.0), and the card never formats a missing price."""
 
-import sys
 from unittest.mock import MagicMock, patch
 
 from reflex_app.state import CartItem  # noqa: E402
 from reflex_app.state import ShoppingState  # noqa: E402
-
-from core.config import settings
 
 
 def test_product_without_a_price_is_not_added_to_the_cart():

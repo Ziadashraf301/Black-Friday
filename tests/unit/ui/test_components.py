@@ -1,17 +1,10 @@
-import os
-import sys
-from unittest.mock import MagicMock, patch
-
-import pytest
-from reflex_app.components.auth_modal import OCCUPATION_LABELS, auth_error_banner, signup_panel
-from reflex_app.components.bot_drawer import bot_card_item, bot_drawer, message_bubble
-from reflex_app.components.hero_card import hero_card
+from reflex_app.components.auth_modal import OCCUPATION_LABELS
+from reflex_app.components.bot_drawer import bot_card_item, message_bubble
 from reflex_app.components.product_card import product_card
-from reflex_app.components.sidebar import extract_filter_options, sidebar
+from reflex_app.components.sidebar import extract_filter_options
 from reflex_app.state import ShoppingState
 
 from apps.api.schemas import SignupRequest
-from core.config import settings
 
 
 def test_changing_hero_product_changes_cart_addition():

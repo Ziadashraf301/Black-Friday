@@ -1,14 +1,7 @@
-import importlib
 import os
-import sys
 from unittest.mock import MagicMock, patch
 
-import pytest
-import reflex as rx
-import reflex_app.state as state_mod
 from reflex_app.state import API_BASE_URL, CartItem, ShoppingState
-
-from core.config import settings
 
 
 def test_auth_token_persisted_with_rx_local_storage():

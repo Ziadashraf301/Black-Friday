@@ -1,16 +1,15 @@
 import os
+from typing import Any, Dict, List, Optional
 
 import matplotlib
 
 matplotlib.use("Agg")  # Non-interactive backend for server/CLI execution
-from typing import Any, Dict, List, Optional
+import matplotlib.pyplot as plt  # noqa: E402
+import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
+import seaborn as sns  # noqa: E402
 
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import seaborn as sns
-
-from core.logging import get_logger
+from core.logging import get_logger  # noqa: E402
 
 logger = get_logger(__name__)
 
@@ -341,7 +340,8 @@ class Visualizer:
             n_cols = eval_features.shape[1] if hasattr(eval_features, "shape") and len(eval_features.shape) > 1 else None
             if feature_names is not None and n_cols is not None and len(feature_names) != n_cols:
                 logger.info(
-                    f"SHAP feature_names count ({len(feature_names)}) != transformed matrix columns ({n_cols}); using auto indexing."
+                    f"SHAP feature_names count ({len(feature_names)}) != transformed matrix columns ({n_cols}); "
+                    "using auto indexing."
                 )
                 feature_names = None
 
@@ -360,7 +360,7 @@ class Visualizer:
     def generate_segmentation_charts(
         segmented_df: pd.DataFrame, stats_df: Optional[pd.DataFrame] = None, output_dir: str = "reports/segmentation"
     ) -> Dict[str, str]:
-        """Generates visual persona distribution, LTV profiling, and cluster statistics table charts for Customer Segmentation."""
+        """Generates persona distribution, LTV profiling, and cluster statistics charts for Customer Segmentation."""
         os.makedirs(output_dir, exist_ok=True)
         charts = {}
 
@@ -457,7 +457,11 @@ class Visualizer:
     def generate_market_basket_charts(
         rules_df: pd.DataFrame, metrics_df: pd.DataFrame, item2vec: Any = None, output_dir: str = "reports/market_basket"
     ) -> Dict[str, str]:
-        """Generates Apriori association rules scatter plot, Product Network centrality leaders chart, and Item2Vec embedding similarity distribution."""
+        """Generates the market basket charts.
+
+        Apriori association rules scatter plot, Product Network centrality leaders chart,
+        and Item2Vec embedding similarity distribution.
+        """
         os.makedirs(output_dir, exist_ok=True)
         charts = {}
 

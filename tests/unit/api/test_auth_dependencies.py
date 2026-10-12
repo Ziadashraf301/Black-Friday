@@ -1,8 +1,7 @@
 import pytest
-from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
-from apps.api.auth import get_current_user, get_optional_user
+from apps.api.auth import get_optional_user
 from apps.api.main import app
 from core.security import create_access_token
 

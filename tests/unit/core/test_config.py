@@ -4,9 +4,6 @@
   and parse back accurately to the raw password
 - Consolidated validator parses empty/whitespace/valid integer values correctly"""
 
-import os
-import urllib.parse
-
 import pytest
 from pydantic import ValidationError
 

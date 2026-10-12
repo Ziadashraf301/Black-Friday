@@ -107,7 +107,7 @@ app = rx.App(
         ),
         rx.el.link(
             rel="stylesheet",
-            href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&family=Inter:wght@400;500;600;700&display=swap",
+            href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&family=Inter:wght@400;500;600;700&display=swap",  # noqa: E501
         ),
     ],
 )
@@ -116,6 +116,8 @@ app.add_page(
     index,
     route="/",
     title="THE Second Hand STORE | Curated Vintage Archives & Smart Bundles",
-    description="High-performance vintage fashion catalog powered by Apriori bundle association rules and ONNX price intelligence.",
+    description=(
+        "High-performance vintage fashion catalog powered by Apriori bundle association rules and ONNX price intelligence."
+    ),
     on_load=ShoppingState.load_catalog,
 )

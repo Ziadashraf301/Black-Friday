@@ -58,7 +58,7 @@ def test_base_repository_create_app_tables_on_scratch_db():
             col_type = conn.execute(
                 text(
                     """
-                SELECT udt_name FROM information_schema.columns 
+                SELECT udt_name FROM information_schema.columns
                 WHERE table_name = 'curated_products' AND column_name = 'embedding';
             """
                 )

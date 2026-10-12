@@ -1,11 +1,9 @@
 import os
-import shutil
 from typing import Any, Dict, List, Optional
 
 from core.config import settings
 from core.logging import get_logger
 from core.tracking import (
-    HAS_MLFLOW,
     MlflowClient,
     get_mlflow_client,
     get_or_create_experiment,

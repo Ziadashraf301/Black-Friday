@@ -1,3 +1,7 @@
 [flake8]
 max-line-length = 127
 exclude = .git,__pycache__,legacy_project,.web,models_backup_*
+# Markdown report templates: long table rows and trailing "  " hard line breaks are part of the output
+per-file-ignores =
+    evaluation/ai/benchmark_router.py:E501,W291
+    ml/tracking/model_card.py:E501

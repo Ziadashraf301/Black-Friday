@@ -7,19 +7,12 @@ Validates:
 4. Fake LLM client integration without network calls.
 """
 
-from typing import Any, Dict, List
+from typing import Any, Dict
 from unittest.mock import MagicMock
 
-import pytest
-
 from ai.services.synthesis_service import SynthesisService
-from ai.services.template_service import ResponseTemplateService
-from ai.workflow.graph import build_shopping_graph
 from ai.workflow.state import (
     AgentState,
-    GroundingCitation,
-    UICard,
-    UIPayload,
     ui_payload_reducer,
 )
 

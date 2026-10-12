@@ -11,14 +11,11 @@ class AbstractBaseModel(ABC):
     @abstractmethod
     def fit(self, X: pd.DataFrame, y: pd.Series) -> "AbstractBaseModel":
         """Fits the underlying regression estimator."""
-        pass
 
     @abstractmethod
     def predict(self, X: pd.DataFrame) -> np.ndarray:
         """Generates predictions on new data."""
-        pass
 
     @abstractmethod
     def get_params(self) -> Dict[str, Any]:
         """Returns hyperparameters dictionary."""
-        pass

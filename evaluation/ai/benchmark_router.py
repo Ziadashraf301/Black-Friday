@@ -5,7 +5,6 @@ Logs parameters, metrics, confusion matrices, latency histograms, and artifacts 
 """
 
 import json
-import os
 import sys
 import time
 from pathlib import Path
@@ -16,21 +15,27 @@ import numpy as np
 import pandas as pd
 
 matplotlib.use("Agg")  # Non-interactive backend for headless execution
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.metrics import accuracy_score, brier_score_loss, confusion_matrix, f1_score, precision_score, recall_score
+import matplotlib.pyplot as plt  # noqa: E402
+import seaborn as sns  # noqa: E402
+from sklearn.metrics import (  # noqa: E402
+    accuracy_score,
+    brier_score_loss,
+    confusion_matrix,
+    f1_score,
+    precision_score,
+    recall_score,
+)
 
 # Add project root to sys.path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from ai.extractor import HybridEntityExtractor, JevEntityExtractor, RegexEntityExtractor
-from ai.router import FastRuleRouter, JevApiRouter
-from ai.schemas import IntentType
-from core.config import settings
-from core.logging import get_logger
-from core.tracking import (
+from ai.extractor import HybridEntityExtractor, JevEntityExtractor, RegexEntityExtractor  # noqa: E402
+from ai.router import FastRuleRouter, JevApiRouter  # noqa: E402
+from ai.schemas import IntentType  # noqa: E402
+from core.logging import get_logger  # noqa: E402
+from core.tracking import (  # noqa: E402
     get_or_create_experiment,
     mlflow,
     setup_tracking_environment,

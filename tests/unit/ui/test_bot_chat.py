@@ -1,15 +1,11 @@
 """UI-5: when the assistant API is unreachable the UI says so; it does not invent deals, prices or leak errors."""
 
 import asyncio
-import json
-import sys
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
 
 import httpx
 import pytest
 from reflex_app.state import BOT_UNAVAILABLE_MESSAGE, ShoppingState  # noqa: E402
-
-from core.config import settings
 
 
 class MockAsyncResponse:
@@ -55,7 +51,8 @@ async def test_mocked_sse_stream_yields_incremental_state_updates_in_order():
         'data: {"type": "token", "content": "We have "}',
         'data: {"type": "token", "content": "great coats."}',
         'data: {"type": "ui_card", "payload": {"cards": [{"product_id": "P01", "name": "Tweed Coat", "price": 99.0}]}}',
-        'data: {"type": "grounding", "citations": [{"product_id": "P01", "title": "Tweed Coat", "url": "/shopper/browse/P01", "price": 99.0}]}',
+        'data: {"type": "grounding", "citations": [{"product_id": "P01", "title": "Tweed Coat", '
+        '"url": "/shopper/browse/P01", "price": 99.0}]}',
         'data: {"type": "done"}',
         "data: [DONE]",
     ]

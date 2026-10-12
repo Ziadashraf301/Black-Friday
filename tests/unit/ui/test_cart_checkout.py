@@ -1,14 +1,9 @@
 """UI-6: a checkout network failure shows a fixed message, not the raw exception text."""
 
-import os
-import sys
 from unittest.mock import MagicMock, patch
 
-import httpx
 import pytest
 from reflex_app.state import CHECKOUT_NETWORK_ERROR, CartItem, ShoppingState  # noqa: E402
-
-from core.config import settings
 
 pytestmark = pytest.mark.slow
 

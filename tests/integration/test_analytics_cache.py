@@ -8,7 +8,7 @@ Regression tests for Fix 9.2 (and WP6 decoupling):
 
 from unittest.mock import MagicMock, PropertyMock, patch
 
-from apps.api.services.analytics_service import AnalyticsService, analytics_service
+from apps.api.services.analytics_service import analytics_service
 from core.cache import RedisCacheManager, cache_manager
 from core.db.repositories.analytics_repo import AnalyticsRepository
 

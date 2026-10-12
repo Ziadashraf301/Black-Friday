@@ -38,8 +38,8 @@ def test_database_has_index_on_product_id():
         result = conn.execute(
             text(
                 """
-            SELECT indexname, indexdef 
-            FROM pg_indexes 
+            SELECT indexname, indexdef
+            FROM pg_indexes
             WHERE tablename = 'black_friday_cleaned' AND indexdef ILIKE '%product_id%';
         """
             )
@@ -99,7 +99,7 @@ def test_category_mode_query_uses_index_scan():
             indexes = conn.execute(
                 text(
                     """
-                SELECT indexname FROM pg_indexes 
+                SELECT indexname FROM pg_indexes
                 WHERE tablename = 'black_friday_cleaned' AND indexdef ILIKE '%product_id%';
             """
                 )

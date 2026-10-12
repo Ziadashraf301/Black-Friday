@@ -6,8 +6,6 @@ Regression test for Extra: Evaluation Layering
 """
 
 import numpy as np
-import pandas as pd
-import pytest
 
 from evaluation.ml.evaluate import ModelEvaluator as EvalEvaluator
 from evaluation.ml.evaluate import evaluate_holdout as eval_holdout

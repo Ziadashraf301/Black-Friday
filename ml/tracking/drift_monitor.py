@@ -2,17 +2,15 @@ import json
 import os
 from typing import Any, Dict, List, Optional
 
-import numpy as np
 import pandas as pd
+from evidently.legacy.metric_preset import DataDriftPreset, DataQualityPreset, RegressionPreset, TargetDriftPreset
+from evidently.legacy.pipeline.column_mapping import ColumnMapping
+from evidently.legacy.report import Report
 
 from core.config import settings
 from core.logging import get_logger
 
 logger = get_logger(__name__)
-
-from evidently.legacy.metric_preset import DataDriftPreset, DataQualityPreset, RegressionPreset, TargetDriftPreset
-from evidently.legacy.pipeline.column_mapping import ColumnMapping
-from evidently.legacy.report import Report
 
 
 class DriftResult:
@@ -108,7 +106,10 @@ class DriftResult:
 
 
 class DriftMonitor:
-    """Computes Data Drift, Target Drift, Prediction Drift, Data Quality, and Concept Drift via built-in Evidently AI Presets."""
+    """Computes Data Drift, Target Drift, Prediction Drift, Data Quality, and Concept Drift.
+
+    Uses the built-in Evidently AI presets.
+    """
 
     def __init__(self, reference_df: pd.DataFrame):
         self.reference_df = reference_df
@@ -157,7 +158,8 @@ class DriftMonitor:
 
         preset_names = [p.__class__.__name__ for p in presets]
         logger.info(
-            f"Running Evidently Report with {len(presets)} presets: {preset_names} (target='{target_col}', pred='{pred_col}')..."
+            f"Running Evidently Report with {len(presets)} presets: {preset_names} "
+            f"(target='{target_col}', pred='{pred_col}')..."
         )
 
         report = Report(metrics=presets)

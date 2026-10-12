@@ -9,7 +9,6 @@ Curated catalog against the live database:
 
 import json
 import os
-from pathlib import Path
 
 import pytest
 
@@ -47,8 +46,8 @@ def test_pgvector_schema(repo):
         col_res = conn.execute(
             text(
                 """
-            SELECT column_name, udt_name 
-            FROM information_schema.columns 
+            SELECT column_name, udt_name
+            FROM information_schema.columns
             WHERE table_name='curated_products' AND column_name IN ('embedding', 'search_vector');
         """
             )
@@ -63,8 +62,8 @@ def test_pgvector_schema(repo):
         idx_res = conn.execute(
             text(
                 """
-            SELECT indexname 
-            FROM pg_indexes 
+            SELECT indexname
+            FROM pg_indexes
             WHERE tablename='curated_products';
         """
             )

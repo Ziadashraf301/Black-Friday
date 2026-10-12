@@ -4,7 +4,6 @@ Fully typed with rx.Base for 100% Reflex compiler compatibility.
 Handles auth, catalog, filters, quick view, ONNX pricing, cart, history, and dashboard.
 """
 
-import asyncio
 import json
 import os
 import uuid
@@ -74,7 +73,7 @@ def _parse_auth_error(resp: httpx.Response) -> str:
         msgs = []
         for err in detail:
             if isinstance(err, dict):
-                loc = " → ".join(str(l) for l in err.get("loc", [])[1:])
+                loc = " → ".join(str(part) for part in err.get("loc", [])[1:])
                 msg = err.get("msg", "Invalid input").replace("String should have", "Must have")
                 msgs.append(f"{loc.replace('_', ' ').title()}: {msg}" if loc else msg)
         return " | ".join(msgs) if msgs else "Please check your inputs and try again."
@@ -966,6 +965,7 @@ class ShoppingState(rx.State):
         for item in self.cart_items:
             if item.key == key:
                 found = True
+                display_price = pers_price if has_pers else (item.personalized_price if item.has_personalized else item.price)
                 new_items.append(
                     CartItem(
                         key=item.key,
@@ -983,7 +983,7 @@ class ShoppingState(rx.State):
                         product_category_2=item.product_category_2,
                         product_category_3=item.product_category_3,
                         price_display=f"${item.price:.2f}",
-                        personalized_display=f"${(pers_price if has_pers else (item.personalized_price if item.has_personalized else item.price)):.2f}",
+                        personalized_display=f"${display_price:.2f}",
                     )
                 )
             else:
@@ -1269,7 +1269,10 @@ class ShoppingState(rx.State):
             self.bot_messages = [
                 {
                     "role": "assistant",
-                    "content": f"Welcome back, {name}! ({persona})\nHow can I assist you with our curated archives and personalized member pricing today?",
+                    "content": (
+                        f"Welcome back, {name}! ({persona})\n"
+                        "How can I assist you with our curated archives and personalized member pricing today?"
+                    ),
                 }
             ]
         return True

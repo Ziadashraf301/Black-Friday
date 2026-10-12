@@ -5,8 +5,6 @@ Regression test for Fix 8.1:
 - Verify every public method of the old facade resolves and is callable
 """
 
-import pytest
-
 from core.db.repositories.analytics_repo import AnalyticsRepository
 from core.db.repositories.base import BaseRepository
 from core.db.repositories.recommendation_repo import RecommendationRepository

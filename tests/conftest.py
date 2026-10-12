@@ -16,7 +16,10 @@ settings.REDIS_DB = 15
 
 
 def pytest_ignore_collect(collection_path, config):
-    """`-m "not slow"` skips files that are slow as a whole, so their heavy imports (evidently, shap, mlflow, ...) never load."""
+    """`-m "not slow"` skips files that are slow as a whole.
+
+    That way their heavy imports (evidently, shap, mlflow, ...) never load.
+    """
     if config.getoption("markexpr", default="") != "not slow" or collection_path.suffix != ".py":
         return None
     try:

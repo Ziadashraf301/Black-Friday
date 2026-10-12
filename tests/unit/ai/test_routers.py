@@ -5,7 +5,6 @@ Validates:
 1. FastRuleRouter routes queries accurately on unit runs without strict sub-millisecond assertions.
 2. Timing checks are marked with the registered pytest 'benchmark' marker."""
 
-from pathlib import Path
 from types import SimpleNamespace
 
 import pytest

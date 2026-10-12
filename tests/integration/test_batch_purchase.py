@@ -7,17 +7,14 @@ Regression test for Batch Purchase Endpoint (POST /shopper/purchase/batch):
 """
 
 import uuid
-from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import text
 
 from apps.api.main import app
 from apps.api.services.auth_service import auth_service
 from apps.api.services.model_service import model_service
 from core.db.repository import BlackFridayRepository
-from core.db.session import get_db_engine
 
 
 @pytest.fixture(autouse=True)

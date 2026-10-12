@@ -5,7 +5,6 @@ Regression test for Fix 2.1:
 - VALID_TABLES contains user_carts and semantic_query_cache
 """
 
-import io
 import uuid
 from unittest.mock import patch
 
@@ -73,7 +72,7 @@ def test_copy_fallback_preserves_table_and_indexes():
                     discounted_price FLOAT,
                     embedding vector(3)
                 );
-                CREATE INDEX idx_curated_embedding_hnsw 
+                CREATE INDEX idx_curated_embedding_hnsw
                 ON curated_products USING hnsw (embedding vector_cosine_ops);
             """
                 )

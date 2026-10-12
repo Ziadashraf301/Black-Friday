@@ -10,9 +10,6 @@ import pytest
 from pandera.errors import SchemaError
 
 from ml.features.data_contract import (
-    VALID_STAY_YEARS,
-    CleanedTransactionSchema,
-    RawTransactionSchema,
     validate_cleaned_data,
     validate_raw_data,
 )

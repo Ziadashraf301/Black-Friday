@@ -1,13 +1,9 @@
 """Login throttling through the real auth route (the login reaches PostgreSQL)."""
 
-import time
-
-import pytest
-from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from apps.api.main import app
-from apps.api.rate_limiting.rate_limiter import LUA_SLIDING_WINDOW_RATE_LIMIT, RedisRateLimiter, auth_rate_limiter
+from apps.api.rate_limiting.rate_limiter import auth_rate_limiter
 from core.config import settings
 
 

@@ -30,7 +30,7 @@ __all__ = [
 
 
 if __name__ == "__main__":
-    import os
+    pass
 
     import pandas as pd
 

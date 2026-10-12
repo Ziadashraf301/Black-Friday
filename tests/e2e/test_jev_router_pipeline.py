@@ -14,39 +14,29 @@ Validates all 8 Phase 2 tasks:
 import json
 import time
 from pathlib import Path
-from typing import Any, Dict
 
 import pytest
 
 from ai.classifier import IntentClassifier
 from ai.extractor import (
-    BaseEntityExtractor,
     EntityExtractorFactory,
     HybridEntityExtractor,
-    JevEntityExtractor,
     RegexEntityExtractor,
 )
 from ai.guardrails.safety_engine import (
     STANDARD_REFUSAL_MESSAGE,
-    JevSafetyFilter,
-    RegexPreFilter,
     SafetyEngine,
-    SafetyEvaluationResult,
-    safety_engine,
 )
 from ai.prompts import PromptRegistry
 from ai.router import (
     BaseRouterStrategy,
     FastRuleRouter,
-    JevApiRouter,
     RouterFactory,
-    intent_router,
 )
-from ai.schemas import ExtractedEntities, IntentType, PromptVersion, RoutingDecision
+from ai.schemas import IntentType, RoutingDecision
 from ai.services.guardrail_service import (
     GuardrailResponse,
     GuardrailService,
-    guardrail_service,
 )
 
 pytestmark = pytest.mark.slow
