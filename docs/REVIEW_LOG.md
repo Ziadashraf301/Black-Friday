@@ -153,6 +153,7 @@ Result: **299 passed, 1 failed, 1 deselected (the hang)**, 301 tests, ~8 min. Co
 | INF-17 | Infra | The API image installed the whole training stack (199 packages, incl. pyarrow, polars, scikit-learn, shap, evidently). `requirements.txt` is now what `apps.api.main` imports at startup (found by importing the app and listing `sys.modules`), 87 packages resolved; everything else moved unchanged to `requirements-ml.txt` (pipelines: `make train` etc. need it), dev tools and `reflex` stay in `requirements-dev.txt`, which includes both. The ML file was deliberately not optimised (polars extra, redundant pins left as they were). Not verified by running the API on the lean set. | `requirements*.txt`, CI cache key, `CLAUDE.md` | medium | fixed | 0a1c61f (not built, see status) |
 | INF-18 | Infra | `uv pip install --no-cache` discarded every downloaded wheel, so each failed build restarted from zero. BuildKit cache mount for `/root/.cache/uv` and `uv -v` so a stalled download is visible. | `docker/Dockerfile.api` | low | fixed | 307cf7f (not built, see status) |
 | INF-19 | Infra | A recreated `blackfriday_ui` crash-loops: `SystemPackageMissingError: System package 'unzip' is missing` (reflex `install_bun`). The old container only worked because bun was already in its writable layer. `unzip` added to the image. Not built or verified. Related, not fixed: the UI downloads bun and npm packages at every container start, which needs network and is slow; installing them at build time (`reflex init`/export in the Dockerfile) would fix that. Also open from its logs: a handler `ShoppingState.handle_bot_trigger_click` returns a `bool` (Reflex `TypeError`), `apps/reflex_app/reflex_app/state.py`; not investigated. | `docker/Dockerfile.ui`, `apps/reflex_app/` | medium | fixed (unverified) | 992533d |
+| INF-20 | Infra | After the rebuild `blackfriday_ui` ran but stayed `unhealthy`: the unpinned `reflex>=0.7` now installs Reflex 0.10, which in prod mode serves the frontend and the backend on one port (8001). The healthcheck and the `3000:3000` mapping pointed at port 3000, where nothing listens. Healthcheck now `curl localhost:8001/ping` with a 180s start period; host port 3000 maps to container 8001 (README URL still valid). The unpinned Reflex version is part of INF-10. | `docker/Dockerfile.ui`, `docker-compose.yml` | medium | fixed | 7ebd808 |
 
 - Housekeeping: 4145d34 untracked the 12 committed `.pyc` files and added `*.py[cod]` to `.gitignore` (`__pycache__/` was already listed).
 
@@ -172,19 +173,23 @@ Flat `tests/test_*.py` split into `tests/unit/{core,ml,ai,api,ui}`, `tests/integ
 
 **Baseline vs now (each file run separately):** baseline 520 passed, 2 failed, and `test_phase3_langgraph_agent.py` hit the 45s per-file timeout (the Gemini model `gemini-2.0-flash` returns 404 and the LLM falls back to the template). Now every file in `integration`, `e2e`, `architecture` and `load` passes, and `tests/unit` in one command gives 382 passed, 1 failed (about 5 min with the slow tests, about 2.5 min with `-m "not slow"`).
 
-**Still failing (pre-existing, not fixed, not caused by the move)**
+**Follow-up fixes (after step 9.5)**
+- The stale bot timeout test was updated to the UI-5 unavailable message (commit 22e390a): the code was right (UI-5 removed the invented deals), only the assertion was stale. `tests/unit` now passes completely (383 passed).
+- `make test-unit` runs in about 47s (41s in pytest, 254 tests; it was about 5 minutes). Collecting the test modules was the main cost (45s of imports: ai, mlflow, shap, evidently, pandera). Changes: `tests/integration/test_response_caching.py` and `test_ui_payload.py` (they build a real Gemini client and run the graph) moved out of unit; 7 single tests that attempt a network or PostgreSQL connection and fall back, and the files that train or load a model, hash passwords with bcrypt, or import a heavy library are `@pytest.mark.slow`; `-m "not slow"` skips whole slow files at collection (`tests/conftest.py`) so their imports never load. The slow unit tests (124) pass in about 3 minutes with `make test-slow`; CI runs fast and slow together. Total collected tests unchanged at 530.
+
+**Previously failing (now fixed)**
 
 | Test | Cause |
 |---|---|
 | `tests/unit/ui/test_bot_chat.py::test_bot_stream_timeout_leaves_ui_usable` | Stale assertion: it expects "deal"/"offline" in the bot message, but UI-5 changed it to "The shopping assistant is unavailable right now." Failed in the baseline too. |
 
-**Depends on the API / UI containers (moved, not fixed; Docker files untouched, no images built)**
+**Depends on the API / UI containers (moved to integration; at the time of step 9.5 the images were not touched)**
 
 | Test | Dependency |
 |---|---|
 | `tests/integration/test_bot_drawer.py::test_frontend_bot_auth_check` | The action chips call the bot endpoint of the running API; it passes only while the API container is up. |
 
-No test failed because the API or UI image was missing or stale. The e2e tests use the in-process app plus the live Redis/PostgreSQL; their LLM calls fall back to templates because the Gemini model is retired (external cause).
+No test failed because the API or UI image was missing or stale. The UI container itself was broken (stale image, INF-19/INF-20) and is fixed above. The e2e tests use the in-process app plus the live Redis/PostgreSQL; their LLM calls fall back to templates because the Gemini model is retired (external cause).
 
 **Old file → new file**
 
@@ -346,9 +351,6 @@ Related tests (each file run separately, `--timeout`): tests/test_core1..7, test
 
 None: infra changes only.
 
-### Step 9 status: images NOT rebuilt
+### Step 9 status: images rebuilt (2026-10-12)
 
-- **The API image (`blackfriday-model-api`) has not been built from the current Dockerfile/requirements** (INF-6, 10, 13, 16, 17, 18). Three attempts did not finish: (1) the full requirements failed after 19 min on a `pyarrow` download timeout; (2) the lean requirements ran 22 min in `uv pip install` with no output and were killed; (3) with the uv cache mount and `-v` it was killed at about 1.5 min by request. The running API container uses the old 3-day-old image, with the source bind-mounted, so it runs the current code but not the new dependency set. The lean `requirements.txt` has never been installed or run. Next: `docker compose build model-api`, then `docker compose up -d` and check `/health`, `import mlflow` (skinny) and tracing in the container.
-- **The UI image has not been rebuilt** (INF-5 uv pin, INF-19 unzip). Its last build failed with `TLS handshake timeout` fetching `ghcr.io/astral-sh/uv:0.5.11`. `blackfriday_ui` is currently crash-looping (INF-19) after the recreate; it was `unhealthy` before.
-- **Containers recreated** with `docker compose up -d --no-build` on the old images: postgres, redis, minio, mlflow and the API are up and the API/postgres/redis report `healthy`. This applies INF-1 to INF-4 (localhost ports, `.env` passthrough, required variables, minio-init ordering).
-- Verification done: `docker compose config --quiet` valid, the postgres init script tested on a scratch container, tests/test_architecture, test_core13_schema_alignment, test_sec1 pass. Tests were not re-run after INF-14 beyond `test_ai2_order_ownership` (the reformatted file).
+Superseded the earlier "images NOT rebuilt" note. The UI was crash-looping on the stale image (`unzip` missing, INF-19; the Dockerfile already had the fix). `docker compose config --quiet` passed and `docker compose up -d --build --force-recreate` rebuilt the API and UI images from the current Dockerfiles (the Debian package download ran at about 94 kB/s, so the UI build took about 25 minutes). The UI then ran but stayed `unhealthy` (INF-20); after that fix all services are up: API, postgres, redis and UI `healthy`, minio and mlflow `Up` (they define no healthcheck), and `http://localhost:3000` answers 200. The API image built with the slimmed requirements without the earlier `pyarrow` timeout.
