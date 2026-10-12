@@ -8,8 +8,9 @@ Leverages MLflow GenAI Tracing:
 """
 
 import functools
+import threading
 import time
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 
 from core.logging import get_logger
 from core.tracking import (
@@ -165,7 +166,26 @@ class AgentTracer:
         return decorator
 
 
-# Singleton instance
-agent_tracer = AgentTracer()
+_agent_tracer: Optional[AgentTracer] = None
+_agent_tracer_lock = threading.Lock()
 
-__all__ = ["agent_tracer", "AgentTracer"]
+
+def get_agent_tracer() -> AgentTracer:
+    """Returns the shared tracer, contacting the MLflow server only on first use (never at import)."""
+    global _agent_tracer
+    if _agent_tracer is None:
+        with _agent_tracer_lock:
+            if _agent_tracer is None:
+                _agent_tracer = AgentTracer()
+    return _agent_tracer
+
+
+def __getattr__(name: str) -> Any:
+    # `from ai.observability.tracing import agent_tracer` keeps working, built lazily (PEP 562)
+    if name == "agent_tracer":
+        return get_agent_tracer()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+# `agent_tracer` is served by __getattr__ above, so it is not listed here
+__all__ = ["AgentTracer", "get_agent_tracer"]
