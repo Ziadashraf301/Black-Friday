@@ -13,6 +13,9 @@ from ai.workflow.state import AgentState
 from langchain_core.messages import HumanMessage
 
 
+pytestmark = pytest.mark.slow
+
+
 class TestTwoTierCacheService:
     """Verifies core cryptographic hashing and Redis storage semantics."""
 

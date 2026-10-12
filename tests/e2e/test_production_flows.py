@@ -22,6 +22,9 @@ from core.db.repository import BlackFridayRepository
 from core.security import create_access_token
 
 
+pytestmark = pytest.mark.slow
+
+
 @pytest.fixture(scope="module")
 def api_client():
     return TestClient(app)

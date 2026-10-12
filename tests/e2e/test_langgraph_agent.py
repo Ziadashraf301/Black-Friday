@@ -27,6 +27,9 @@ from ai.tools.cart_tools import cart_tool
 from ai.tools.order_tools import order_tool
 
 
+pytestmark = pytest.mark.slow
+
+
 # ==============================================================================
 # P3-01: Schema & State Contracts
 # ==============================================================================

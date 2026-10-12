@@ -10,42 +10,45 @@ Validates all 8 Phase 2 tasks:
   - Task P2-07: Sub-10ms Latency SLA Optimization & Benchmark Verification
   - Task P2-08: Complete Phase 2 Integration & End-to-End Contract Compliance
 """
-import pytest
 import json
 import time
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
 
-from ai.schemas import IntentType, RoutingDecision, ExtractedEntities, PromptVersion
-from ai.prompts import PromptRegistry
+import pytest
+
 from ai.classifier import IntentClassifier
 from ai.extractor import (
-    RegexEntityExtractor,
-    JevEntityExtractor,
-    HybridEntityExtractor,
-    EntityExtractorFactory,
     BaseEntityExtractor,
+    EntityExtractorFactory,
+    HybridEntityExtractor,
+    JevEntityExtractor,
+    RegexEntityExtractor,
 )
+from ai.guardrails.safety_engine import (
+    STANDARD_REFUSAL_MESSAGE,
+    JevSafetyFilter,
+    RegexPreFilter,
+    SafetyEngine,
+    SafetyEvaluationResult,
+    safety_engine,
+)
+from ai.prompts import PromptRegistry
 from ai.router import (
     BaseRouterStrategy,
-    JevApiRouter,
     FastRuleRouter,
+    JevApiRouter,
     RouterFactory,
     intent_router,
 )
-from ai.guardrails.safety_engine import (
-    SafetyEngine,
-    RegexPreFilter,
-    JevSafetyFilter,
-    SafetyEvaluationResult,
-    safety_engine,
-    STANDARD_REFUSAL_MESSAGE,
-)
+from ai.schemas import ExtractedEntities, IntentType, PromptVersion, RoutingDecision
 from ai.services.guardrail_service import (
-    GuardrailService,
     GuardrailResponse,
+    GuardrailService,
     guardrail_service,
 )
+
+pytestmark = pytest.mark.slow
 
 
 @pytest.fixture(scope="module")
