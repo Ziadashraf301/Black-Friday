@@ -30,3 +30,5 @@ langchain-core>=1.6.2
 
 # MLflow tracing client only (same major as the server image in docker/mlflow); the full package is in requirements-ml.txt
 mlflow-skinny>=2.20.0,<3
+# The artifact store is s3://mlflow-artifacts (MinIO); without boto3 traces lose their span data (INF-21)
+boto3>=1.34.0

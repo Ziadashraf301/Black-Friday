@@ -4,6 +4,7 @@ Centralizes MLflow configuration, tracking URI, S3/MinIO endpoint management,
 client initialization, experiment management, and tracing helpers for the entire platform.
 """
 
+import importlib.util
 import os
 from typing import Any, Callable, Dict, Optional
 
@@ -52,7 +53,16 @@ def setup_tracking_environment() -> str:
     os.environ.setdefault("AWS_ACCESS_KEY_ID", settings.MINIO_ROOT_USER)
     os.environ.setdefault("AWS_SECRET_ACCESS_KEY", settings.MINIO_ROOT_PASSWORD)
     os.environ.setdefault("MLFLOW_DISABLE_AGENT_HINT", "1")
+    if not has_s3_client():
+        # The artifact store is s3://mlflow-artifacts: without boto3 the client logs trace metadata but never uploads
+        # traces.json, and the MLflow UI cannot open the trace (INF-21)
+        logger.warning("[TRACKING: CORE] boto3 is not installed; MLflow artifacts and trace data will not be uploaded.")
     return s3_endpoint
+
+
+def has_s3_client() -> bool:
+    """True when boto3 is importable, which MLflow needs to write to the S3 / MinIO artifact store."""
+    return importlib.util.find_spec("boto3") is not None
 
 
 def get_tracking_uri() -> str:
