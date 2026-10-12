@@ -63,6 +63,8 @@ def no_network(monkeypatch):
     def refuse_db(*args, **kwargs):
         raise ConnectionRefusedError("PostgreSQL access is blocked in tests/unit; use tests/integration")
 
+    # the blocked MLflow connection must fail at once, not after MLflow's default 7 retries with backoff
+    monkeypatch.setenv("MLFLOW_HTTP_REQUEST_MAX_RETRIES", "0")
     monkeypatch.setattr(socket.socket, "connect", connect)
     monkeypatch.setattr(socket.socket, "connect_ex", connect_ex)
     try:

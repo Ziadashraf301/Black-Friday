@@ -6,7 +6,68 @@ Severity: high / medium / low · Status: open / fixed / deferred / won't fix
 
 ## Summary
 
-_(filled in at step 10)_
+Round 1 closed on 2026-10-12, branch `review/round-1`. 105 findings over 10 areas: **100 fixed, 5 deferred**, none open and none "won't fix".
+
+### Findings by area and severity
+
+| Area | high | medium | low | not rated in the table | fixed | deferred |
+|---|---|---|---|---|---|---|
+| Core (CORE-1..16) | 0 | 4 | 12 | 0 | 15 | 1 (CORE-16) |
+| Security (SEC-1..9) | 1 | 4 | 3 | 1 (SEC-8) | 8 | 1 (SEC-9) |
+| API (API-1..8) | 0 | 0 | 0 | 8 | 8 | 0 |
+| AI (AI-1..14, UI-4) | 2 | 7 | 6 | 0 | 15 | 0 |
+| Frontend (UI-1..3, 5..7) | 0 | 4 | 2 | 0 | 6 | 0 |
+| ML serving / models (SRV-1..6) | 0 | 2 | 4 | 0 | 6 | 0 |
+| ML pipelines / features (PIPE-1..14) | 0 | 6 | 8 | 0 | 13 | 1 (PIPE-13) |
+| ML analytics (ANL-1..11) | 0 | 2 | 9 | 0 | 10 | 1 (ANL-9) |
+| Infra (INF-1..20) | 1 | 6 | 13 | 0 | 19 | 1 (INF-12) |
+| **Total** | **4** | **35** | **57** | **9** | **100** | **5** |
+
+(Severity was missing from the log rows for API-1..8 and SEC-8; they were not rated after the fact.) All 4 high findings (SEC-1, AI-2, AI-6, INF-2) are fixed. Per the runbook only high/medium bugs were fixed by default; many low findings were fixed too, with the user's approval.
+
+### Tests, before and after
+
+| | Baseline (step 0) | Now |
+|---|---|---|
+| Collected | 531 | 530 (1 exact duplicate removed) |
+| Whole-suite run | unusable on Windows: `test_api.py` hung, so the run needed `--deselect` and took about 8 min | `make test-unit` 254 passed in 44s; `make test-slow` 124 passed in 3m25s |
+| Integration (27 files, run one by one) | part of the flat suite | 112 passed |
+| E2E (6 files, run one by one) | part of the flat suite | 40 passed |
+| Failures | hang (CORE-1), circular import (AI-1), stale rate-limit test, stale bot timeout test | none: 254 + 124 + 112 + 40 = 530, all passing |
+
+Final-run fix: `tests/unit/conftest.py` now sets `MLFLOW_HTTP_REQUEST_MAX_RETRIES=0`. With the MLflow server up, the unit network guard refused the connection and MLflow retried with backoff for over 60s, so `test_node_logging.py::test_specialist_node_execution_logs_through_core_logger` timed out (it also broke `make test-unit`). It now fails fast and passes (3 tests in 19s).
+
+### Lint, before and after
+
+| Check | Baseline | Now |
+|---|---|---|
+| flake8 (ai, apps, core, evaluation, ml, tests) | 494 violations | 258 (97 outside `tests/`, was 337) |
+| black | 205 of 228 files would be reformatted (default line length 88) | 93 of 272 files (config: line length 127) |
+| isort | 203 files | 45 files |
+| `make lint-ci` (`ai/ core/`, what CI runs) | no lint in CI | fails locally with black 26.10: 7 files, all formatted with black 25.x. CI pins `black>=25.1,<26` (INF-14), so run `pip install -r requirements-dev.txt` first. |
+
+Lint was never clean repo-wide. It is now enforced for `ai/` and `core/` only.
+
+## Round-2 items (from the deferred findings and the notes in this log)
+
+Deferred findings:
+1. **CORE-16** (low): make the ORM the real schema (missing `CustomerSegment` columns, a `semantic_query_cache` model, JSONB, NUMERIC) and migrate with Alembic.
+2. **SEC-9** (low): `X-Forwarded-For` / trusted-proxy handling, so rate limits and bans work behind a reverse proxy.
+3. **PIPE-13** (low): `frequency` counts distinct products, not purchases. Fixing it changes clusters and personas, so retrain and re-check them.
+4. **ANL-9** (medium): Item2Vec `window=5` over baskets in arbitrary order; use the whole basket as the window. Changes embeddings, recommendations and the graph.
+5. **INF-12** (low): run the API and UI containers as non-root (needs a decision on bind-mount ownership).
+
+Not deferred in the table, but left undone in the notes:
+6. Repo-wide `black`/`isort`/flake8 pass (`apps/`, `ml/`, `evaluation/`, `tests/`), then widen `LINT_CLEAN_PATHS`.
+7. Lock file for the Python dependencies (INF-10), and check that the API runs on the slim `requirements.txt` (INF-17: built, not exercised beyond the health check).
+8. UI image installs bun/npm packages at every start; do it at build time. `ShoppingState.handle_bot_trigger_click` returns a `bool` (Reflex `TypeError`) (INF-19).
+9. UI-7 leftovers: validate prices once at the catalog boundary and replace the other inline `$x.2f` sites.
+10. CORE-15: the HNSW index is filtered by `user_key` after the vector search; revisit if the semantic cache grows.
+11. SRV-5: `LGBM_SUBSAMPLE` only takes effect with `LGBM_SUBSAMPLE_FREQ > 0`; evaluate it on the champion. `SEGMENTATION_METRIC` is still unused (ANL-11).
+12. INF-11: newer minio / mc tags are unconfirmed (registry not queryable from here).
+13. The Gemini model `gemini-2.0-flash` is retired (404), so e2e LLM calls fall back to templates. Update `LLM_MODEL` and re-run the e2e suite against a live model.
+14. Structural ideas skipped in the step 7 simplify pass (validator on `RoutingDecision`, shared `is_cacheable`, `track_order` returning `Optional`, scoped cache view) and the shared product-id normaliser.
+15. Test hygiene: the unit network guard hides MLflow tracing at import time; consider a lazy tracer so importing `ai.observability.tracing` makes no network call.
 
 ## Baseline (step 0)
 
