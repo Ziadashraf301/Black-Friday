@@ -44,25 +44,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00184942",
-        "name": "Heritage Olive Military Utility Trench",
-        "image_url": "/products/P00184942.jpg",
-        "price": 119.0,
-        "similarity": 0.812
-      },
-      {
-        "product_id": "P00058042",
-        "name": "Terracotta High-Waist Trouser Set",
-        "image_url": "/products/P00058042.jpg",
-        "price": 68.0,
-        "similarity": 0.812
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "similarity": 0.925
       },
       {
         "product_id": "P00112142",
         "name": "Pastel Retro Varsity Bomber Jacket",
         "image_url": "/products/P00112142.jpg",
         "price": 89.0,
-        "similarity": 0.812
+        "similarity": 0.923
+      },
+      {
+        "product_id": "P00086442",
+        "name": "Linen Band Collar Relaxed Tunic Shirt",
+        "image_url": "/products/P00086442.jpg",
+        "price": 45.0,
+        "similarity": 0.906
       }
     ]
   },
@@ -119,11 +119,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00110742",
-        "name": "Distressed Saddle Brown Aviator Bomber",
-        "image_url": "/products/P00110742.jpg",
-        "price": 165.0,
-        "similarity": 0.845
+        "product_id": "P00046742",
+        "name": "Boho Gilded Velvet Embroidered Tunic",
+        "image_url": "/products/P00046742.jpg",
+        "price": 64.0,
+        "similarity": 0.968
+      },
+      {
+        "product_id": "P00073842",
+        "name": "Raw Selvedge Denim Trucker Vest",
+        "image_url": "/products/P00073842.jpg",
+        "price": 69.0,
+        "similarity": 0.953
+      },
+      {
+        "product_id": "P00044442",
+        "name": "Vintage Cafe Racer Leather Jacket",
+        "image_url": "/products/P00044442.jpg",
+        "price": 135.0,
+        "similarity": 0.933
       }
     ]
   },
@@ -175,7 +189,21 @@
         "name": "Distressed Saddle Brown Aviator Bomber",
         "image_url": "/products/P00110742.jpg",
         "price": 165.0,
-        "similarity": 0.83
+        "similarity": 0.954
+      },
+      {
+        "product_id": "P00110942",
+        "name": "Pleated Silk Midi Wrap Skirt",
+        "image_url": "/products/P00110942.jpg",
+        "price": 69.0,
+        "similarity": 0.953
+      },
+      {
+        "product_id": "P00102642",
+        "name": "Vintage Suede Penny Loafers",
+        "image_url": "/products/P00102642.jpg",
+        "price": 95.0,
+        "similarity": 0.946
       }
     ]
   },
@@ -216,18 +244,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00184942",
-        "name": "Heritage Olive Military Utility Trench",
-        "image_url": "/products/P00184942.jpg",
-        "price": 119.0,
-        "similarity": 0.812
+        "product_id": "P00059442",
+        "name": "Rugged Espresso Leather Chelsea Boots",
+        "image_url": "/products/P00059442.jpg",
+        "price": 139.0,
+        "similarity": 0.974
       },
       {
-        "product_id": "P00112142",
-        "name": "Pastel Retro Varsity Bomber Jacket",
-        "image_url": "/products/P00112142.jpg",
-        "price": 89.0,
-        "similarity": 0.812
+        "product_id": "P00051442",
+        "name": "Wide-Leg Sailor Front Indigo Trousers",
+        "image_url": "/products/P00051442.jpg",
+        "price": 74.0,
+        "similarity": 0.961
+      },
+      {
+        "product_id": "P00028842",
+        "name": "Retro Gum-Sole Canvas Court Sneakers",
+        "image_url": "/products/P00028842.jpg",
+        "price": 49.0,
+        "similarity": 0.959
       }
     ]
   },
@@ -283,11 +318,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00059442",
-        "name": "Rugged Espresso Leather Chelsea Boots",
-        "image_url": "/products/P00059442.jpg",
-        "price": 135.0,
-        "similarity": 0.799
+        "product_id": "P00147942",
+        "name": "Indigo Selvedge Denim Western Snap Shirt",
+        "image_url": "/products/P00147942.jpg",
+        "price": 55.0,
+        "similarity": 0.925
+      },
+      {
+        "product_id": "P00148642",
+        "name": "Artisan Waxed Suede Chukka Boots",
+        "image_url": "/products/P00148642.jpg",
+        "price": 89.0,
+        "similarity": 0.897
+      },
+      {
+        "product_id": "P00255842",
+        "name": "Burgundy Velvet Evening Blazer",
+        "image_url": "/products/P00255842.jpg",
+        "price": 110.0,
+        "similarity": 0.892
       }
     ]
   },
@@ -336,11 +385,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00059442",
-        "name": "Rugged Espresso Leather Chelsea Boots",
-        "image_url": "/products/P00059442.jpg",
-        "price": 135.0,
-        "similarity": 0.811
+        "product_id": "P00278642",
+        "name": "Midnight Ribbed Merino Wool Duster Coat",
+        "image_url": "/products/P00278642.jpg",
+        "price": 119.9,
+        "similarity": 0.94
+      },
+      {
+        "product_id": "P00255842",
+        "name": "Burgundy Velvet Evening Blazer",
+        "image_url": "/products/P00255842.jpg",
+        "price": 110.0,
+        "similarity": 0.936
+      },
+      {
+        "product_id": "P00220442",
+        "name": "Retro Suede Fringe Western Overshirt",
+        "image_url": "/products/P00220442.jpg",
+        "price": 79.0,
+        "similarity": 0.916
       }
     ]
   },
@@ -389,11 +452,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00057642",
-        "name": "Heritage Pleated Pinafore Dress",
-        "image_url": "/products/P00057642.jpg",
+        "product_id": "P00110942",
+        "name": "Pleated Silk Midi Wrap Skirt",
+        "image_url": "/products/P00110942.jpg",
+        "price": 69.0,
+        "similarity": 0.97
+      },
+      {
+        "product_id": "P00112142",
+        "name": "Pastel Retro Varsity Bomber Jacket",
+        "image_url": "/products/P00112142.jpg",
+        "price": 89.0,
+        "similarity": 0.954
+      },
+      {
+        "product_id": "P00114942",
+        "name": "Bohemian Tiered Linen Maxi Dress",
+        "image_url": "/products/P00114942.jpg",
         "price": 79.0,
-        "similarity": 0.845
+        "similarity": 0.946
       }
     ]
   },
@@ -444,18 +521,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00265242",
-        "name": "Chunky Woven Aran Cable Knit Cardigan",
-        "image_url": "/products/P00265242.jpg",
-        "price": 75.0,
-        "similarity": 0.811
+        "product_id": "P00058042",
+        "name": "Terracotta High-Waist Trouser Set",
+        "image_url": "/products/P00058042.jpg",
+        "price": 68.0,
+        "similarity": 0.974
       },
       {
-        "product_id": "P00184942",
-        "name": "Heritage Olive Military Utility Trench",
-        "image_url": "/products/P00184942.jpg",
-        "price": 119.0,
-        "similarity": 0.799
+        "product_id": "P00051442",
+        "name": "Wide-Leg Sailor Front Indigo Trousers",
+        "image_url": "/products/P00051442.jpg",
+        "price": 74.0,
+        "similarity": 0.972
+      },
+      {
+        "product_id": "P00028842",
+        "name": "Retro Gum-Sole Canvas Court Sneakers",
+        "image_url": "/products/P00028842.jpg",
+        "price": 49.0,
+        "similarity": 0.965
       }
     ]
   },
@@ -503,25 +587,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00184942",
-        "name": "Heritage Olive Military Utility Trench",
-        "image_url": "/products/P00184942.jpg",
-        "price": 119.0,
-        "similarity": 0.812
+        "product_id": "P00057642",
+        "name": "Heritage Pleated Pinafore Dress",
+        "image_url": "/products/P00057642.jpg",
+        "price": 79.0,
+        "similarity": 0.968
       },
       {
-        "product_id": "P00058042",
-        "name": "Terracotta High-Waist Trouser Set",
-        "image_url": "/products/P00058042.jpg",
-        "price": 68.0,
-        "similarity": 0.812
+        "product_id": "P00073842",
+        "name": "Raw Selvedge Denim Trucker Vest",
+        "image_url": "/products/P00073842.jpg",
+        "price": 69.0,
+        "similarity": 0.951
       },
       {
         "product_id": "P00112142",
         "name": "Pastel Retro Varsity Bomber Jacket",
         "image_url": "/products/P00112142.jpg",
         "price": 89.0,
-        "similarity": 0.812
+        "similarity": 0.932
       }
     ]
   },
@@ -570,25 +654,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00184942",
-        "name": "Heritage Olive Military Utility Trench",
-        "image_url": "/products/P00184942.jpg",
-        "price": 119.0,
-        "similarity": 0.812
-      },
-      {
-        "product_id": "P00058042",
-        "name": "Terracotta High-Waist Trouser Set",
-        "image_url": "/products/P00058042.jpg",
-        "price": 68.0,
-        "similarity": 0.812
-      },
-      {
         "product_id": "P00112142",
         "name": "Pastel Retro Varsity Bomber Jacket",
         "image_url": "/products/P00112142.jpg",
         "price": 89.0,
-        "similarity": 0.812
+        "similarity": 0.924
+      },
+      {
+        "product_id": "P00117942",
+        "name": "Hand-Knitted Nordic Wool Fair Isle Sweater",
+        "image_url": "/products/P00117942.jpg",
+        "price": 110.0,
+        "similarity": 0.91
+      },
+      {
+        "product_id": "P00242742",
+        "name": "Urban Tech Utility Cargo Pants",
+        "image_url": "/products/P00242742.jpg",
+        "price": 54.9,
+        "similarity": 0.909
       }
     ]
   },
@@ -637,18 +721,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00112142",
-        "name": "Pastel Retro Varsity Bomber Jacket",
-        "image_url": "/products/P00112142.jpg",
-        "price": 89.0,
-        "similarity": 0.81
+        "product_id": "P00242742",
+        "name": "Urban Tech Utility Cargo Pants",
+        "image_url": "/products/P00242742.jpg",
+        "price": 54.9,
+        "similarity": 0.949
       },
       {
-        "product_id": "P00145042",
-        "name": "Heavyweight French Chore Worker Jacket",
-        "image_url": "/products/P00145042.jpg",
-        "price": 95.0,
-        "similarity": 0.79
+        "product_id": "P00270942",
+        "name": "Embroidered Velvet Kimono Duster",
+        "image_url": "/products/P00270942.jpg",
+        "price": 115.0,
+        "similarity": 0.914
+      },
+      {
+        "product_id": "P00114942",
+        "name": "Bohemian Tiered Linen Maxi Dress",
+        "image_url": "/products/P00114942.jpg",
+        "price": 79.0,
+        "similarity": 0.886
       }
     ]
   },
@@ -696,18 +787,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00110842",
-        "name": "Oversized Herringbone Wool Overcoat",
-        "image_url": "/products/P00110842.jpg",
-        "price": 145.0,
-        "similarity": 0.83
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "similarity": 0.936
       },
       {
         "product_id": "P00184942",
         "name": "Heritage Olive Military Utility Trench",
         "image_url": "/products/P00184942.jpg",
         "price": 119.0,
-        "similarity": 0.77
+        "similarity": 0.892
+      },
+      {
+        "product_id": "P00220442",
+        "name": "Retro Suede Fringe Western Overshirt",
+        "image_url": "/products/P00220442.jpg",
+        "price": 79.0,
+        "similarity": 0.89
       }
     ]
   },
@@ -756,18 +854,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00265242",
-        "name": "Chunky Woven Aran Cable Knit Cardigan",
-        "image_url": "/products/P00265242.jpg",
-        "price": 75.0,
-        "similarity": 0.86
+        "product_id": "P00102642",
+        "name": "Vintage Suede Penny Loafers",
+        "image_url": "/products/P00102642.jpg",
+        "price": 95.0,
+        "similarity": 0.939
       },
       {
-        "product_id": "P00117442",
-        "name": "Artisan Floral Embroidered Cardigan",
-        "image_url": "/products/P00117442.jpg",
-        "price": 69.0,
-        "similarity": 0.82
+        "product_id": "P00112142",
+        "name": "Pastel Retro Varsity Bomber Jacket",
+        "image_url": "/products/P00112142.jpg",
+        "price": 89.0,
+        "similarity": 0.937
+      },
+      {
+        "product_id": "P00110842",
+        "name": "Oversized Herringbone Wool Overcoat",
+        "image_url": "/products/P00110842.jpg",
+        "price": 145.0,
+        "similarity": 0.928
       }
     ]
   },
@@ -816,18 +921,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00057642",
-        "name": "Heritage Pleated Pinafore Dress",
-        "image_url": "/products/P00057642.jpg",
-        "price": 79.0,
-        "similarity": 0.83
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "similarity": 0.97
       },
       {
-        "product_id": "P00058042",
-        "name": "Terracotta High-Waist Trouser Set",
-        "image_url": "/products/P00058042.jpg",
-        "price": 68.0,
-        "similarity": 0.8
+        "product_id": "P00112142",
+        "name": "Pastel Retro Varsity Bomber Jacket",
+        "image_url": "/products/P00112142.jpg",
+        "price": 89.0,
+        "similarity": 0.953
+      },
+      {
+        "product_id": "P00110842",
+        "name": "Oversized Herringbone Wool Overcoat",
+        "image_url": "/products/P00110842.jpg",
+        "price": 145.0,
+        "similarity": 0.94
       }
     ]
   },
@@ -875,18 +987,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00184942",
-        "name": "Heritage Olive Military Utility Trench",
-        "image_url": "/products/P00184942.jpg",
-        "price": 119.0,
-        "similarity": 0.85
+        "product_id": "P00051442",
+        "name": "Wide-Leg Sailor Front Indigo Trousers",
+        "image_url": "/products/P00051442.jpg",
+        "price": 74.0,
+        "similarity": 0.932
       },
       {
-        "product_id": "P00145042",
-        "name": "Heavyweight French Chore Worker Jacket",
-        "image_url": "/products/P00145042.jpg",
-        "price": 95.0,
-        "similarity": 0.81
+        "product_id": "P00044442",
+        "name": "Vintage Cafe Racer Leather Jacket",
+        "image_url": "/products/P00044442.jpg",
+        "price": 135.0,
+        "similarity": 0.926
+      },
+      {
+        "product_id": "P00031042",
+        "name": "Tailored Pleated Wool Flannel Trousers",
+        "image_url": "/products/P00031042.jpg",
+        "price": 74.0,
+        "similarity": 0.908
       }
     ]
   },
@@ -934,18 +1053,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00110742",
-        "name": "Distressed Saddle Brown Aviator Bomber",
-        "image_url": "/products/P00110742.jpg",
-        "price": 165.0,
-        "similarity": 0.84
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "similarity": 0.916
       },
       {
-        "product_id": "P00059442",
-        "name": "Embroidered Linen Folk Boho Tunic",
-        "image_url": "/products/P00059442.jpg",
-        "price": 58.0,
-        "similarity": 0.78
+        "product_id": "P00255842",
+        "name": "Burgundy Velvet Evening Blazer",
+        "image_url": "/products/P00255842.jpg",
+        "price": 110.0,
+        "similarity": 0.89
+      },
+      {
+        "product_id": "P00216342",
+        "name": "Waffle Knit Organic Cotton Henley",
+        "image_url": "/products/P00216342.jpg",
+        "price": 38.0,
+        "similarity": 0.862
       }
     ]
   },
@@ -993,18 +1119,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00184942",
-        "name": "Heritage Olive Military Utility Trench",
-        "image_url": "/products/P00184942.jpg",
-        "price": 119.0,
-        "similarity": 0.86
+        "product_id": "P00110942",
+        "name": "Pleated Silk Midi Wrap Skirt",
+        "image_url": "/products/P00110942.jpg",
+        "price": 69.0,
+        "similarity": 0.94
       },
       {
-        "product_id": "P00255842",
-        "name": "Burgundy Velvet Evening Blazer",
-        "image_url": "/products/P00255842.jpg",
-        "price": 110.0,
-        "similarity": 0.83
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "similarity": 0.932
+      },
+      {
+        "product_id": "P00112142",
+        "name": "Pastel Retro Varsity Bomber Jacket",
+        "image_url": "/products/P00112142.jpg",
+        "price": 89.0,
+        "similarity": 0.929
       }
     ]
   },
@@ -1052,18 +1185,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00265242",
-        "name": "Chunky Woven Aran Cable Knit Cardigan",
-        "image_url": "/products/P00265242.jpg",
-        "price": 75.0,
-        "similarity": 0.82
+        "product_id": "P00116842",
+        "name": "Chunky Merino Ribbed Beanie & Scarf Set",
+        "image_url": "/products/P00116842.jpg",
+        "price": 49.0,
+        "similarity": 0.913
       },
       {
-        "product_id": "P00059442",
-        "name": "Embroidered Linen Folk Boho Tunic",
-        "image_url": "/products/P00059442.jpg",
-        "price": 58.0,
-        "similarity": 0.8
+        "product_id": "P00034742",
+        "name": "Vintage Brushed Flannel Camp Shirt",
+        "image_url": "/products/P00034742.jpg",
+        "price": 44.9,
+        "similarity": 0.901
+      },
+      {
+        "product_id": "P00110842",
+        "name": "Oversized Herringbone Wool Overcoat",
+        "image_url": "/products/P00110842.jpg",
+        "price": 145.0,
+        "similarity": 0.898
       }
     ]
   },
@@ -1112,18 +1252,25 @@
     ],
     "item2vec_similars": [
       {
+        "product_id": "P00059442",
+        "name": "Rugged Espresso Leather Chelsea Boots",
+        "image_url": "/products/P00059442.jpg",
+        "price": 139.0,
+        "similarity": 0.972
+      },
+      {
+        "product_id": "P00031042",
+        "name": "Tailored Pleated Wool Flannel Trousers",
+        "image_url": "/products/P00031042.jpg",
+        "price": 74.0,
+        "similarity": 0.962
+      },
+      {
         "product_id": "P00058042",
         "name": "Terracotta High-Waist Trouser Set",
         "image_url": "/products/P00058042.jpg",
         "price": 68.0,
-        "similarity": 0.85
-      },
-      {
-        "product_id": "P00046742",
-        "name": "Hand-Tooled Heritage Chelsea Boots",
-        "image_url": "/products/P00046742.jpg",
-        "price": 139.0,
-        "similarity": 0.79
+        "similarity": 0.961
       }
     ]
   },
@@ -1173,18 +1320,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00046742",
-        "name": "Hand-Tooled Heritage Chelsea Boots",
-        "image_url": "/products/P00046742.jpg",
-        "price": 139.0,
-        "similarity": 0.88
+        "product_id": "P00112142",
+        "name": "Pastel Retro Varsity Bomber Jacket",
+        "image_url": "/products/P00112142.jpg",
+        "price": 89.0,
+        "similarity": 0.946
       },
       {
-        "product_id": "P00237542",
-        "name": "Vintage Patchwork Denim Trucker Jacket",
-        "image_url": "/products/P00237542.jpg",
-        "price": 78.0,
-        "similarity": 0.76
+        "product_id": "P00117942",
+        "name": "Hand-Knitted Nordic Wool Fair Isle Sweater",
+        "image_url": "/products/P00117942.jpg",
+        "price": 110.0,
+        "similarity": 0.939
+      },
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "similarity": 0.92
       }
     ]
   },
@@ -1228,18 +1382,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00240142",
-        "name": "Ribbed Knit Charcoal Turtleneck",
-        "image_url": "/products/P00278642.jpg",
-        "price": 79.0,
-        "similarity": 0.825
+        "product_id": "P00265242",
+        "name": "Chunky Woven Aran Cable Knit Cardigan",
+        "image_url": "/products/P00265242.jpg",
+        "price": 75.0,
+        "similarity": 0.94
       },
       {
-        "product_id": "P00307342",
-        "name": "Heavy Gauge Alpaca Wrap Cardigan",
-        "image_url": "/products/P00265242.jpg",
-        "price": 95.0,
-        "similarity": 0.798
+        "product_id": "P00255842",
+        "name": "Burgundy Velvet Evening Blazer",
+        "image_url": "/products/P00255842.jpg",
+        "price": 110.0,
+        "similarity": 0.864
+      },
+      {
+        "product_id": "P00220442",
+        "name": "Retro Suede Fringe Western Overshirt",
+        "image_url": "/products/P00220442.jpg",
+        "price": 79.0,
+        "similarity": 0.836
       }
     ]
   },
@@ -1307,18 +1468,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00184942",
-        "name": "Heritage Olive Military Utility Trench",
-        "image_url": "/products/P00184942.jpg",
-        "price": 119.0,
-        "similarity": 0.815
+        "product_id": "P00237542",
+        "name": "Vintage Patchwork Denim Trucker Jacket",
+        "image_url": "/products/P00237542.jpg",
+        "price": 78.0,
+        "similarity": 0.949
       },
       {
-        "product_id": "P00051442",
-        "name": "Wide-Leg Sailor Front Indigo Trousers",
-        "image_url": "/products/P00051442.jpg",
-        "price": 74.0,
-        "similarity": 0.792
+        "product_id": "P00270942",
+        "name": "Embroidered Velvet Kimono Duster",
+        "image_url": "/products/P00270942.jpg",
+        "price": 115.0,
+        "similarity": 0.913
+      },
+      {
+        "product_id": "P00145042",
+        "name": "Maritime Navy Heavy Wool Peacoat",
+        "image_url": "/products/P00145042.jpg",
+        "price": 95.0,
+        "similarity": 0.909
       }
     ]
   },
@@ -1353,18 +1521,25 @@
     "apriori_bundles": [],
     "item2vec_similars": [
       {
-        "product_id": "P00220442",
-        "name": "Retro Suede Fringe Western Overshirt",
-        "image_url": "/products/P00220442.jpg",
-        "price": 79.0,
-        "similarity": 0.834
-      },
-      {
         "product_id": "P00117442",
         "name": "Artisan Floral Embroidered Cardigan",
         "image_url": "/products/P00117442.jpg",
         "price": 92.0,
-        "similarity": 0.801
+        "similarity": 0.901
+      },
+      {
+        "product_id": "P00112142",
+        "name": "Pastel Retro Varsity Bomber Jacket",
+        "image_url": "/products/P00112142.jpg",
+        "price": 89.0,
+        "similarity": 0.881
+      },
+      {
+        "product_id": "P00110842",
+        "name": "Oversized Herringbone Wool Overcoat",
+        "image_url": "/products/P00110842.jpg",
+        "price": 145.0,
+        "similarity": 0.881
       }
     ]
   },
@@ -1422,14 +1597,21 @@
         "name": "Rugged Espresso Leather Chelsea Boots",
         "image_url": "/products/P00059442.jpg",
         "price": 139.0,
-        "similarity": 0.842
+        "similarity": 0.936
       },
       {
-        "product_id": "P00102642",
-        "name": "Vintage Suede Penny Loafers",
-        "image_url": "/products/P00102642.jpg",
-        "price": 95.0,
-        "similarity": 0.816
+        "product_id": "P00058042",
+        "name": "Terracotta High-Waist Trouser Set",
+        "image_url": "/products/P00058042.jpg",
+        "price": 68.0,
+        "similarity": 0.931
+      },
+      {
+        "product_id": "P00112442",
+        "name": "Handcrafted Suede Chelsea Dress Boots",
+        "image_url": "/products/P00112442.jpg",
+        "price": 98.0,
+        "similarity": 0.904
       }
     ]
   },
@@ -1465,18 +1647,25 @@
     "apriori_bundles": [],
     "item2vec_similars": [
       {
-        "product_id": "P00110742",
-        "name": "Distressed Saddle Brown Aviator Bomber",
-        "image_url": "/products/P00110742.jpg",
-        "price": 165.0,
-        "similarity": 0.824
+        "product_id": "P00113242",
+        "name": "Heavy Moleskin Workwear Chore Jacket",
+        "image_url": "/products/P00113242.jpg",
+        "price": 82.0,
+        "similarity": 0.945
       },
       {
         "product_id": "P00059442",
         "name": "Rugged Espresso Leather Chelsea Boots",
         "image_url": "/products/P00059442.jpg",
         "price": 139.0,
-        "similarity": 0.805
+        "similarity": 0.92
+      },
+      {
+        "product_id": "P00051442",
+        "name": "Wide-Leg Sailor Front Indigo Trousers",
+        "image_url": "/products/P00051442.jpg",
+        "price": 74.0,
+        "similarity": 0.911
       }
     ]
   },
@@ -1540,14 +1729,21 @@
         "name": "Wide-Leg Sailor Front Indigo Trousers",
         "image_url": "/products/P00051442.jpg",
         "price": 74.0,
-        "similarity": 0.838
+        "similarity": 0.962
       },
       {
         "product_id": "P00058042",
         "name": "Terracotta High-Waist Trouser Set",
         "image_url": "/products/P00058042.jpg",
         "price": 68.0,
-        "similarity": 0.812
+        "similarity": 0.952
+      },
+      {
+        "product_id": "P00028842",
+        "name": "Retro Gum-Sole Canvas Court Sneakers",
+        "image_url": "/products/P00028842.jpg",
+        "price": 49.0,
+        "similarity": 0.942
       }
     ]
   },
@@ -1610,18 +1806,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00102642",
-        "name": "Vintage Suede Penny Loafers",
-        "image_url": "/products/P00102642.jpg",
-        "price": 95.0,
-        "similarity": 0.829
-      },
-      {
         "product_id": "P00059442",
         "name": "Rugged Espresso Leather Chelsea Boots",
         "image_url": "/products/P00059442.jpg",
         "price": 139.0,
-        "similarity": 0.795
+        "similarity": 0.965
+      },
+      {
+        "product_id": "P00005042",
+        "name": "Retro Low-Top Suede Court Trainers",
+        "image_url": "/products/P00005042.jpg",
+        "price": 58.0,
+        "similarity": 0.962
+      },
+      {
+        "product_id": "P00058042",
+        "name": "Terracotta High-Waist Trouser Set",
+        "image_url": "/products/P00058042.jpg",
+        "price": 68.0,
+        "similarity": 0.959
       }
     ]
   },
@@ -1665,18 +1868,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00117942",
-        "name": "Hand-Knitted Nordic Wool Fair Isle Sweater",
-        "image_url": "/products/P00117942.jpg",
-        "price": 110.0,
-        "similarity": 0.831
+        "product_id": "P00277642",
+        "name": "Heritage Wingtip Brogue Leather Shoes",
+        "image_url": "/products/P00277642.jpg",
+        "price": 115.0,
+        "similarity": 0.883
       },
       {
-        "product_id": "P00117442",
-        "name": "Artisan Floral Embroidered Cardigan",
-        "image_url": "/products/P00117442.jpg",
-        "price": 92.0,
-        "similarity": 0.814
+        "product_id": "P00216342",
+        "name": "Waffle Knit Organic Cotton Henley",
+        "image_url": "/products/P00216342.jpg",
+        "price": 38.0,
+        "similarity": 0.863
+      },
+      {
+        "product_id": "P00255842",
+        "name": "Burgundy Velvet Evening Blazer",
+        "image_url": "/products/P00255842.jpg",
+        "price": 110.0,
+        "similarity": 0.862
       }
     ]
   },
@@ -1753,18 +1963,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00057642",
-        "name": "Heritage Pleated Pinafore Dress",
-        "image_url": "/products/P00057642.jpg",
-        "price": 79.0,
-        "similarity": 0.852
+        "product_id": "P00111142",
+        "name": "Expedition Thermal Storm Parka",
+        "image_url": "/products/P00111142.jpg",
+        "price": 129.0,
+        "similarity": 0.949
       },
       {
-        "product_id": "P00110942",
-        "name": "Pleated Silk Midi Wrap Skirt",
-        "image_url": "/products/P00110942.jpg",
-        "price": 69.0,
-        "similarity": 0.827
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "similarity": 0.946
+      },
+      {
+        "product_id": "P00112142",
+        "name": "Pastel Retro Varsity Bomber Jacket",
+        "image_url": "/products/P00112142.jpg",
+        "price": 89.0,
+        "similarity": 0.93
       }
     ]
   },
@@ -1839,18 +2056,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00025442",
-        "name": "Artisan Paisley Silk Kimono Shirt",
-        "image_url": "/products/P00025442.jpg",
-        "price": 49.9,
-        "similarity": 0.865
+        "product_id": "P00237542",
+        "name": "Vintage Patchwork Denim Trucker Jacket",
+        "image_url": "/products/P00237542.jpg",
+        "price": 78.0,
+        "similarity": 0.914
       },
       {
-        "product_id": "P00046742",
-        "name": "Boho Gilded Velvet Embroidered Tunic",
-        "image_url": "/products/P00046742.jpg",
-        "price": 64.0,
-        "similarity": 0.843
+        "product_id": "P00242742",
+        "name": "Urban Tech Utility Cargo Pants",
+        "image_url": "/products/P00242742.jpg",
+        "price": 54.9,
+        "similarity": 0.913
+      },
+      {
+        "product_id": "P00147942",
+        "name": "Indigo Selvedge Denim Western Snap Shirt",
+        "image_url": "/products/P00147942.jpg",
+        "price": 55.0,
+        "similarity": 0.839
       }
     ]
   },
@@ -1893,11 +2117,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00265242",
-        "name": "Chunky Woven Aran Cable Knit Cardigan",
-        "image_url": "/products/P00265242.jpg",
-        "price": 75.0,
-        "similarity": 0.805
+        "product_id": "P00034742",
+        "name": "Vintage Brushed Flannel Camp Shirt",
+        "image_url": "/products/P00034742.jpg",
+        "price": 44.9,
+        "similarity": 0.878
+      },
+      {
+        "product_id": "P00112142",
+        "name": "Pastel Retro Varsity Bomber Jacket",
+        "image_url": "/products/P00112142.jpg",
+        "price": 89.0,
+        "similarity": 0.867
+      },
+      {
+        "product_id": "P00216342",
+        "name": "Waffle Knit Organic Cotton Henley",
+        "image_url": "/products/P00216342.jpg",
+        "price": 38.0,
+        "similarity": 0.865
       }
     ]
   },
@@ -1939,11 +2177,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00265242",
-        "name": "Chunky Woven Aran Cable Knit Cardigan",
-        "image_url": "/products/P00265242.jpg",
-        "price": 75.0,
-        "similarity": 0.805
+        "product_id": "P00086442",
+        "name": "Linen Band Collar Relaxed Tunic Shirt",
+        "image_url": "/products/P00086442.jpg",
+        "price": 45.0,
+        "similarity": 0.934
+      },
+      {
+        "product_id": "P00111142",
+        "name": "Expedition Thermal Storm Parka",
+        "image_url": "/products/P00111142.jpg",
+        "price": 129.0,
+        "similarity": 0.925
+      },
+      {
+        "product_id": "P00114942",
+        "name": "Bohemian Tiered Linen Maxi Dress",
+        "image_url": "/products/P00114942.jpg",
+        "price": 79.0,
+        "similarity": 0.914
       }
     ]
   },
@@ -1986,11 +2238,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00265242",
-        "name": "Chunky Woven Aran Cable Knit Cardigan",
-        "image_url": "/products/P00265242.jpg",
-        "price": 75.0,
-        "similarity": 0.805
+        "product_id": "P00057642",
+        "name": "Heritage Pleated Pinafore Dress",
+        "image_url": "/products/P00057642.jpg",
+        "price": 79.0,
+        "similarity": 0.933
+      },
+      {
+        "product_id": "P00010742",
+        "name": "Waxed Canvas Field Explorer Parka",
+        "image_url": "/products/P00010742.jpg",
+        "price": 125.0,
+        "similarity": 0.926
+      },
+      {
+        "product_id": "P00046742",
+        "name": "Boho Gilded Velvet Embroidered Tunic",
+        "image_url": "/products/P00046742.jpg",
+        "price": 64.0,
+        "similarity": 0.923
       }
     ]
   },
@@ -2037,7 +2303,21 @@
         "name": "Chunky Woven Aran Cable Knit Cardigan",
         "image_url": "/products/P00265242.jpg",
         "price": 75.0,
-        "similarity": 0.805
+        "similarity": 0.847
+      },
+      {
+        "product_id": "P00278642",
+        "name": "Midnight Ribbed Merino Wool Duster Coat",
+        "image_url": "/products/P00278642.jpg",
+        "price": 119.9,
+        "similarity": 0.836
+      },
+      {
+        "product_id": "P00255842",
+        "name": "Burgundy Velvet Evening Blazer",
+        "image_url": "/products/P00255842.jpg",
+        "price": 110.0,
+        "similarity": 0.836
       }
     ]
   },
@@ -2080,11 +2360,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00265242",
-        "name": "Chunky Woven Aran Cable Knit Cardigan",
-        "image_url": "/products/P00265242.jpg",
-        "price": 75.0,
-        "similarity": 0.805
+        "product_id": "P00114942",
+        "name": "Bohemian Tiered Linen Maxi Dress",
+        "image_url": "/products/P00114942.jpg",
+        "price": 79.0,
+        "similarity": 0.949
+      },
+      {
+        "product_id": "P00112542",
+        "name": "Double-Breasted Camel Wool Overcoat",
+        "image_url": "/products/P00112542.jpg",
+        "price": 159.0,
+        "similarity": 0.925
+      },
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "similarity": 0.924
       }
     ]
   },
@@ -2128,11 +2422,25 @@
     ],
     "item2vec_similars": [
       {
+        "product_id": "P00251242",
+        "name": "Cashmere Ribbed Mock-Neck Pullover",
+        "image_url": "/products/P00251242.jpg",
+        "price": 95.0,
+        "similarity": 0.883
+      },
+      {
         "product_id": "P00265242",
         "name": "Chunky Woven Aran Cable Knit Cardigan",
         "image_url": "/products/P00265242.jpg",
         "price": 75.0,
-        "similarity": 0.805
+        "similarity": 0.832
+      },
+      {
+        "product_id": "P00216342",
+        "name": "Waffle Knit Organic Cotton Henley",
+        "image_url": "/products/P00216342.jpg",
+        "price": 38.0,
+        "similarity": 0.829
       }
     ]
   },
@@ -2175,11 +2483,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00265242",
-        "name": "Chunky Woven Aran Cable Knit Cardigan",
-        "image_url": "/products/P00265242.jpg",
-        "price": 75.0,
-        "similarity": 0.805
+        "product_id": "P00086442",
+        "name": "Linen Band Collar Relaxed Tunic Shirt",
+        "image_url": "/products/P00086442.jpg",
+        "price": 45.0,
+        "similarity": 0.944
+      },
+      {
+        "product_id": "P00111142",
+        "name": "Expedition Thermal Storm Parka",
+        "image_url": "/products/P00111142.jpg",
+        "price": 129.0,
+        "similarity": 0.906
+      },
+      {
+        "product_id": "P00025442",
+        "name": "Artisan Paisley Silk Kimono Shirt",
+        "image_url": "/products/P00025442.jpg",
+        "price": 49.9,
+        "similarity": 0.905
       }
     ]
   },
@@ -2219,11 +2541,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00265242",
-        "name": "Chunky Woven Aran Cable Knit Cardigan",
-        "image_url": "/products/P00265242.jpg",
-        "price": 75.0,
-        "similarity": 0.805
+        "product_id": "P00117442",
+        "name": "Artisan Floral Embroidered Cardigan",
+        "image_url": "/products/P00117442.jpg",
+        "price": 92.0,
+        "similarity": 0.913
+      },
+      {
+        "product_id": "P00110842",
+        "name": "Oversized Herringbone Wool Overcoat",
+        "image_url": "/products/P00110842.jpg",
+        "price": 145.0,
+        "similarity": 0.901
+      },
+      {
+        "product_id": "P00117942",
+        "name": "Hand-Knitted Nordic Wool Fair Isle Sweater",
+        "image_url": "/products/P00117942.jpg",
+        "price": 110.0,
+        "similarity": 0.897
       }
     ]
   },
@@ -2268,11 +2604,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00265242",
-        "name": "Chunky Woven Aran Cable Knit Cardigan",
-        "image_url": "/products/P00265242.jpg",
-        "price": 75.0,
-        "similarity": 0.805
+        "product_id": "P00028842",
+        "name": "Retro Gum-Sole Canvas Court Sneakers",
+        "image_url": "/products/P00028842.jpg",
+        "price": 49.0,
+        "similarity": 0.962
+      },
+      {
+        "product_id": "P00058042",
+        "name": "Terracotta High-Waist Trouser Set",
+        "image_url": "/products/P00058042.jpg",
+        "price": 68.0,
+        "similarity": 0.944
+      },
+      {
+        "product_id": "P00059442",
+        "name": "Rugged Espresso Leather Chelsea Boots",
+        "image_url": "/products/P00059442.jpg",
+        "price": 139.0,
+        "similarity": 0.941
       }
     ]
   },
@@ -2315,11 +2665,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00265242",
-        "name": "Chunky Woven Aran Cable Knit Cardigan",
-        "image_url": "/products/P00265242.jpg",
-        "price": 75.0,
-        "similarity": 0.805
+        "product_id": "P00052842",
+        "name": "Oversized Houndstooth Wool Trench Coat",
+        "image_url": "/products/P00052842.jpg",
+        "price": 119.0,
+        "similarity": 0.944
+      },
+      {
+        "product_id": "P00112542",
+        "name": "Double-Breasted Camel Wool Overcoat",
+        "image_url": "/products/P00112542.jpg",
+        "price": 159.0,
+        "similarity": 0.934
+      },
+      {
+        "product_id": "P00111142",
+        "name": "Expedition Thermal Storm Parka",
+        "image_url": "/products/P00111142.jpg",
+        "price": 129.0,
+        "similarity": 0.919
       }
     ]
   },
@@ -2362,11 +2726,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00265242",
-        "name": "Chunky Woven Aran Cable Knit Cardigan",
-        "image_url": "/products/P00265242.jpg",
-        "price": 75.0,
-        "similarity": 0.805
+        "product_id": "P00116842",
+        "name": "Chunky Merino Ribbed Beanie & Scarf Set",
+        "image_url": "/products/P00116842.jpg",
+        "price": 49.0,
+        "similarity": 0.84
+      },
+      {
+        "product_id": "P00251242",
+        "name": "Cashmere Ribbed Mock-Neck Pullover",
+        "image_url": "/products/P00251242.jpg",
+        "price": 95.0,
+        "similarity": 0.837
+      },
+      {
+        "product_id": "P00110842",
+        "name": "Oversized Herringbone Wool Overcoat",
+        "image_url": "/products/P00110842.jpg",
+        "price": 145.0,
+        "similarity": 0.81
       }
     ]
   },
@@ -2409,11 +2787,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00265242",
-        "name": "Chunky Woven Aran Cable Knit Cardigan",
-        "image_url": "/products/P00265242.jpg",
-        "price": 75.0,
-        "similarity": 0.805
+        "product_id": "P00110942",
+        "name": "Pleated Silk Midi Wrap Skirt",
+        "image_url": "/products/P00110942.jpg",
+        "price": 69.0,
+        "similarity": 0.912
+      },
+      {
+        "product_id": "P00102642",
+        "name": "Vintage Suede Penny Loafers",
+        "image_url": "/products/P00102642.jpg",
+        "price": 95.0,
+        "similarity": 0.887
+      },
+      {
+        "product_id": "P00110842",
+        "name": "Oversized Herringbone Wool Overcoat",
+        "image_url": "/products/P00110842.jpg",
+        "price": 145.0,
+        "similarity": 0.875
       }
     ]
   },
@@ -2456,11 +2848,25 @@
     ],
     "item2vec_similars": [
       {
+        "product_id": "P00255842",
+        "name": "Burgundy Velvet Evening Blazer",
+        "image_url": "/products/P00255842.jpg",
+        "price": 110.0,
+        "similarity": 0.882
+      },
+      {
         "product_id": "P00265242",
         "name": "Chunky Woven Aran Cable Knit Cardigan",
         "image_url": "/products/P00265242.jpg",
         "price": 75.0,
-        "similarity": 0.805
+        "similarity": 0.88
+      },
+      {
+        "product_id": "P00000142",
+        "name": "Merino Ribbed High-Neck Knit Sweater",
+        "image_url": "/products/P00000142.jpg",
+        "price": 68.0,
+        "similarity": 0.865
       }
     ]
   },
@@ -2503,11 +2909,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00265242",
-        "name": "Chunky Woven Aran Cable Knit Cardigan",
-        "image_url": "/products/P00265242.jpg",
-        "price": 75.0,
-        "similarity": 0.805
+        "product_id": "P00057642",
+        "name": "Heritage Pleated Pinafore Dress",
+        "image_url": "/products/P00057642.jpg",
+        "price": 79.0,
+        "similarity": 0.953
+      },
+      {
+        "product_id": "P00046742",
+        "name": "Boho Gilded Velvet Embroidered Tunic",
+        "image_url": "/products/P00046742.jpg",
+        "price": 64.0,
+        "similarity": 0.951
+      },
+      {
+        "product_id": "P00112142",
+        "name": "Pastel Retro Varsity Bomber Jacket",
+        "image_url": "/products/P00112142.jpg",
+        "price": 89.0,
+        "similarity": 0.886
       }
     ]
   },
@@ -2550,11 +2970,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00265242",
-        "name": "Chunky Woven Aran Cable Knit Cardigan",
-        "image_url": "/products/P00265242.jpg",
-        "price": 75.0,
-        "similarity": 0.805
+        "product_id": "P00110942",
+        "name": "Pleated Silk Midi Wrap Skirt",
+        "image_url": "/products/P00110942.jpg",
+        "price": 69.0,
+        "similarity": 0.906
+      },
+      {
+        "product_id": "P00112542",
+        "name": "Double-Breasted Camel Wool Overcoat",
+        "image_url": "/products/P00112542.jpg",
+        "price": 159.0,
+        "similarity": 0.876
+      },
+      {
+        "product_id": "P00110742",
+        "name": "Distressed Saddle Brown Aviator Bomber",
+        "image_url": "/products/P00110742.jpg",
+        "price": 165.0,
+        "similarity": 0.871
       }
     ]
   },
@@ -2597,11 +3031,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00265242",
-        "name": "Chunky Woven Aran Cable Knit Cardigan",
-        "image_url": "/products/P00265242.jpg",
-        "price": 75.0,
-        "similarity": 0.805
+        "product_id": "P00080342",
+        "name": "Sherpa-Lined Corduroy Trucker Jacket",
+        "image_url": "/products/P00080342.jpg",
+        "price": 92.0,
+        "similarity": 0.945
+      },
+      {
+        "product_id": "P00148642",
+        "name": "Artisan Waxed Suede Chukka Boots",
+        "image_url": "/products/P00148642.jpg",
+        "price": 89.0,
+        "similarity": 0.901
+      },
+      {
+        "product_id": "P00059442",
+        "name": "Rugged Espresso Leather Chelsea Boots",
+        "image_url": "/products/P00059442.jpg",
+        "price": 139.0,
+        "similarity": 0.886
       }
     ]
   },
@@ -2645,11 +3093,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00265242",
-        "name": "Chunky Woven Aran Cable Knit Cardigan",
-        "image_url": "/products/P00265242.jpg",
-        "price": 75.0,
-        "similarity": 0.805
+        "product_id": "P00059442",
+        "name": "Rugged Espresso Leather Chelsea Boots",
+        "image_url": "/products/P00059442.jpg",
+        "price": 139.0,
+        "similarity": 0.936
+      },
+      {
+        "product_id": "P00058042",
+        "name": "Terracotta High-Waist Trouser Set",
+        "image_url": "/products/P00058042.jpg",
+        "price": 68.0,
+        "similarity": 0.922
+      },
+      {
+        "product_id": "P00028842",
+        "name": "Retro Gum-Sole Canvas Court Sneakers",
+        "image_url": "/products/P00028842.jpg",
+        "price": 49.0,
+        "similarity": 0.914
       }
     ]
   },
@@ -2692,11 +3154,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00265242",
-        "name": "Chunky Woven Aran Cable Knit Cardigan",
-        "image_url": "/products/P00265242.jpg",
-        "price": 75.0,
-        "similarity": 0.805
+        "product_id": "P00112142",
+        "name": "Pastel Retro Varsity Bomber Jacket",
+        "image_url": "/products/P00112142.jpg",
+        "price": 89.0,
+        "similarity": 0.902
+      },
+      {
+        "product_id": "P00112542",
+        "name": "Double-Breasted Camel Wool Overcoat",
+        "image_url": "/products/P00112542.jpg",
+        "price": 159.0,
+        "similarity": 0.894
+      },
+      {
+        "product_id": "P00114942",
+        "name": "Bohemian Tiered Linen Maxi Dress",
+        "image_url": "/products/P00114942.jpg",
+        "price": 79.0,
+        "similarity": 0.893
       }
     ]
   },
@@ -2739,11 +3215,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00265242",
-        "name": "Chunky Woven Aran Cable Knit Cardigan",
-        "image_url": "/products/P00265242.jpg",
-        "price": 75.0,
-        "similarity": 0.805
+        "product_id": "P00334242",
+        "name": "Nordic Fair Isle Shetland Wool Sweater",
+        "image_url": "/products/P00334242.jpg",
+        "price": 79.0,
+        "similarity": 0.787
+      },
+      {
+        "product_id": "P00270942",
+        "name": "Embroidered Velvet Kimono Duster",
+        "image_url": "/products/P00270942.jpg",
+        "price": 115.0,
+        "similarity": 0.74
+      },
+      {
+        "product_id": "P00277642",
+        "name": "Heritage Wingtip Brogue Leather Shoes",
+        "image_url": "/products/P00277642.jpg",
+        "price": 115.0,
+        "similarity": 0.699
       }
     ]
   },
@@ -2786,11 +3276,25 @@
     ],
     "item2vec_similars": [
       {
-        "product_id": "P00265242",
-        "name": "Chunky Woven Aran Cable Knit Cardigan",
-        "image_url": "/products/P00265242.jpg",
-        "price": 75.0,
-        "similarity": 0.805
+        "product_id": "P00184942",
+        "name": "Heritage Olive Military Utility Trench",
+        "image_url": "/products/P00184942.jpg",
+        "price": 119.0,
+        "similarity": 0.925
+      },
+      {
+        "product_id": "P00044442",
+        "name": "Vintage Cafe Racer Leather Jacket",
+        "image_url": "/products/P00044442.jpg",
+        "price": 135.0,
+        "similarity": 0.914
+      },
+      {
+        "product_id": "P00145042",
+        "name": "Maritime Navy Heavy Wool Peacoat",
+        "image_url": "/products/P00145042.jpg",
+        "price": 95.0,
+        "similarity": 0.895
       }
     ]
   }

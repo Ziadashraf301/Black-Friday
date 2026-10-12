@@ -91,10 +91,10 @@ An enterprise-grade, end-to-end Data Engineering, Data Science, and Machine Lear
 1. **Apriori Association Mining (`ml/market_basket/apriori_engine.py`)**:
    - Mined `508` high-confidence rules ($\text{support} \ge 0.05, \text{confidence} \ge 0.40$)
 2. **Item2Vec Embedding Quality (`ml/market_basket/item2vec.py`)**:
-   - Dense 32-dimensional skip-gram vector space learned directly from co-purchased baskets.
-   - **Catalog Coverage**: **96.03%** of products embedded (`3,487` unique product vectors).
-   - **Cosine Similarity Compactness**: Average top-5 nearest neighbor similarity = **0.8628**).
-   - **Apriori Rule Alignment Score**: **0.6716** (67.16% average cosine similarity for items in mined Apriori rules).
+   - Dense 32-dimensional skip-gram vector space learned directly from co-purchased baskets. A basket has no order, so the whole basket is the context window (`ITEM2VEC_WINDOW=0`, as in the Item2Vec paper).
+   - **Catalog Coverage**: **96.01%** of products embedded (`3,487` unique product vectors).
+   - **Cosine Similarity Compactness**: Average top-5 nearest neighbor similarity = **0.797**.
+   - **Apriori Rule Alignment Score**: **0.806** (average cosine similarity for item pairs in mined Apriori rules; was 0.672 with a 5-item window).
 
 ---
 
