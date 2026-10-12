@@ -19,51 +19,6 @@ DEFAULT_STAY_IN_CITY_YEARS = "1"
 class UserRepository(BaseRepository):
     """Repository managing app_users and user_purchases tables."""
 
-    def ensure_user_tables(self):
-        """Create app_users and user_purchases tables if they do not exist."""
-        ddl = """
-            CREATE TABLE IF NOT EXISTS app_users (
-                user_id                   SERIAL PRIMARY KEY,
-                name                      TEXT NOT NULL,
-                email                     TEXT UNIQUE NOT NULL,
-                password_hash             TEXT NOT NULL,
-                gender                    VARCHAR(1),
-                age                       VARCHAR(10),
-                city_category             VARCHAR(1),
-                marital_status            INTEGER,
-                occupation                INTEGER,
-                stay_in_current_city_years VARCHAR(5),
-                cluster_id                INTEGER,
-                cluster_persona           TEXT,
-                recommended_action        TEXT,
-                created_at                TIMESTAMPTZ DEFAULT NOW()
-            );
-
-            CREATE TABLE IF NOT EXISTS user_purchases (
-                id                   SERIAL PRIMARY KEY,
-                user_id              INTEGER NOT NULL REFERENCES app_users(user_id) ON DELETE CASCADE,
-                product_id           TEXT NOT NULL,
-                product_category_1   INTEGER,
-                product_category_2   INTEGER,
-                product_category_3   INTEGER,
-                predicted_usd        FLOAT,
-                model_used           TEXT,
-                purchased_at         TIMESTAMPTZ DEFAULT NOW()
-            );
-        """
-        with self.engine.begin() as conn:
-            conn.execute(text(ddl))
-        self._require_purchase_user_id()
-        logger.info("App tables (app_users, user_purchases) ensured.")
-
-    def _require_purchase_user_id(self):
-        """Brings a table created by an older DDL (nullable user_id) in line with the ORM model and init_schema.sql."""
-        try:
-            with self.engine.begin() as conn:
-                conn.execute(text("ALTER TABLE user_purchases ALTER COLUMN user_id SET NOT NULL"))
-        except Exception as err:
-            logger.warning(f"Could not make user_purchases.user_id NOT NULL (existing rows without a user?): {err}")
-
     def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
         query = text("SELECT * FROM app_users WHERE email = :email")
         with self.engine.connect() as conn:

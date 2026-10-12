@@ -1,4 +1,7 @@
-"""CORE-13: init_schema.sql and ensure_user_tables must never be looser than the ORM models on NOT NULL."""
+"""CORE-13: init_schema.sql must never be looser than the ORM models on NOT NULL.
+
+The old runtime DDL (`ensure_user_tables`) is gone: Alembic owns the schema, and migration 0002 repairs a legacy
+nullable `user_purchases.user_id` (tests/integration/test_migrations.py)."""
 
 from pathlib import Path
 
@@ -7,7 +10,6 @@ from sqlalchemy import create_engine, text
 
 from core.config import settings
 from core.db.models import Base
-from core.db.repositories.user_repo import UserRepository
 
 SCHEMA_SQL = Path(__file__).resolve().parents[2] / "docker" / "postgres" / "init_schema.sql"
 SCRATCH = "core13_schema_scratch"
@@ -54,27 +56,3 @@ def test_init_schema_enforces_every_orm_not_null(scratch_engine):
         if not col.nullable and not col.primary_key and actual.get((table.name, col.name)) is True
     ]
     assert loose == []
-
-
-def test_ensure_user_tables_requires_purchase_user(scratch_engine):
-    repo = UserRepository(engine=scratch_engine)
-    repo.ensure_user_tables()
-    assert _nullable(scratch_engine)[("user_purchases", "user_id")] is False
-
-
-def test_ensure_user_tables_upgrades_legacy_nullable_column(scratch_engine):
-    with scratch_engine.begin() as conn:
-        conn.execute(text("CREATE TABLE app_users (user_id SERIAL PRIMARY KEY, name TEXT, email TEXT, password_hash TEXT)"))
-        conn.execute(text("CREATE TABLE user_purchases (id SERIAL PRIMARY KEY, user_id INTEGER, product_id TEXT)"))
-    UserRepository(engine=scratch_engine).ensure_user_tables()
-    assert _nullable(scratch_engine)[("user_purchases", "user_id")] is False
-
-
-def test_legacy_rows_without_user_keep_table_usable(scratch_engine):
-    with scratch_engine.begin() as conn:
-        conn.execute(text("CREATE TABLE app_users (user_id SERIAL PRIMARY KEY, name TEXT, email TEXT, password_hash TEXT)"))
-        conn.execute(text("CREATE TABLE user_purchases (id SERIAL PRIMARY KEY, user_id INTEGER, product_id TEXT)"))
-        conn.execute(text("INSERT INTO user_purchases (user_id, product_id) VALUES (NULL, 'P1')"))
-    UserRepository(engine=scratch_engine).ensure_user_tables()  # must warn, not raise
-    with scratch_engine.connect() as conn:
-        assert conn.execute(text("SELECT COUNT(*) FROM user_purchases")).scalar() == 1

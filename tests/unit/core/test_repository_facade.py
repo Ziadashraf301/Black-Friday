@@ -46,10 +46,9 @@ def test_every_public_method_of_old_facade_resolves():
                 if callable(attr):
                     all_public_methods.add(attr_name)
 
-    # Note: create_app_tables in UserRepository was renamed to ensure_user_tables in Fix 3.1
-    # Both create_app_tables (from BaseRepository) and ensure_user_tables (from UserRepository) must exist!
+    # create_app_tables (BaseRepository) stays; the duplicate runtime DDL helpers were removed once Alembic owned the schema
     assert "create_app_tables" in all_public_methods
-    assert "ensure_user_tables" in all_public_methods
+    assert "ensure_user_tables" not in all_public_methods
 
     missing_methods = []
     for method_name in all_public_methods:

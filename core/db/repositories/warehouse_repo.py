@@ -476,32 +476,12 @@ class WarehouseRepository(BaseRepository):
                 "item2vec_similars": row[4] or [],
             }
 
-    def ensure_user_carts_table(self):
-        """Ensures user_carts cold-tier table exists."""
-        with self.engine.begin() as conn:
-            conn.execute(
-                text(
-                    """
-                CREATE TABLE IF NOT EXISTS user_carts (
-                    user_id VARCHAR(64) PRIMARY KEY,
-                    session_id VARCHAR(64) NOT NULL,
-                    cart_data JSONB NOT NULL,
-                    item_count INT DEFAULT 0,
-                    total_amount NUMERIC(10, 2) DEFAULT 0.00,
-                    updated_at VARCHAR(64)
-                );
-            """
-                )
-            )
-
     def save_user_cart_snapshot(self, user_id: str, session_id: str, cart_dict: Dict[str, Any]) -> bool:
         """Upserts cart snapshot to PostgreSQL user_carts table."""
-        from datetime import datetime, timezone
-
         query = text(
             """
             INSERT INTO user_carts (user_id, session_id, cart_data, item_count, total_amount, updated_at)
-            VALUES (:uid, :sid, CAST(:cdata AS jsonb), :icount, :tot, :upd)
+            VALUES (:uid, :sid, CAST(:cdata AS jsonb), :icount, :tot, now())
             ON CONFLICT (user_id) DO UPDATE SET
                 session_id = EXCLUDED.session_id,
                 cart_data = EXCLUDED.cart_data,
@@ -519,7 +499,6 @@ class WarehouseRepository(BaseRepository):
                     "cdata": json.dumps(cart_dict),
                     "icount": int(cart_dict.get("item_count", 0)),
                     "tot": float(cart_dict.get("final_total", 0.0)),
-                    "upd": datetime.now(timezone.utc).isoformat(),
                 },
             )
         return True
@@ -557,22 +536,6 @@ class WarehouseRepository(BaseRepository):
             if size:
                 return size.upper() in [s.upper() for s in sizes]
             return True
-
-    _semantic_cache_ready = False
-
-    def _ensure_semantic_cache_schema(self) -> None:
-        """Idempotent upgrade: per-user key column (older rows have NULL and never match) and lookup indexes."""
-        if WarehouseRepository._semantic_cache_ready:
-            return
-        with self.engine.begin() as conn:
-            conn.execute(text("ALTER TABLE semantic_query_cache ADD COLUMN IF NOT EXISTS user_key TEXT"))
-            conn.execute(
-                text(
-                    "CREATE INDEX IF NOT EXISTS idx_semantic_cache_user_created "
-                    "ON semantic_query_cache (user_key, created_at)"
-                )
-            )
-        WarehouseRepository._semantic_cache_ready = True
 
     def find_semantic_cached_response(
         self,
@@ -654,7 +617,6 @@ class WarehouseRepository(BaseRepository):
         vec_str = "[" + ",".join(str(x) for x in query_vec) + "]"
         ttl = ttl_seconds if ttl_seconds is not None else settings.SEMANTIC_CACHE_TTL_SECONDS
         try:
-            self._ensure_semantic_cache_schema()
             with self.engine.begin() as conn:
                 conn.execute(
                     text(

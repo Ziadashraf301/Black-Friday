@@ -69,7 +69,7 @@ def test_base_repository_create_app_tables_on_scratch_db():
         # 2. BlackFridayRepository facade delegates create_app_tables to BaseRepository
         facade_repo = BlackFridayRepository(engine=scratch_engine)
         assert hasattr(facade_repo, "create_app_tables")
-        assert hasattr(facade_repo, "ensure_user_tables")
+        assert not hasattr(facade_repo, "ensure_user_tables")
 
     finally:
         if scratch_engine:
