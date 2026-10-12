@@ -109,6 +109,18 @@ Item 6 above. No new findings (planned change, not a review).
 - Tests: `tests/unit/api/test_client_identity.py` 29 passed (spoofed header from untrusted peer, prepended fake hops, multiple headers, IPv6, malformed entries, invalid setting entry, ban middleware behind trusted/untrusted peer, WebSocket). `test_ban_middleware.py`, `test_bot_routes.py`, `test_rate_limiter.py`, `tests/unit/core/test_config.py` and the architecture test pass; touched files lint-clean.
 - `security-review` on the diff: no findings. Not tested: a real reverse proxy in front of the container (Docker image not rebuilt; step 5).
 
+### Step 6: Item2Vec window and customer frequency (2026-10-12)
+
+| ID | Area | Finding | File | Severity | Status | Commit |
+|---|---|---|---|---|---|---|
+| PIPE-13 | ML features | (round-1 deferred) `frequency` now counts purchase rows (`size`), not distinct products. `train.csv` has 0 duplicate (user, product) pairs, so the values, clusters and personas are unchanged on the real data; no segmentation rerun needed. | `ml/features/customer_features.py` | low | fixed | ffaf22e |
+| ANL-9 | ML analytics | (round-1 deferred) `ITEM2VEC_WINDOW` defaults to `0` = whole basket (window = longest basket, `shrink_windows=False`); a value > 0 is still a fixed window. Baskets are sorted, so they no longer depend on row order. Retrained and promoted with the user's approval; the curated catalogue `item2vec_similars` were rebuilt from the new model (top 3 catalogue neighbours, real cosine similarities instead of hand-written ones). | `ml/market_basket/item2vec.py`, `ml/features/basket_encoder.py`, `core/config.py`, `data/curated_products.json` | medium | fixed | b25574c, c1f9551 |
+
+- Backup before promotion: `models_backup_2026-10-12/` (`models/`, the old market-basket reports, `pg_dump` of `product_network_metrics`, `curated_products` recommendation + embedding columns; gitignored). `.env` set to `ITEM2VEC_WINDOW=0`.
+- Before/after (window 5 → whole basket): coverage 96.03% → 96.01% (3,487 products both), average top-5 similarity 0.863 → 0.797, Apriori alignment 0.672 → **0.806**. Apriori rules (508) and PageRank/HITS (133 nodes) unchanged. Mean top-5 overlap with the old recommendations 0.74 of 5. Training takes about 27 min (one worker).
+- The scratch retrain and `make basket` (MLflow run `d85e3145f00249e2ab370950264d42b9`) gave identical metrics and identical `product_network_metrics` rows. Catalogue re-seeded (0 re-embedded), `semantic_query_cache` emptied, no `shopper:*` / `price:*` / `analytics:*` keys left in Redis. API checked for P00025442 and P00110742: `/shopper/curated-catalog` and `/shopper/browse/{id}` serve the new similar items; bundles unchanged.
+- Tests: `test_segmentation_and_market_basket.py` (16), `test_pipelines.py` (28), `test_features.py` (7), the architecture test, `tests/integration/test_curated_catalog.py` (5) and `test_bundle_tools.py` (3) pass; touched files lint-clean. Not updated: the README chart `docs/images/item2vec_similarity_distribution.png` (new one in `reports/market_basket/`).
+
 ## Baseline (step 0)
 
 Recorded 2026-10-11 on `review/round-1` (no fixes applied). Local Postgres, Redis and MLflow are reachable, and the Docker API container is running.
