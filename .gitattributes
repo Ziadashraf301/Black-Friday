@@ -1,0 +1,14 @@
+# Normalise line endings for text files; never touch binaries.
+* text=auto
+
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.onnx binary
+*.dump binary
+*.pkl binary
+*.joblib binary
+*.parquet binary
