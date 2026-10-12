@@ -99,6 +99,16 @@ Item 6 above. No new findings (planned change, not a review).
 - Live warehouse migrated on 2026-10-12 after a full backup (`backups/fridayblack_pre_core17_20261012.dump`, pg_dump custom format, gitignored). `alembic current` = `0002 (head)`; autogenerate finds no diff between the live DB and the ORM; row counts unchanged; `/health`, `/shopper/catalog`, `/shopper/curated-catalog` and `/shopper/browse/{id}` (bundles + similar items from JSONB) work; UI on :3000 answers 200. 21 integration files for the touched tables pass.
 - Left as before: the API still runs `create_all` at startup (right shape on an empty DB); the duplicate `_ensure_semantic_cache_schema` goes in step 6.5.
 
+### Step 4: trusted proxy (2026-10-12)
+
+| ID | Area | Finding | File | Severity | Status | Commit |
+|---|---|---|---|---|---|---|
+| SEC-9 | Security | (round-1 deferred) `client_ip` now honours `X-Forwarded-For` only when the socket peer is in the new `TRUSTED_PROXIES` setting (IPs/CIDRs, empty by default = unchanged) and returns the rightmost untrusted hop; malformed entries stop at the last trusted hop. Uvicorn runs with `--no-proxy-headers` (Dockerfile, `main.py`, documented run commands) so `TRUSTED_PROXIES` is the single control. | `apps/api/client_identity.py`, `core/config.py`, `docker/Dockerfile.api` | low | fixed | a39b3d9 |
+| SEC-10 | Security | `/bot/live-ws` read `websocket.client.host` itself, so its ban check and guest id bypassed the shared identity function (and would ignore trusted-proxy handling). It now calls `client_ip(websocket)`. | `apps/api/routes/bot.py:244` | low | fixed | 708fe4b |
+
+- Tests: `tests/unit/api/test_client_identity.py` 29 passed (spoofed header from untrusted peer, prepended fake hops, multiple headers, IPv6, malformed entries, invalid setting entry, ban middleware behind trusted/untrusted peer, WebSocket). `test_ban_middleware.py`, `test_bot_routes.py`, `test_rate_limiter.py`, `tests/unit/core/test_config.py` and the architecture test pass; touched files lint-clean.
+- `security-review` on the diff: no findings. Not tested: a real reverse proxy in front of the container (Docker image not rebuilt; step 5).
+
 ## Baseline (step 0)
 
 Recorded 2026-10-11 on `review/round-1` (no fixes applied). Local Postgres, Redis and MLflow are reachable, and the Docker API container is running.
@@ -164,7 +174,7 @@ Result: **299 passed, 1 failed, 1 deselected (the hang)**, 301 tests, ~8 min. Co
 | SEC-6 | Security | `get_current_user` echoes the raw JWT exception text to the client (`Invalid or expired token: {e}`). Information leak. | `apps/api/auth.py:44` | low | fixed | 8193f96 |
 | SEC-7 | Security | JWT has no `iss`/`aud` claims and no revocation. CORS uses `allow_methods=["*"]` and `allow_headers=["*"]` with credentials. | `core/security.py:99`, `apps/api/main.py:64` | low | fixed | a92508c |
 | SEC-8 | Security | All unauthenticated bot users share the single `guest_user` identity (`guest_voice_shopper` on the WebSocket), so history, cart or personalisation state could be shared between strangers. Fixed: guests get an HMAC(SECRET_KEY) id from peer IP + session_id (`guest_<24 hex>`); `session_id` is validated (`[A-Za-z0-9_.:-]{1,64}`). Residual (guests behind one NAT sharing a `session_id`) closed by UI-1: the Reflex client now sends a random per-browser id. | `apps/api/client_identity.py` (`GUEST_USER_ID`), `apps/api/routes/bot.py:298` | fixed | 159a174 | |
-| SEC-9 | Security | No `X-Forwarded-For` / trusted-proxy handling. The client IP is the socket peer, so behind a reverse proxy every caller shares the proxy IP for rate limits and bans. | `apps/api/client_identity.py` (`client_ip`) | low | deferred | |
+| SEC-9 | Security | No `X-Forwarded-For` / trusted-proxy handling. The client IP is the socket peer, so behind a reverse proxy every caller shares the proxy IP for rate limits and bans. | `apps/api/client_identity.py` (`client_ip`) | low | fixed (round 2) | a39b3d9 |
 | API-1 | API | `ShopperBatchPurchaseItem.quantity` and `items` lists have no upper bound. `process_batch_purchase` builds one record per unit, so an authenticated user can send `quantity=10**9` and exhaust memory / the DB. `predict-price-batch` (unauthenticated, no rate limit) is also uncapped. | `apps/api/schemas.py:147,214,224`, `apps/api/services/shopper_service.py:437` | fixed | 6a819fa | |
 | API-2 | API | `GET /shopper/catalog?limit=` is unbounded and each value gets its own Redis key (`shopper:catalog:{limit}`). Negative or huge values hit the DB, and unique values pollute the cache. | `apps/api/routes/shopper.py:31`, `apps/api/services/shopper_service.py:54` | fixed | 5724579 | |
 | API-3 | API | `/shopper/predict-price-batch` is open to guests with no rate limit, unlike `/predict-price`. Each call runs ONNX inference and DB lookups. Fixed: now `rate_limit_dependency` (auth + rate limit). Reflex only calls it with a token. | `apps/api/routes/shopper.py:50` | fixed | 5724579 | |
