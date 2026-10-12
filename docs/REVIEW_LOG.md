@@ -69,6 +69,24 @@ Not deferred in the table, but left undone in the notes:
 14. Structural ideas skipped in the step 7 simplify pass (validator on `RoutingDecision`, shared `is_cacheable`, `track_order` returning `Optional`, scoped cache view) and the shared product-id normaliser.
 15. Test hygiene: the unit network guard hides MLflow tracing at import time; consider a lazy tracer so importing `ai.observability.tracing` makes no network call.
 
+## Round 2
+
+### Step 1: repo-wide lint pass (2026-10-12)
+
+Item 6 above. No new findings (planned change, not a review).
+
+| | Before | After |
+|---|---|---|
+| flake8 (`ai/ apps/ core/ evaluation/ ml/ tests/`) | 258 | 0 |
+| black | 93 files | 0 |
+| isort | 45 files | 0 |
+
+- `05cb9d3` black (25.12, within the `>=25.1,<26` pin) + isort on `apps/ evaluation/ ml/ tests/`.
+- `da40b82` remaining flake8: 113 unused imports (autoflake, `__init__.py` excluded), `# noqa: E402` where `matplotlib.use("Agg")` or a `sys.path` insert must run first, long lines split, trailing spaces stripped in SQL test strings. `.flake8` gets `per-file-ignores` for the two Markdown report templates (`benchmark_router.py`, `model_card.py`), whose long rows and trailing `"  "` line breaks are output.
+- `944038e` `LINT_CLEAN_PATHS = $(LINT_PATHS)`: CI now lints the whole repo.
+- Tests: 530 collected (same as round 1). Unit + architecture + load 376 passed (including all slow tests); every touched integration file passed against the live stack; e2e collected only (real LLM calls).
+- Note: `-m "not slow"` drops whole slow files at collection time (the conftest hook), so they are not counted as deselected. Count with `--collect-only` without `-m` when comparing totals.
+
 ## Baseline (step 0)
 
 Recorded 2026-10-11 on `review/round-1` (no fixes applied). Local Postgres, Redis and MLflow are reachable, and the Docker API container is running.
