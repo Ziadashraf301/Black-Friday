@@ -47,7 +47,8 @@ def bundle_agent_node(state: AgentState) -> Dict[str, Any]:
         "bundle_recommendations": bundles_payload,
         "ui_payload": {
             "cards": cards,
-            "action_chips": ["Add Bundle to Cart"],
+            # No pairings for this product (no Apriori rule and no similar item): no empty bundle offer
+            "action_chips": ["Add Bundle to Cart"] if cards else [],
         },
         "current_node": "bundle_agent_node",
     }
