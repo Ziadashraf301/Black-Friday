@@ -11,6 +11,8 @@ Validates 100% of Phase 3 Requirements:
   - P3-07: Multi-Turn Conversational Journey (test_multi_turn_conversational_workflow)
 """
 
+import re
+
 import pytest
 
 from ai.schemas import (
@@ -191,6 +193,11 @@ def test_cart_agent_node_size_mutation():
     assert any(i["size"] == "XL" for i in updated_cart["items"])
 
 
+NOT_FOUND_WORDING = re.compile(
+    r"(couldn.?t|could not|can.?t|cannot|unable to|wasn.?t able to) (find|locate)|not found|no (record|order)", re.I
+)
+
+
 # ==============================================================================
 # P3-06: Order Support & Return Policy
 # ==============================================================================
@@ -208,7 +215,8 @@ def test_support_agent_node_tracking_and_policies():
     # A guest-style id owns no orders, so the lookup reports "Not Found" instead of inventing a status
     assert order["order_id"] == "ORD-9842"
     assert order["status"] == "Not Found"
-    assert "couldn't find that order" in res_track["final_response"]
+    # The answer is LLM-written, so only its meaning is pinned, not the exact phrase
+    assert NOT_FOUND_WORDING.search(res_track["final_response"]), res_track["final_response"]
 
     # Policy
     policy_state: AgentState = {
