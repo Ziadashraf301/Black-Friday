@@ -4,7 +4,6 @@ from unittest.mock import MagicMock, patch
 
 from core.config import settings
 import sys
-sys.path.insert(0, str(settings.BASE_DIR / "apps" / "reflex_app"))
 from reflex_app.state import ShoppingState
 from reflex_app.components.sidebar import extract_filter_options, sidebar
 from reflex_app.components.hero_card import hero_card
