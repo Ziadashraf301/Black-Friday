@@ -1,21 +1,33 @@
-import os
 import json
-import pandas as pd
-from typing import Dict, Any
+import os
+from typing import Any, Dict
 
-from core.db.repository import BlackFridayRepository
-from ml.features.imputation import MissForestImputer
-from ml.features.preprocessor import DataPreprocessor
-from ml.features.data_contract import validate_cleaned_data
-from ml.tracking.mlflow_tracker import MLflowTracker
-from ml.visualization.visualizer import Visualizer
-from ml.models.metrics import ModelEvaluator
-from ml.models.onnx_exporter import ONNXExporter
+import pandas as pd
 
 from core.config import settings
+from core.db.repository import BlackFridayRepository
 from core.logging import get_logger
+from ml.features.data_contract import validate_cleaned_data
+from ml.features.imputation import MissForestImputer
+from ml.features.preprocessor import DataPreprocessor
+from ml.models.metrics import ModelEvaluator
+from ml.models.onnx_exporter import ONNXExporter
+from ml.pipelines.common import imputer_onnx_dir, invalidate_caches, reports_dir
+from ml.tracking.mlflow_tracker import MLflowTracker
+from ml.visualization.visualizer import Visualizer
 
 logger = get_logger(__name__)
+
+
+def _missing_value_metrics(imputer_stats: Dict[str, Any]) -> Dict[str, float]:
+    """Missing counts per imputed column before imputation and still missing afterwards (as reported by the imputer)."""
+    before = imputer_stats.get("missing_before", {})
+    after = imputer_stats.get("missing_after", {})
+    metrics: Dict[str, float] = {}
+    for col in ("product_category_2", "product_category_3"):
+        metrics[f"missing_{col}_raw"] = float(before.get(col, 0))
+        metrics[f"missing_{col}_imputed"] = float(after.get(col, 0))
+    return metrics
 
 
 def run_preprocessing():
@@ -52,10 +64,7 @@ def run_preprocessing():
     # 3. Evaluate Imputation Quality on Truly Unseen Holdout Ground-Truth Test Records
     logger.info("Evaluating MissForest imputation on held-out observed test records (NRMSE & PFC)...")
     imputation_eval = ModelEvaluator.evaluate_imputation_holdout(
-        imputer=imputer,
-        test_df=test_raw,
-        sample_size=settings.IMPUTER_SAMPLE_SIZE or 50000,
-        random_state=settings.RANDOM_SEED
+        imputer=imputer, test_df=test_raw, sample_size=settings.IMPUTER_SAMPLE_SIZE or 50000, random_state=settings.RANDOM_SEED
     )
 
     # 4. Outlier Detection: Calculate Bounds on Train Only, Tag Both
@@ -79,37 +88,26 @@ def run_preprocessing():
 
     # 8. Generate Per-Split and Per-Category Diagnostic Visualizations
     logger.info("Generating preprocessing and imputation diagnostic charts...")
-    os.makedirs("reports/preprocessing", exist_ok=True)
+    preprocessing_dir = reports_dir("preprocessing")
+    os.makedirs(preprocessing_dir, exist_ok=True)
     charts = Visualizer.generate_preprocessing_charts(
-        raw_df=raw_df,
-        cleaned_df=cleaned_df,
-        outlier_bounds=preprocessor.outlier_bounds,
-        output_dir="reports/preprocessing"
+        raw_df=raw_df, cleaned_df=cleaned_df, outlier_bounds=preprocessor.outlier_bounds, output_dir=preprocessing_dir
     )
 
-    imputation_charts = Visualizer.generate_imputation_charts(
-        eval_data=imputation_eval,
-        output_dir="reports/preprocessing"
-    )
+    imputation_charts = Visualizer.generate_imputation_charts(eval_data=imputation_eval, output_dir=preprocessing_dir)
     charts.update(imputation_charts)
 
     # 9. Persist Cleaned Records with Split Indicator to Warehouse
     logger.info("Persisting cleaned data with train/test split indicator to database...")
-    repo.truncate_cleaned_table()
-    repo.insert_cleaned_batch(cleaned_df)
+    repo.replace_cleaned_batch(cleaned_df)
 
-    try:
-        from core.cache import cache_manager
-        cache_manager.delete_pattern("analytics:*")
-        logger.info("Invalidated analytics cache entries.")
-    except Exception as e:
-        logger.warning(f"Analytics cache invalidation warning: {e}")
+    invalidate_caches("analytics:*")
 
     # 10. Export Fitted MissForest Imputer Model to Lightweight ONNX Format for Production Serving
-    imputer_onnx_dir = os.path.join(settings.BASE_DIR, "models", "onnx", "imputer")
-    logger.info(f"Exporting MissForest imputer to ONNX format at: {imputer_onnx_dir}...")
-    ONNXExporter.export_imputer(imputer, output_dir=imputer_onnx_dir)
-    logger.info(f"Persisted lightweight ONNX imputer artifacts to: {imputer_onnx_dir}")
+    imputer_dir = imputer_onnx_dir()
+    logger.info(f"Exporting MissForest imputer to ONNX format at: {imputer_dir}...")
+    ONNXExporter.export_imputer(imputer, output_dir=imputer_dir)
+    logger.info(f"Persisted lightweight ONNX imputer artifacts to: {imputer_dir}")
 
     # 11. Assemble Full Audit Parameters and Metrics (Per Train and Test)
     train_outliers = int(train_cleaned["is_outlier"].sum())
@@ -129,21 +127,15 @@ def run_preprocessing():
         "outlier_threshold_constant": settings.OUTLIER_THRESHOLD,
         "normalization_method": "max_scaling",
         "normalization_purchase_max": preprocessor.purchase_max,
-        "random_seed": settings.RANDOM_SEED
+        "random_seed": settings.RANDOM_SEED,
     }
-
-    # Extract missing stats from imputer (calculated cleanly once)
-    missing_before = imputer.stats.get("missing_before", {})
 
     metrics: Dict[str, float] = {
         "raw_records_count": float(len(raw_df)),
         "train_records_count": float(len(train_cleaned)),
         "test_records_count": float(len(test_cleaned)),
         "cleaned_records_count": float(len(cleaned_df)),
-        "missing_product_category_2_raw": float(missing_before.get("product_category_2", 0)),
-        "missing_product_category_3_raw": float(missing_before.get("product_category_3", 0)),
-        "missing_product_category_2_imputed": 0.0,
-        "missing_product_category_3_imputed": 0.0,
+        **_missing_value_metrics(imputer.stats),
         "train_outliers_count": float(train_outliers),
         "train_outliers_percentage": round((train_outliers / len(train_cleaned)) * 100, 3),
         "test_outliers_count": float(test_outliers),
@@ -154,9 +146,13 @@ def run_preprocessing():
         "test_raw_purchase_mean": round(float(test_cleaned["purchase"].mean()), 2),
         "train_cleaned_purchase_mean": round(float(train_cleaned[~train_cleaned["is_outlier"]]["purchase"].mean()), 2),
         "test_cleaned_purchase_mean": round(float(test_cleaned[~test_cleaned["is_outlier"]]["purchase"].mean()), 2),
-        "train_normalized_purchase_mean": round(float(train_cleaned[~train_cleaned["is_outlier"]]["normalized_purchase"].mean()), 4),
-        "test_normalized_purchase_mean": round(float(test_cleaned[~test_cleaned["is_outlier"]]["normalized_purchase"].mean()), 4),
-        "imputation_duration_seconds": float(imputer.stats.get("imputation_duration_seconds", 0.0))
+        "train_normalized_purchase_mean": round(
+            float(train_cleaned[~train_cleaned["is_outlier"]]["normalized_purchase"].mean()), 4
+        ),
+        "test_normalized_purchase_mean": round(
+            float(test_cleaned[~test_cleaned["is_outlier"]]["normalized_purchase"].mean()), 4
+        ),
+        "imputation_duration_seconds": float(imputer.stats.get("imputation_duration_seconds", 0.0)),
     }
 
     # Training OOB metrics from fitted estimators
@@ -171,23 +167,15 @@ def run_preprocessing():
         metrics[f"imputation_{metric_key}"] = float(metric_val)
 
     # 12. Summary JSON audit file
-    summary_path = os.path.join("reports", "preprocessing", "preprocessing_summary.json")
+    summary_path = os.path.join(preprocessing_dir, "preprocessing_summary.json")
     with open(summary_path, "w", encoding="utf-8") as f:
         json.dump(
-            {
-                "params": params,
-                "metrics": metrics,
-                "imputer_stats": imputer.stats,
-                "imputation_evaluation": eval_metrics
-            },
+            {"params": params, "metrics": metrics, "imputer_stats": imputer.stats, "imputation_evaluation": eval_metrics},
             f,
-            indent=2
+            indent=2,
         )
 
-    artifacts = {
-        **charts,
-        "preprocessing_summary": summary_path
-    }
+    artifacts = {**charts, "preprocessing_summary": summary_path}
 
     # 13. Log Preprocessing Run and Register/Promote Imputer Model in MLflow
     logger.info("Logging preprocessing run, metrics, charts, and registering ONNX imputer in MLflow...")
@@ -201,11 +189,11 @@ def run_preprocessing():
             "outlier_strategy": "flagged_exclude_from_training",
             "split_ratio": "90/10",
             "model_format": "ONNX",
-            "imputer_status": "PROMOTED_TO_PRODUCTION"
+            "imputer_status": "PROMOTED_TO_PRODUCTION",
         },
         artifacts=artifacts,
-        imputer_model_path=imputer_onnx_dir,
-        register_imputer_name=settings.MLFLOW_IMPUTER_MODEL_NAME
+        imputer_model_path=imputer_dir,
+        register_imputer_name=settings.MLFLOW_IMPUTER_MODEL_NAME,
     )
 
     logger.info(f"Preprocessing pipeline finished successfully. MLflow Run ID: {run_id}")

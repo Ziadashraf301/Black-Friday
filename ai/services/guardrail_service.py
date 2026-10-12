@@ -3,11 +3,12 @@ Guardrail & System-1 Router Service Layer (Facade Pattern).
 Orchestrates safety pre-screening, System-1 routing, entity extraction,
 and audit logging for FastAPI routers and client applications.
 """
-from typing import Optional, Dict, Any
+
 from datetime import datetime, timezone
-from pydantic import BaseModel, Field
-from ai.router import BaseRouterStrategy, RouterFactory, intent_router
-from ai.schemas import GuardrailResponse, RoutingDecision, IntentType, ExtractedEntities
+from typing import Any, Dict, Optional
+
+from ai.router import BaseRouterStrategy, intent_router
+from ai.schemas import ExtractedEntities, GuardrailResponse, IntentType, RoutingDecision
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -45,6 +46,7 @@ class GuardrailService:
         """
         # 0. Check strike tracker lockout (Phase 4 - Task P4-07)
         from ai.guardrails.strike_tracker import strike_tracker
+
         if user_id and strike_tracker.is_banned(user_id):
             logger.warning(f"[SECURITY: LOCKOUT] Rejected request from banned user={user_id}")
             return GuardrailResponse(
@@ -79,13 +81,16 @@ class GuardrailService:
             )
         else:
             logger.debug(
-                f"[GUARDRAIL-SERVICE] Safe query routed: Intent={decision.intent.value}, "
-                f"Latency={decision.latency_ms}ms"
+                f"[GUARDRAIL-SERVICE] Safe query routed: Intent={decision.intent.value}, " f"Latency={decision.latency_ms}ms"
             )
-        target_intents_list = [it.value for it in decision.target_intents] if decision.target_intents else [decision.intent.value]
-        decomposed_entities_dict = {
-            k: v.model_dump() for k, v in decision.decomposed_entities.items()
-        } if decision.decomposed_entities else {decision.intent.value: decision.entities.model_dump()}
+        target_intents_list = (
+            [it.value for it in decision.target_intents] if decision.target_intents else [decision.intent.value]
+        )
+        decomposed_entities_dict = (
+            {k: v.model_dump() for k, v in decision.decomposed_entities.items()}
+            if decision.decomposed_entities
+            else {decision.intent.value: decision.entities.model_dump()}
+        )
 
         response = GuardrailResponse(
             query=decision.query,

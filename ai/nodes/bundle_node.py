@@ -2,11 +2,13 @@
 Bundle recommendations specialist node.
 Retrieves statistical Apriori cross-sell associations and Item2Vec bundles.
 """
-from typing import Dict, Any
-from core.logging import get_logger
 
-from ai.workflow.state import AgentState
+from typing import Any, Dict
+
+from ai.schemas.identity import ASK_WHICH_PRODUCT
+from ai.schemas.state import AgentState
 from ai.tools.bundle_tools import bundle_tool
+from core.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -17,7 +19,10 @@ def bundle_agent_node(state: AgentState) -> Dict[str, Any]:
     """
     entities = state.get("entities") or {}
     product_ids = entities.get("product_ids") or []
-    target_pid = product_ids[0] if product_ids else "P00025442"
+    if not product_ids:
+        logger.info("[GRAPH: BUNDLE-NODE] No product resolved from the query; asking the shopper")
+        return {"clarification": ASK_WHICH_PRODUCT, "current_node": "bundle_agent_node"}
+    target_pid = product_ids[0]
 
     logger.info(f"[GRAPH: BUNDLE-NODE] Fetching bundles for product_id={target_pid}")
 

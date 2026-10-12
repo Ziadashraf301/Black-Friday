@@ -3,14 +3,15 @@ Core MLflow Tracking and Observability Client.
 Centralizes MLflow configuration, tracking URI, S3/MinIO endpoint management,
 client initialization, experiment management, and tracing helpers for the entire platform.
 """
+
 import os
-from typing import Optional, Dict, Any, List, Callable
+from typing import Any, Callable, Dict, Optional
 
 try:
     import mlflow
-    import mlflow.langchain
-    from mlflow.tracking import MlflowClient
     from mlflow.entities import SpanType
+    from mlflow.tracking import MlflowClient
+
     HAS_MLFLOW = True
 except ImportError:
     mlflow = None  # type: ignore
@@ -27,6 +28,7 @@ except ImportError:
         def __init__(self, *args, **kwargs):
             pass
 
+
 from core.config import settings
 from core.logging import get_logger
 
@@ -35,13 +37,13 @@ logger = get_logger(__name__)
 
 def setup_tracking_environment() -> str:
     """Configures environment variables for S3/MinIO artifact storage and tracking URI.
-    
+
     Reads endpoint URL dynamically from core.config settings, eliminating any hardcoded hosts.
     Returns the resolved S3 endpoint URL.
     """
     s3_endpoint = (
-        getattr(settings, "MLFLOW_S3_ENDPOINT_URL", None)
-        or getattr(settings, "S3_ENDPOINT_URL", None)
+        settings.MLFLOW_S3_ENDPOINT_URL
+        or settings.S3_ENDPOINT_URL
         or os.getenv("MLFLOW_S3_ENDPOINT_URL")
         or os.getenv("S3_ENDPOINT_URL")
         or settings.s3_endpoint_url
@@ -55,7 +57,7 @@ def setup_tracking_environment() -> str:
 
 def get_tracking_uri() -> str:
     """Returns the configured MLflow tracking URI."""
-    return getattr(settings, "MLFLOW_TRACKING_URI", "http://localhost:5000")
+    return settings.MLFLOW_TRACKING_URI
 
 
 def get_mlflow_client(tracking_uri: Optional[str] = None) -> Optional[MlflowClient]:
@@ -106,7 +108,7 @@ def init_mlflow_tracking(experiment_name: Optional[str] = None) -> None:
         return
     setup_tracking_environment()
     uri = get_tracking_uri()
-    exp_name = experiment_name or getattr(settings, "MLFLOW_EXPERIMENT_NAME", "black-friday-sales-prediction")
+    exp_name = experiment_name or settings.MLFLOW_EXPERIMENT_NAME
     try:
         mlflow.set_tracking_uri(uri)
         get_or_create_experiment(exp_name)
@@ -114,16 +116,13 @@ def init_mlflow_tracking(experiment_name: Optional[str] = None) -> None:
         logger.warning(f"[TRACKING: CORE] Failed to initialize MLflow tracking: {e}")
 
 
-def enable_langchain_autolog(
-    log_models: bool = False,
-    log_input_examples: bool = False,
-    log_traces: bool = True
-) -> None:
+def enable_langchain_autolog(log_models: bool = False, log_input_examples: bool = False, log_traces: bool = True) -> None:
     """Enables framework autologging for LangChain and LangGraph."""
     if not HAS_MLFLOW or mlflow is None:
         return
     try:
         import mlflow.langchain
+
         mlflow.langchain.autolog(
             log_models=log_models,
             log_input_examples=log_input_examples,
@@ -144,8 +143,10 @@ def trace(name: Optional[str] = None, span_type: Optional[str] = None):
             kwargs["span_type"] = span_type
         return mlflow.trace(**kwargs)
     else:
+
         def noop_decorator(func: Callable):
             return func
+
         return noop_decorator
 
 

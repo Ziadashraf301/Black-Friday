@@ -3,9 +3,11 @@ Hybrid Product Search Tool Adapter (Phase 3).
 Lean adapter adhering to SOLID: delegates embedding orchestration, category expansion,
 and PostgreSQL hybrid RRF retrieval to ProductSearchService.
 """
+
 from typing import List, Optional
+
 from ai.schemas import ProductSearchResult
-from ai.services.search_service import search_service, ProductSearchService
+from ai.services.search_service import ProductSearchService, search_service
 
 
 class HybridProductSearchTool:

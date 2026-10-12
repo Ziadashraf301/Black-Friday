@@ -5,17 +5,28 @@ Provides:
   - Tier 1: True Vector Semantic Cache in PostgreSQL with pgvector HNSW index
     (Cosine similarity >= 0.92, max_distance <= 0.08) on 768-dim embeddings (<5ms).
 """
+
 import hashlib
 import json
 import time
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any, List
+from typing import Any, Dict, List, Optional
 
 from core.cache.redis_client import RedisCacheManager, cache_manager
 from core.db.repository import BlackFridayRepository
 from core.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+def _trace_lookup(raw_query: str, tier: str, is_hit: bool, latency_ms: float) -> None:
+    """Records a cache lookup span; tracing must never break a cache read."""
+    try:
+        from ai.observability.tracing import agent_tracer
+
+        agent_tracer.trace_cache_lookup(raw_query=raw_query, tier=tier, is_hit=is_hit, latency_ms=latency_ms)
+    except Exception:
+        pass
 
 
 class TwoTierCacheService:
@@ -46,6 +57,31 @@ class TwoTierCacheService:
         return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
     @staticmethod
+    def user_key(user_id: str) -> str:
+        """
+        Opaque per-shopper cache namespace. Every cache read and write is scoped by it, so an answer that
+        was personalised for one shopper (or guest session) can never be served to another.
+        """
+        clean = (user_id or "").strip().lower()
+        if not clean:
+            raise ValueError("A user_id is required to use the response caches")
+        return hashlib.sha256(clean.encode("utf-8")).hexdigest()[:32]
+
+    def _exact_key(self, user_id: str, q_hash: str) -> str:
+        return f"{self.EXACT_CACHE_PREFIX}:{self.user_key(user_id)}:{q_hash}"
+
+    @staticmethod
+    def _embed(text: str, purpose: str) -> Optional[List[float]]:
+        """Query embedding, or None (logged) when the embedding service fails."""
+        try:
+            from core.embeddings import embedding_service
+
+            return embedding_service.generate_embedding(text)
+        except Exception as e:
+            logger.warning(f"[CACHE: SEMANTIC] Embedding generation {purpose} failed: {e}")
+            return None
+
+    @staticmethod
     def hash_constraints(intent: str, constraints: Dict[str, Any]) -> str:
         """Computes deterministic SHA-256 fingerprint for intent + sorted constraints."""
         clean_constraints = {}
@@ -61,9 +97,9 @@ class TwoTierCacheService:
     # =========================================================================
     # Tier 0: Hard LLM Response Message Cache (6-Hour Window in Redis)
     # =========================================================================
-    def get_exact_llm_response(self, raw_query: str) -> Optional[Dict[str, Any]]:
+    def get_exact_llm_response(self, raw_query: str, user_id: str) -> Optional[Dict[str, Any]]:
         """
-        Looks up exact raw query in 6-hour hard response cache.
+        Looks up the shopper's own exact raw query in the 6-hour hard response cache.
         Returns stored response message and UI cards if within 6-hour window, else None.
         """
         if not self._cache.is_available:
@@ -71,16 +107,10 @@ class TwoTierCacheService:
 
         t0 = time.perf_counter()
         q_hash = self.hash_query(raw_query)
-        cache_key = f"{self.EXACT_CACHE_PREFIX}:{q_hash}"
-        data = self._cache.get_json(cache_key)
+        data = self._cache.get_json(self._exact_key(user_id, q_hash))
         latency_ms = (time.perf_counter() - t0) * 1000
 
-        is_hit = bool(data)
-        try:
-            from ai.observability.tracing import agent_tracer
-            agent_tracer.trace_cache_lookup(raw_query=raw_query, tier="TIER_0_HARD_6H", is_hit=is_hit, latency_ms=latency_ms)
-        except Exception:
-            pass
+        _trace_lookup(raw_query, "TIER_0_HARD_6H", bool(data), latency_ms)
 
         if data:
             logger.info(f"[CACHE: TIER-0 HIT] Query hash={q_hash[:10]} found in 6h LLM response cache ({latency_ms:.2f}ms)")
@@ -93,6 +123,7 @@ class TwoTierCacheService:
     def store_exact_llm_response(
         self,
         raw_query: str,
+        user_id: str,
         response_message: str,
         ui_payload: Optional[Dict[str, Any]] = None,
         target_intents: Optional[List[str]] = None,
@@ -108,7 +139,7 @@ class TwoTierCacheService:
             return False
 
         q_hash = self.hash_query(raw_query)
-        cache_key = f"{self.EXACT_CACHE_PREFIX}:{q_hash}"
+        cache_key = self._exact_key(user_id, q_hash)
         ttl_seconds = ttl if ttl is not None else self.DEFAULT_6H_TTL
 
         payload = {
@@ -130,43 +161,37 @@ class TwoTierCacheService:
             logger.info(f"[CACHE: TIER-0 STORE] Cached LLM response for query hash={q_hash[:10]} (TTL={ttl_seconds}s)")
         return success
 
-
     # =========================================================================
     # Tier 1: True Vector Semantic Cache (PostgreSQL pgvector HNSW Index)
     # =========================================================================
     def get_vector_semantic_response(
         self,
         raw_query: str,
+        user_id: str,
         query_vec: Optional[List[float]] = None,
         max_distance: float = 0.08,  # Cosine similarity >= 0.92
     ) -> Optional[Dict[str, Any]]:
         """
         True Vector Semantic Caching.
-        Compares 768-dim query embedding against cached queries in PostgreSQL via pgvector.
-        Returns cached response if cosine similarity >= 0.92 (distance <= 0.08).
+        Compares 768-dim query embedding against this shopper's cached queries in PostgreSQL via pgvector.
+        Returns cached response if cosine similarity >= 0.92 (distance <= 0.08) and the entry has not expired.
         """
         t0 = time.perf_counter()
 
         # Generate embedding if not already provided
         if query_vec is None:
-            try:
-                from core.embeddings import embedding_service
-                query_vec = embedding_service.generate_embedding(raw_query)
-            except Exception as e:
-                logger.debug(f"[CACHE: SEMANTIC] Embedding generation failed: {e}")
+            query_vec = self._embed(raw_query, "lookup")
+            if query_vec is None:
                 return None
 
         # Query pgvector HNSW index
         try:
-            cached = self._repo.find_semantic_cached_response(query_vec=query_vec, max_distance=max_distance)
+            cached = self._repo.find_semantic_cached_response(
+                query_vec=query_vec, user_key=self.user_key(user_id), max_distance=max_distance
+            )
             latency_ms = (time.perf_counter() - t0) * 1000
 
-            is_hit = bool(cached)
-            try:
-                from ai.observability.tracing import agent_tracer
-                agent_tracer.trace_cache_lookup(raw_query=raw_query, tier="TIER_1_SEMANTIC_VECTOR", is_hit=is_hit, latency_ms=latency_ms)
-            except Exception:
-                pass
+            _trace_lookup(raw_query, "TIER_1_SEMANTIC_VECTOR", bool(cached), latency_ms)
 
             if cached:
                 sim = cached.get("cosine_similarity", 0.95)
@@ -176,13 +201,14 @@ class TwoTierCacheService:
                 )
                 return cached
         except Exception as e:
-            logger.debug(f"[CACHE: SEMANTIC] Vector cache lookup error: {e}")
+            logger.warning(f"[CACHE: SEMANTIC] Vector cache lookup error: {e}")
 
         return None
 
     def store_vector_semantic_response(
         self,
         query_text: str,
+        user_id: str,
         response_text: str,
         ui_payload: Dict[str, Any],
         intent: str,
@@ -190,11 +216,8 @@ class TwoTierCacheService:
     ) -> bool:
         """Stores a verified query and answer in pgvector semantic_query_cache."""
         if query_vec is None:
-            try:
-                from core.embeddings import embedding_service
-                query_vec = embedding_service.generate_embedding(query_text)
-            except Exception as e:
-                logger.debug(f"[CACHE: SEMANTIC] Embedding generation for store failed: {e}")
+            query_vec = self._embed(query_text, "for store")
+            if query_vec is None:
                 return False
 
         try:
@@ -204,24 +227,27 @@ class TwoTierCacheService:
                 response_text=response_text,
                 ui_payload=ui_payload,
                 intent=intent,
+                user_key=self.user_key(user_id),
             )
             if stored:
                 logger.info(f"[CACHE: TIER-1 STORE] Vector semantic cache entry stored for query: '{query_text[:50]}'")
             return stored
         except Exception as e:
-            logger.debug(f"[CACHE: SEMANTIC] Vector cache store error: {e}")
+            logger.warning(f"[CACHE: SEMANTIC] Vector cache store error: {e}")
             return False
 
     # =========================================================================
     # Compatibility Key-Value Semantic Methods (Constraint Hashing)
     # =========================================================================
-    def get_semantic_response(self, intent: str, constraints: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def _constraint_key(self, user_id: str, intent: str, constraints: Dict[str, Any]) -> str:
+        c_hash = self.hash_constraints(intent, constraints)
+        return f"{self.SEMANTIC_CACHE_PREFIX}:{self.user_key(user_id)}:{intent.upper()}:{c_hash}"
+
+    def get_semantic_response(self, intent: str, constraints: Dict[str, Any], user_id: str) -> Optional[Dict[str, Any]]:
         """Structured constraint cache lookup."""
         if not self._cache.is_available:
             return None
-        c_hash = self.hash_constraints(intent, constraints)
-        cache_key = f"{self.SEMANTIC_CACHE_PREFIX}:{intent.upper()}:{c_hash}"
-        data = self._cache.get_json(cache_key)
+        data = self._cache.get_json(self._constraint_key(user_id, intent, constraints))
         if data:
             data["is_cache_hit"] = True
             data["cache_tier"] = "TIER_1_SEMANTIC"
@@ -232,6 +258,7 @@ class TwoTierCacheService:
         self,
         intent: str,
         constraints: Dict[str, Any],
+        user_id: str,
         answer_text: str,
         ui_payload: Optional[Dict[str, Any]] = None,
         ttl: Optional[int] = None,
@@ -239,8 +266,7 @@ class TwoTierCacheService:
         """Structured constraint cache store."""
         if not self._cache.is_available:
             return False
-        c_hash = self.hash_constraints(intent, constraints)
-        cache_key = f"{self.SEMANTIC_CACHE_PREFIX}:{intent.upper()}:{c_hash}"
+        cache_key = self._constraint_key(user_id, intent, constraints)
         ttl_seconds = ttl or self.DEFAULT_SEMANTIC_TTL
         payload = {
             "intent": intent.upper(),
@@ -252,10 +278,9 @@ class TwoTierCacheService:
         }
         return self._cache.set_json(cache_key, payload, ttl=ttl_seconds)
 
-    def invalidate_exact_cache(self, raw_query: str) -> bool:
-        """Explicitly evicts a query from exact cache."""
-        q_hash = self.hash_query(raw_query)
-        return self._cache.delete_key(f"{self.EXACT_CACHE_PREFIX}:{q_hash}")
+    def invalidate_exact_cache(self, raw_query: str, user_id: str) -> bool:
+        """Explicitly evicts a shopper's query from the exact cache."""
+        return self._cache.delete_key(self._exact_key(user_id, self.hash_query(raw_query)))
 
     def clear_all_llm_cache(self) -> int:
         """Clears all cached LLM responses."""

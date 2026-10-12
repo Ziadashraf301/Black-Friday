@@ -1,10 +1,14 @@
 """
 Warehouse repository for transaction ingestion and cleaned data warehouse queries.
 """
+
 import json
+from typing import Any, Dict, List, Optional
+
 import pandas as pd
-from typing import Dict, Optional, List, Any
 from sqlalchemy import text
+
+from core.config import settings
 from core.db.repositories.base import BaseRepository
 from core.logging import get_logger
 
@@ -19,6 +23,14 @@ class WarehouseRepository(BaseRepository):
 
     def insert_raw_batch(self, df: pd.DataFrame, chunksize: int = 25000):
         self.insert_dataframe("raw_black_friday", df, if_exists="append", chunksize=chunksize)
+
+    def replace_raw_batch(self, df: pd.DataFrame, chunksize: int = 25000):
+        """Swaps the raw table contents in one transaction: a failed load leaves the previous rows in place."""
+        self.insert_dataframe("raw_black_friday", df, if_exists="replace", chunksize=chunksize)
+
+    def replace_cleaned_batch(self, df: pd.DataFrame, chunksize: int = 25000):
+        """Swaps the cleaned table contents in one transaction: a failed load leaves the previous rows in place."""
+        self.insert_dataframe("black_friday_cleaned", df, if_exists="replace", chunksize=chunksize)
 
     def truncate_cleaned_table(self):
         self.truncate_table("black_friday_cleaned", restart_identity=True)
@@ -38,16 +50,15 @@ class WarehouseRepository(BaseRepository):
             return pd.read_sql(query, conn, params=params)
 
     def get_cleaned_records_df(
-        self,
-        exclude_outliers: bool = False,
-        split: Optional[str] = None,
-        limit: Optional[int] = None
+        self, exclude_outliers: bool = False, split: Optional[str] = None, limit: Optional[int] = None
     ) -> pd.DataFrame:
         """Retrieves cleaned and imputed records."""
-        query = "SELECT user_id, product_id, gender, age, occupation, city_category, " \
-                "stay_in_current_city_years, marital_status, product_category_1, " \
-                "product_category_2, product_category_3, purchase, is_outlier, normalized_purchase, split " \
-                "FROM black_friday_cleaned"
+        query = (
+            "SELECT user_id, product_id, gender, age, occupation, city_category, "
+            "stay_in_current_city_years, marital_status, product_category_1, "
+            "product_category_2, product_category_3, purchase, is_outlier, normalized_purchase, split "
+            "FROM black_friday_cleaned"
+        )
         conditions = []
         params = {}
         if exclude_outliers:
@@ -73,16 +84,23 @@ class WarehouseRepository(BaseRepository):
         with self.engine.begin() as conn:
             if conn.dialect.name == "postgresql":
                 conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
-                conn.execute(text("""
-                    CREATE INDEX IF NOT EXISTS idx_curated_embedding_hnsw 
+                conn.execute(
+                    text(
+                        """
+                    CREATE INDEX IF NOT EXISTS idx_curated_embedding_hnsw
                     ON curated_products USING hnsw (embedding vector_cosine_ops);
-                """))
-                conn.execute(text("""
-                    CREATE INDEX IF NOT EXISTS idx_curated_search_vector 
+                """
+                    )
+                )
+                conn.execute(
+                    text(
+                        """
+                    CREATE INDEX IF NOT EXISTS idx_curated_search_vector
                     ON curated_products USING gin (search_vector);
-                """))
+                """
+                    )
+                )
                 logger.info("pgvector extension and hybrid indexes verified in PostgreSQL.")
-
 
     @staticmethod
     def _map_curated_attributes(p: dict) -> dict:
@@ -136,6 +154,7 @@ class WarehouseRepository(BaseRepository):
         """Retrieves curated products from curated_products table."""
         from core.db.models.warehouse import CuratedProduct
         from core.db.session import get_db_session
+
         with get_db_session() as session:
             records = session.query(CuratedProduct).all()
             return [
@@ -174,6 +193,7 @@ class WarehouseRepository(BaseRepository):
         """Retrieves curated products where embedding is NULL (incremental skip logic)."""
         from core.db.models.warehouse import CuratedProduct
         from core.db.session import get_db_session
+
         with get_db_session() as session:
             records = session.query(CuratedProduct).filter(CuratedProduct.embedding.is_(None)).all()
             return [
@@ -191,21 +211,25 @@ class WarehouseRepository(BaseRepository):
 
     def update_product_embedding(self, product_id: str, embedding: list, search_text: str = None) -> None:
         """Updates embedding vector and tsvector search text for a product."""
-        from sqlalchemy import text
         from core.db.session import get_db_session
+
         with get_db_session() as session:
-            stmt = text("""
+            stmt = text(
+                """
                 UPDATE curated_products
                 SET embedding = :emb,
                     search_vector = to_tsvector('english', :stext)
                 WHERE product_id = :pid
-            """)
-            session.execute(stmt, {
-                "emb": str(embedding),
-                "stext": search_text or "",
-                "pid": product_id,
-            })
-            session.commit()
+            """
+            )
+            session.execute(
+                stmt,
+                {
+                    "emb": str(embedding),
+                    "stext": search_text or "",
+                    "pid": product_id,
+                },
+            )
 
     def _execute_rrf_query(
         self,
@@ -235,35 +259,40 @@ class WarehouseRepository(BaseRepository):
 
         if size is not None:
             where_clauses.append("sizes::jsonb @> CAST(:size_json AS jsonb)")
-            params["size_json"] = f'["{size.strip().upper()}"]'
+            params["size_json"] = json.dumps([size.strip().upper()])
 
         filter_sql = " AND ".join(where_clauses)
 
-        rrf_query = text(f"""
+        rrf_query = text(
+            f"""
             WITH dense_ranks AS (
-                SELECT 
+                SELECT
                     product_id,
                     ROW_NUMBER() OVER (ORDER BY embedding <=> CAST(:query_vec AS vector)) AS dense_rank
                 FROM curated_products
                 WHERE {filter_sql}
+                ORDER BY dense_rank
                 LIMIT :top_k_candidates
             ),
             sparse_ranks AS (
-                SELECT 
+                SELECT
                     product_id,
-                    ROW_NUMBER() OVER (ORDER BY ts_rank_cd(search_vector, plainto_tsquery('english', :query_text)) DESC) AS sparse_rank
+                    ROW_NUMBER() OVER (
+                        ORDER BY ts_rank_cd(search_vector, plainto_tsquery('english', :query_text)) DESC NULLS LAST
+                    ) AS sparse_rank
                 FROM curated_products
                 WHERE {filter_sql}
+                ORDER BY sparse_rank
                 LIMIT :top_k_candidates
             ),
             combined_scores AS (
-                SELECT 
+                SELECT
                     COALESCE(d.product_id, s.product_id) AS product_id,
                     (COALESCE(1.0 / (60.0 + d.dense_rank), 0.0) + COALESCE(1.0 / (60.0 + s.sparse_rank), 0.0)) AS rrf_score
                 FROM dense_ranks d
                 FULL OUTER JOIN sparse_ranks s ON d.product_id = s.product_id
             )
-            SELECT 
+            SELECT
                 p.product_id,
                 p.name,
                 p.category_name,
@@ -278,25 +307,28 @@ class WarehouseRepository(BaseRepository):
             JOIN curated_products p ON c.product_id = p.product_id
             ORDER BY c.rrf_score DESC
             LIMIT :top_k;
-        """)
+        """
+        )
 
         with self.engine.connect() as conn:
             rows = conn.execute(rrf_query, params).fetchall()
 
         results: List[Dict[str, Any]] = []
         for r in rows:
-            results.append({
-                "product_id": r[0],
-                "name": r[1],
-                "category_name": r[2],
-                "original_price": float(r[3]),
-                "discounted_price": float(r[4]),
-                "badge": r[5],
-                "sizes": list(r[6]) if r[6] else [],
-                "image_url": r[7] or f"/products/{r[0]}.jpg",
-                "style": r[8],
-                "score": round(float(r[9]), 4),
-            })
+            results.append(
+                {
+                    "product_id": r[0],
+                    "name": r[1],
+                    "category_name": r[2],
+                    "original_price": float(r[3]),
+                    "discounted_price": float(r[4]),
+                    "badge": r[5],
+                    "sizes": list(r[6]) if r[6] else [],
+                    "image_url": r[7] or f"/products/{r[0]}.jpg",
+                    "style": r[8],
+                    "score": round(float(r[9]), 4),
+                }
+            )
         return results
 
     def hybrid_search_products(
@@ -318,57 +350,38 @@ class WarehouseRepository(BaseRepository):
         """
         vec_str = "[" + ",".join(str(x) for x in query_vec) + "]"
 
-        # Tier 1: Strict search
-        results = self._execute_rrf_query(
-            query_vec_str=vec_str,
-            query_text=query_text,
-            target_categories=target_categories,
-            max_price=max_price,
-            size=size,
-            top_k=top_k,
-        )
-        if results:
-            for r in results:
-                r["relaxation_level"] = "TIER_1_STRICT"
-            return results, "TIER_1_STRICT"
-
-        # Tier 2: Relax size
+        tiers = [("TIER_1_STRICT", size, max_price)]
         if size is not None:
-            logger.info(f"[SEARCH: LADDER] Tier 1 yielded 0 results. Relaxing size='{size}' -> Tier 2")
-            results = self._execute_rrf_query(
-                query_vec_str=vec_str,
-                query_text=query_text,
-                target_categories=target_categories,
-                max_price=max_price,
-                size=None,
-                top_k=top_k,
-            )
-            if results:
-                for r in results:
-                    r["relaxation_level"] = "TIER_2_RELAX_SIZE"
-                return results, "TIER_2_RELAX_SIZE"
-
-        # Tier 3: Relax budget (+25%)
+            tiers.append(("TIER_2_RELAX_SIZE", None, max_price))
         if max_price is not None:
-            expanded_budget = round(max_price * 1.25, 2)
-            logger.info(f"[SEARCH: LADDER] Tier 2 yielded 0 results. Expanding budget ${max_price:.2f} -> ${expanded_budget:.2f} (+25%) -> Tier 3")
+            tiers.append(("TIER_3_RELAX_BUDGET", None, round(max_price * 1.25, 2)))
+
+        for level, tier_size, tier_budget in tiers:
+            if level == "TIER_2_RELAX_SIZE":
+                logger.info(f"[SEARCH: LADDER] Tier 1 yielded 0 results. Relaxing size='{size}' -> Tier 2")
+            elif level == "TIER_3_RELAX_BUDGET":
+                logger.info(
+                    f"[SEARCH: LADDER] Tier 2 yielded 0 results. Expanding budget ${max_price:.2f} -> "
+                    f"${tier_budget:.2f} (+25%) -> Tier 3"
+                )
             results = self._execute_rrf_query(
                 query_vec_str=vec_str,
                 query_text=query_text,
                 target_categories=target_categories,
-                max_price=expanded_budget,
-                size=None,
+                max_price=tier_budget,
+                size=tier_size,
                 top_k=top_k,
             )
             if results:
                 for r in results:
-                    r["relaxation_level"] = "TIER_3_RELAX_BUDGET"
-                return results, "TIER_3_RELAX_BUDGET"
+                    r["relaxation_level"] = level
+                return results, level
 
         # Tier 4: Guaranteed Doorbuster Deals Fallback
         logger.info("[SEARCH: LADDER] All constraints yielded 0 results. Activating Tier 4 Zero-Data Deals fallback.")
-        fallback_query = text("""
-            SELECT 
+        fallback_query = text(
+            """
+            SELECT
                 p.product_id,
                 p.name,
                 p.category_name,
@@ -383,38 +396,43 @@ class WarehouseRepository(BaseRepository):
             WHERE p.is_hero = TRUE OR p.badge ILIKE '%deal%' OR p.badge ILIKE '%sale%'
             ORDER BY ((p.original_price - p.discounted_price) / NULLIF(p.original_price, 0)) DESC
             LIMIT :top_k;
-        """)
+        """
+        )
         with self.engine.connect() as conn:
             rows = conn.execute(fallback_query, {"top_k": int(top_k)}).fetchall()
 
         deals: List[Dict[str, Any]] = []
         for r in rows:
-            deals.append({
-                "product_id": r[0],
-                "name": r[1],
-                "category_name": r[2],
-                "original_price": float(r[3]),
-                "discounted_price": float(r[4]),
-                "badge": r[5] or "Black Friday Steal",
-                "sizes": list(r[6]) if r[6] else ["S", "M", "L"],
-                "image_url": r[7] or f"/products/{r[0]}.jpg",
-                "style": r[8],
-                "score": 0.50,
-                "relaxation_level": "TIER_4_ZERO_DATA_DEALS",
-            })
+            deals.append(
+                {
+                    "product_id": r[0],
+                    "name": r[1],
+                    "category_name": r[2],
+                    "original_price": float(r[3]),
+                    "discounted_price": float(r[4]),
+                    "badge": r[5] or "Black Friday Steal",
+                    "sizes": list(r[6]) if r[6] else ["S", "M", "L"],
+                    "image_url": r[7] or f"/products/{r[0]}.jpg",
+                    "style": r[8],
+                    "score": 0.50,
+                    "relaxation_level": "TIER_4_ZERO_DATA_DEALS",
+                }
+            )
         return deals, "TIER_4_ZERO_DATA_DEALS"
 
     def get_curated_product_by_id(self, product_id: str) -> Optional[Dict[str, Any]]:
         """Retrieves a single curated product specification from curated_products table."""
-        query = text("""
-            SELECT 
+        query = text(
+            """
+            SELECT
                 product_id, name, tagline, description, category_name,
                 sizes, original_price, discounted_price, badge, image_url,
                 gender, brand, style, season
             FROM curated_products
             WHERE product_id = :pid
             LIMIT 1;
-        """)
+        """
+        )
         with self.engine.connect() as conn:
             row = conn.execute(query, {"pid": product_id}).fetchone()
             if not row:
@@ -438,12 +456,14 @@ class WarehouseRepository(BaseRepository):
 
     def get_product_bundles(self, product_id: str) -> Optional[Dict[str, Any]]:
         """Retrieves raw apriori_bundles and item2vec_similars from curated_products table."""
-        query = text("""
+        query = text(
+            """
             SELECT product_id, name, discounted_price, apriori_bundles, item2vec_similars
             FROM curated_products
             WHERE product_id = :pid
             LIMIT 1;
-        """)
+        """
+        )
         with self.engine.connect() as conn:
             row = conn.execute(query, {"pid": product_id}).fetchone()
             if not row:
@@ -459,7 +479,9 @@ class WarehouseRepository(BaseRepository):
     def ensure_user_carts_table(self):
         """Ensures user_carts cold-tier table exists."""
         with self.engine.begin() as conn:
-            conn.execute(text("""
+            conn.execute(
+                text(
+                    """
                 CREATE TABLE IF NOT EXISTS user_carts (
                     user_id VARCHAR(64) PRIMARY KEY,
                     session_id VARCHAR(64) NOT NULL,
@@ -468,13 +490,16 @@ class WarehouseRepository(BaseRepository):
                     total_amount NUMERIC(10, 2) DEFAULT 0.00,
                     updated_at VARCHAR(64)
                 );
-            """))
+            """
+                )
+            )
 
     def save_user_cart_snapshot(self, user_id: str, session_id: str, cart_dict: Dict[str, Any]) -> bool:
         """Upserts cart snapshot to PostgreSQL user_carts table."""
-        import json
         from datetime import datetime, timezone
-        query = text("""
+
+        query = text(
+            """
             INSERT INTO user_carts (user_id, session_id, cart_data, item_count, total_amount, updated_at)
             VALUES (:uid, :sid, CAST(:cdata AS jsonb), :icount, :tot, :upd)
             ON CONFLICT (user_id) DO UPDATE SET
@@ -483,36 +508,47 @@ class WarehouseRepository(BaseRepository):
                 item_count = EXCLUDED.item_count,
                 total_amount = EXCLUDED.total_amount,
                 updated_at = EXCLUDED.updated_at;
-        """)
+        """
+        )
         with self.engine.begin() as conn:
-            conn.execute(query, {
-                "uid": user_id,
-                "sid": session_id,
-                "cdata": json.dumps(cart_dict),
-                "icount": int(cart_dict.get("item_count", 0)),
-                "tot": float(cart_dict.get("final_total", 0.0)),
-                "upd": datetime.now(timezone.utc).isoformat(),
-            })
+            conn.execute(
+                query,
+                {
+                    "uid": user_id,
+                    "sid": session_id,
+                    "cdata": json.dumps(cart_dict),
+                    "icount": int(cart_dict.get("item_count", 0)),
+                    "tot": float(cart_dict.get("final_total", 0.0)),
+                    "upd": datetime.now(timezone.utc).isoformat(),
+                },
+            )
         return True
 
     def load_user_cart_snapshot(self, user_id: str) -> Optional[Dict[str, Any]]:
         """Retrieves cold-tier cart snapshot from PostgreSQL."""
-        import json
-        query = text("""
+        query = text(
+            """
             SELECT cart_data FROM user_carts WHERE user_id = :uid LIMIT 1;
-        """)
+        """
+        )
         with self.engine.connect() as conn:
             row = conn.execute(query, {"uid": user_id}).fetchone()
             if row and row[0]:
                 return row[0] if isinstance(row[0], dict) else json.loads(row[0])
         return None
 
-    def check_product_stock(self, product_id: str, size: Optional[str] = None, quantity: int = 1) -> bool:
-        """Validates inventory and catalog sizing availability for a product."""
+    def is_size_offered(self, product_id: str, size: Optional[str] = None) -> bool:
+        """Returns True if the product exists in the curated catalog and, when given, offers the size.
+
+        There is no inventory table: every catalogued product is treated as always available in any quantity,
+        so this checks catalog membership and listed sizes only.
+        """
         clean_id = product_id.strip().upper()
-        query = text("""
+        query = text(
+            """
             SELECT sizes FROM curated_products WHERE product_id = :pid LIMIT 1;
-        """)
+        """
+        )
         with self.engine.connect() as conn:
             row = conn.execute(query, {"pid": clean_id}).fetchone()
             if not row:
@@ -522,31 +558,62 @@ class WarehouseRepository(BaseRepository):
                 return size.upper() in [s.upper() for s in sizes]
             return True
 
+    _semantic_cache_ready = False
+
+    def _ensure_semantic_cache_schema(self) -> None:
+        """Idempotent upgrade: per-user key column (older rows have NULL and never match) and lookup indexes."""
+        if WarehouseRepository._semantic_cache_ready:
+            return
+        with self.engine.begin() as conn:
+            conn.execute(text("ALTER TABLE semantic_query_cache ADD COLUMN IF NOT EXISTS user_key TEXT"))
+            conn.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_semantic_cache_user_created "
+                    "ON semantic_query_cache (user_key, created_at)"
+                )
+            )
+        WarehouseRepository._semantic_cache_ready = True
+
     def find_semantic_cached_response(
         self,
         query_vec: List[float],
+        user_key: str,
         max_distance: float = 0.08,  # Cosine similarity >= 0.92
+        ttl_seconds: Optional[int] = None,
     ) -> Optional[Dict[str, Any]]:
         """
         True Vector Semantic Cache lookup (pgvector HNSW index).
-        Computes cosine distance <=> between incoming query_vec and cached queries.
-        Returns cached response if distance <= max_distance (similarity >= 0.92).
+        Only entries stored for the same `user_key` and younger than `ttl_seconds`
+        (default settings.SEMANTIC_CACHE_TTL_SECONDS) can match, so one shopper's personalised
+        answer is never served to another and prices do not go stale.
+        Returns the closest entry with cosine distance <= max_distance (similarity >= 0.92).
         """
+        self._ensure_semantic_cache_schema()
         vec_str = "[" + ",".join(str(x) for x in query_vec) + "]"
-        query = text("""
-            SELECT 
+        query = text(
+            """
+            SELECT
                 query_text,
                 response_text,
                 ui_payload,
                 intent,
                 (embedding <=> CAST(:qvec AS vector)) AS distance
             FROM semantic_query_cache
-            WHERE (embedding <=> CAST(:qvec AS vector)) <= :max_dist
+            WHERE user_key = :user_key
+              AND created_at > now() - make_interval(secs => :ttl)
+              AND (embedding <=> CAST(:qvec AS vector)) <= :max_dist
             ORDER BY distance ASC
             LIMIT 1;
-        """)
+        """
+        )
+        params = {
+            "qvec": vec_str,
+            "max_dist": max_distance,
+            "user_key": user_key,
+            "ttl": ttl_seconds if ttl_seconds is not None else settings.SEMANTIC_CACHE_TTL_SECONDS,
+        }
         with self.engine.connect() as conn:
-            row = conn.execute(query, {"qvec": vec_str, "max_dist": max_distance}).fetchone()
+            row = conn.execute(query, params).fetchone()
             if not row:
                 return None
             dist = float(row[4])
@@ -568,23 +635,44 @@ class WarehouseRepository(BaseRepository):
         response_text: str,
         ui_payload: Dict[str, Any],
         intent: str,
+        user_key: str,
+        ttl_seconds: Optional[int] = None,
     ) -> bool:
-        """Stores query embedding and response in semantic_query_cache."""
+        """
+        Stores query embedding and response in semantic_query_cache for one user.
+        Replaces that user's earlier answer to the same query and drops expired rows of every user,
+        so the table does not grow without bound.
+        """
         vec_str = "[" + ",".join(str(x) for x in query_vec) + "]"
-        query = text("""
-            INSERT INTO semantic_query_cache (query_text, embedding, response_text, ui_payload, intent)
-            VALUES (:qtext, CAST(:qvec AS vector), :resp, CAST(:ui AS jsonb), :intent);
-        """)
+        ttl = ttl_seconds if ttl_seconds is not None else settings.SEMANTIC_CACHE_TTL_SECONDS
         try:
+            self._ensure_semantic_cache_schema()
             with self.engine.begin() as conn:
-                conn.execute(query, {
-                    "qtext": query_text,
-                    "qvec": vec_str,
-                    "resp": response_text,
-                    "ui": json.dumps(ui_payload),
-                    "intent": intent,
-                })
+                conn.execute(
+                    text(
+                        "DELETE FROM semantic_query_cache "
+                        "WHERE created_at <= now() - make_interval(secs => :ttl) "
+                        "OR (user_key = :user_key AND query_text = :qtext)"
+                    ),
+                    {"ttl": ttl, "user_key": user_key, "qtext": query_text},
+                )
+                conn.execute(
+                    text(
+                        """
+                        INSERT INTO semantic_query_cache (query_text, embedding, response_text, ui_payload, intent, user_key)
+                        VALUES (:qtext, CAST(:qvec AS vector), :resp, CAST(:ui AS jsonb), :intent, :user_key);
+                        """
+                    ),
+                    {
+                        "qtext": query_text,
+                        "qvec": vec_str,
+                        "resp": response_text,
+                        "ui": json.dumps(ui_payload),
+                        "intent": intent,
+                        "user_key": user_key,
+                    },
+                )
             return True
         except Exception as e:
-            logger.debug(f"[CACHE: SEMANTIC] Failed to insert semantic cache entry: {e}")
+            logger.warning(f"[CACHE: SEMANTIC] Failed to insert semantic cache entry: {e}")
             return False

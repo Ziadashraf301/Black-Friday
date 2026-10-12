@@ -1,12 +1,16 @@
+from typing import Any, Dict, List, Optional, Tuple
+
 import numpy as np
 import pandas as pd
-from typing import List, Dict, Tuple, Optional, Any
+
+from core.config import settings
 from core.logging import get_logger
 
 logger = get_logger(__name__)
 
 try:
     from gensim.models import Word2Vec
+
     HAS_GENSIM = True
 except ImportError:
     HAS_GENSIM = False
@@ -16,11 +20,17 @@ except ImportError:
 class Item2VecRecommender:
     """Computes dense 32-dimensional product embedding vectors from customer baskets."""
 
-    def __init__(self, vector_size: int = 32, window: int = 5, min_count: int = 5, epochs: int = 10):
-        self.vector_size = vector_size
-        self.window = window
-        self.min_count = min_count
-        self.epochs = epochs
+    def __init__(
+        self,
+        vector_size: Optional[int] = None,
+        window: Optional[int] = None,
+        min_count: Optional[int] = None,
+        epochs: Optional[int] = None,
+    ):
+        self.vector_size = settings.ITEM2VEC_VECTOR_SIZE if vector_size is None else vector_size
+        self.window = settings.ITEM2VEC_WINDOW if window is None else window
+        self.min_count = settings.ITEM2VEC_MIN_COUNT if min_count is None else min_count
+        self.epochs = settings.ITEM2VEC_EPOCHS if epochs is None else epochs
         self.model = None
 
     def fit(self, baskets: List[List[str]]) -> "Item2VecRecommender":
@@ -36,8 +46,10 @@ class Item2VecRecommender:
             window=self.window,
             min_count=self.min_count,
             sg=1,  # Skip-gram
-            workers=4,
-            epochs=self.epochs
+            # One worker plus a fixed seed makes training reproducible; several workers reorder updates between runs
+            workers=1,
+            seed=settings.RANDOM_SEED,
+            epochs=self.epochs,
         )
         logger.info(f"Item2Vec training complete. Vocabulary size: {len(self.model.wv):,} products.")
         return self
@@ -61,12 +73,8 @@ class Item2VecRecommender:
 
         results = {}
         for pid in self.model.wv.index_to_key:
-            try:
-                similar = self.model.wv.most_similar(pid, topn=top_n)
-                filtered = [(prod, round(float(sim), 4)) for prod, sim in similar if sim >= min_similarity]
-                results[pid] = filtered
-            except Exception:
-                results[pid] = []
+            similar = self.model.wv.most_similar(pid, topn=top_n)
+            results[pid] = [(prod, round(float(sim), 4)) for prod, sim in similar if sim >= min_similarity]
         return results
 
     @property
@@ -83,10 +91,7 @@ class Item2VecRecommender:
         return None
 
     def evaluate_embeddings(
-        self,
-        baskets: Optional[List[List[str]]] = None,
-        rules_df: Optional[pd.DataFrame] = None,
-        top_n: int = 5
+        self, baskets: Optional[List[List[str]]] = None, rules_df: Optional[pd.DataFrame] = None, top_n: int = 5
     ) -> Dict[str, float]:
         """Evaluates trained Item2Vec embeddings using vector norms, cosine similarity compactness,
         and alignment with mined Apriori association rules."""
@@ -95,7 +100,7 @@ class Item2VecRecommender:
             "item2vec_catalog_coverage_pct": 0.0,
             "item2vec_avg_top_k_cosine_sim": 0.0,
             "item2vec_mean_vector_norm": 0.0,
-            "item2vec_apriori_alignment_score": 0.0
+            "item2vec_apriori_alignment_score": 0.0,
         }
 
         if not HAS_GENSIM or not self.model or len(self.vocabulary) == 0:
@@ -127,7 +132,17 @@ class Item2VecRecommender:
             if isinstance(val, (set, frozenset, list, tuple)):
                 return [str(x) for x in val]
             elif isinstance(val, str):
-                cleaned = val.replace("frozenset(", "").replace(")", "").replace("[", "").replace("]", "").replace("{", "").replace("}", "").replace("'", "").replace('"', "").strip()
+                cleaned = (
+                    val.replace("frozenset(", "")
+                    .replace(")", "")
+                    .replace("[", "")
+                    .replace("]", "")
+                    .replace("{", "")
+                    .replace("}", "")
+                    .replace("'", "")
+                    .replace('"', "")
+                    .strip()
+                )
                 return [s.strip() for s in cleaned.split(",") if s.strip()]
             return []
 

@@ -2,7 +2,9 @@
 LLMOps Prompt & Question Registry Engine.
 Central versioned repository for System-1 prompts, questions, and choice criteria.
 """
-from typing import Dict, Optional, List
+
+from typing import Dict, List, Optional
+
 from ai.schemas import PromptVersion
 
 

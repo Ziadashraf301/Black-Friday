@@ -2,12 +2,14 @@
 Tier-1 Semantic Entity Extractor using Jev (TypeSafe AI) System-1.
 Classifies queries across all 17 catalog categories using calibrated softmax probabilities.
 """
+
 from typing import List, Optional
-from ai.schemas import ExtractedEntities
+
 from ai.extractor.base import BaseEntityExtractor
 from ai.extractor.regex_extractor import RegexEntityExtractor
 from ai.extractor.taxonomy import CATEGORY_HIERARCHY
 from ai.prompts.registry import PromptRegistry
+from ai.schemas import ExtractedEntities
 from core.config import settings
 from core.logging import get_logger
 
@@ -27,6 +29,7 @@ class JevEntityExtractor(BaseEntityExtractor):
         if self._api_key:
             try:
                 from typesafe_sdk import TypeSafeClient
+
                 self._client = TypeSafeClient(api_key=self._api_key)
             except Exception as e:
                 logger.warning(f"[ENTITY-EXTRACTOR: JEV] Could not initialize TypeSafeClient: {e}")
@@ -37,6 +40,7 @@ class JevEntityExtractor(BaseEntityExtractor):
 
         try:
             from typesafe_sdk import Choice
+
             prompt_spec = PromptRegistry.get(self._prompt_version)
             questions = {
                 qid: Choice(instructions=q.instructions, criteria=q.criteria)
@@ -56,11 +60,7 @@ class JevEntityExtractor(BaseEntityExtractor):
 
                 # Scan softmax probabilities for high-probability alternative categories (>= 0.05, max 3)
                 probs = ans.probabilities or {}
-                sorted_probs = sorted(
-                    [(k, v) for k, v in probs.items() if k != "None"],
-                    key=lambda x: x[1],
-                    reverse=True
-                )
+                sorted_probs = sorted([(k, v) for k, v in probs.items() if k != "None"], key=lambda x: x[1], reverse=True)
                 for cat, p in sorted_probs[:3]:
                     if p >= 0.05 and cat not in categories:
                         categories.append(cat)
@@ -84,7 +84,9 @@ class JevEntityExtractor(BaseEntityExtractor):
                 extraction_strategy="jev_v2",
             )
         except Exception as e:
-            logger.error(f"[ENTITY-EXTRACTOR: JEV] Jev extraction failed: {e}. Falling back to empty.")
+            logger.warning(
+                f"[ENTITY-EXTRACTOR: JEV] Jev extraction failed ({type(e).__name__}: {e}); falling back to empty entities."
+            )
             return ExtractedEntities(extraction_strategy="jev_error")
 
 

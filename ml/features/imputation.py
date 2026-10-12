@@ -1,20 +1,23 @@
 import time
+from typing import Any, Dict, List, Optional
+
 import numpy as np
 import pandas as pd
-from typing import Optional, Dict, Any, List
+from sklearn.ensemble import ExtraTreesRegressor
 from sklearn.experimental import enable_iterative_imputer  # noqa
 from sklearn.impute import IterativeImputer
-from sklearn.ensemble import ExtraTreesRegressor
 from sklearn.preprocessing import OrdinalEncoder
+
 from core.config import settings
 from core.logging import get_logger
 
 logger = get_logger(__name__)
 
+
 class MissForestImputer:
     """Imputes missing Product_Category_2 and Product_Category_3 using ExtraTrees regression
     leveraging all demographic, product, and target variables in the feature matrix.
-    
+
     Replicates R's missForest library behavior:
     - Estimator: ExtraTreesRegressor
     - Fits on encoded feature matrix (demographics, product_id, category_1..3, purchase).
@@ -31,7 +34,7 @@ class MissForestImputer:
         "product_category_1",
         "product_category_2",
         "product_category_3",
-        "product_id"
+        "product_id",
     ]
     STRING_COLS: List[str] = ["gender", "age", "city_category", "stay_in_current_city_years", "product_id"]
 
@@ -43,7 +46,7 @@ class MissForestImputer:
         max_depth: Optional[int] = settings.IMPUTER_MAX_DEPTH,
         min_samples_leaf: int = settings.IMPUTER_MIN_SAMPLES_LEAF,
         n_jobs: int = settings.IMPUTER_N_JOBS,
-        random_state: int = settings.RANDOM_SEED
+        random_state: int = settings.RANDOM_SEED,
     ):
         self.n_estimators = n_estimators
         self.max_iter = max_iter
@@ -69,7 +72,7 @@ class MissForestImputer:
             "imputer_max_depth": self.max_depth if self.max_depth else "none",
             "imputer_min_samples_leaf": self.min_samples_leaf,
             "imputer_random_state": self.random_state,
-            "features_used": self.cols
+            "features_used": self.cols,
         }
 
     def _prepare_numeric_matrix(self, df: pd.DataFrame, is_fit: bool = True) -> pd.DataFrame:
@@ -101,9 +104,13 @@ class MissForestImputer:
         return matrix.astype(np.float32)
 
     def fit_transform(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Fits imputer on all feature columns (demographics + product, excluding purchase target) and returns imputed dataframe."""
+        """Fits imputer on all feature columns (demographics + product, excluding purchase target).
+
+        Returns the imputed dataframe.
+        """
         logger.info(
-            f"Initializing MissForest IterativeImputer on non-target variables (trees={self.n_estimators}, max_iter={self.max_iter}, "
+            f"Initializing MissForest IterativeImputer on non-target variables (trees={self.n_estimators}, "
+            f"max_iter={self.max_iter}, "
             f"max_depth={self.max_depth}, min_samples_leaf={self.min_samples_leaf}, "
             f"sample_size={self.sample_size or 'full'}, bootstrap=True, oob_score=True)..."
         )
@@ -121,15 +128,10 @@ class MissForestImputer:
             bootstrap=True,
             oob_score=True,
             random_state=self.random_state,
-            n_jobs=self.n_jobs
+            n_jobs=self.n_jobs,
         )
 
-        self.imputer = IterativeImputer(
-            estimator=estimator,
-            max_iter=self.max_iter,
-            random_state=self.random_state,
-            verbose=1
-        )
+        self.imputer = IterativeImputer(estimator=estimator, max_iter=self.max_iter, random_state=self.random_state, verbose=1)
 
         if self.sample_size and len(numeric_df) > self.sample_size:
             logger.info(
@@ -173,7 +175,7 @@ class MissForestImputer:
             "imputed_columns": missing_cols,
             "total_records_imputed": len(result_df),
             "oob_scores": oob_scores,
-            "oob_errors": oob_errors
+            "oob_errors": oob_errors,
         }
 
         logger.info(
@@ -194,4 +196,3 @@ class MissForestImputer:
         result_df["product_category_2"] = np.clip(np.round(imputed_df["product_category_2"]), 1, 20).astype(int)
         result_df["product_category_3"] = np.clip(np.round(imputed_df["product_category_3"]), 1, 20).astype(int)
         return result_df
-

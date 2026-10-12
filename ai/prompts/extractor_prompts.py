@@ -1,6 +1,8 @@
+# flake8: noqa: E501 (long prompt/regex literals)
 """
 Semantic System-1 Entity Extractor Prompt Specifications.
 """
+
 from ai.schemas import PromptVersion, QuestionSpec
 
 # V1 Entity Extractor: Baseline Department, Budget, Size, and Product ID

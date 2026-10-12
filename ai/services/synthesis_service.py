@@ -1,15 +1,16 @@
+# flake8: noqa: E501 (long prompt/regex literals)
 """
 RAG Synthesis Service for Black Friday Assistant.
 Manages context augmentation, LLM model invocation from configuration,
 and deterministic fallback generation.
 """
-from typing import Dict, Any, List, Optional, TYPE_CHECKING
+
+from typing import Any, Dict, List, Optional
+
 from langchain_core.messages import AIMessage
 
-if TYPE_CHECKING:
-    from ai.workflow.state import AgentState, UIPayload
-
 from ai.prompts.synthesis_prompts import format_rag_prompt
+from ai.schemas.state import AgentState
 from ai.services.template_service import ResponseTemplateService, template_service
 from core.config import settings
 from core.logging import get_logger
@@ -26,7 +27,7 @@ class SynthesisService:
         template_service_instance: Optional[ResponseTemplateService] = None,
         llm_client: Optional[Any] = None,
     ):
-        self._configured_model = model_name or getattr(settings, "LLM_MODEL", "gemini-2.0-flash")
+        self._configured_model = model_name or getattr(settings, "LLM_MODEL", "gemini-3-flash-preview")
         self._templates = template_service_instance or template_service
         self._llm_client = llm_client
 
@@ -114,9 +115,10 @@ class SynthesisService:
                 return None
             try:
                 from google import genai
+
                 client = genai.Client(api_key=api_key)
             except Exception as e:
-                logger.debug(f"[SYNTHESIS-SERVICE] Could not initialize genai client: {e}")
+                logger.warning(f"[SYNTHESIS-SERVICE] Could not initialize genai client: {e}")
                 return None
 
         try:
@@ -128,7 +130,7 @@ class SynthesisService:
             if response and getattr(response, "text", None):
                 return response.text.strip()
         except Exception as e:
-            logger.debug(f"[SYNTHESIS-SERVICE] LLM generation with {self._configured_model} skipped: {e}")
+            logger.warning(f"[SYNTHESIS-SERVICE] LLM generation with {self._configured_model} failed, using template: {e}")
 
         return None
 
@@ -155,7 +157,29 @@ class SynthesisService:
             policy=policy,
         )
 
-    def synthesize(self, state: "AgentState") -> Dict[str, Any]:
+    # Answers built from one shopper's cart or orders must never be replayed to anyone else
+    PERSONAL_INTENTS = frozenset({"CART_ACTIONS"})  # order answers are caught by `order_status`
+
+    @classmethod
+    def _is_cacheable(cls, state: AgentState, intent: str) -> bool:
+        """True when the answer depends only on the query and the shared catalog, not on the shopper's own data."""
+        intents = {intent, *(state.get("target_intents") or [])}
+        personal = state.get("cart") or state.get("order_status")
+        return not (intents & cls.PERSONAL_INTENTS) and not personal and not state.get("clarification")
+
+    @staticmethod
+    def _clarification_only(question: str, intent: str, ui_payload: Dict[str, Any]) -> Dict[str, Any]:
+        """Final update when the only thing to say is a question to the shopper (never cached)."""
+        return {
+            "messages": [AIMessage(content=question, additional_kwargs={"intent": intent, "ui_type": "clarification"})],
+            "final_response": question,
+            "ui_payload": {**ui_payload, "type": "clarification", "data": {}},
+            "is_cache_hit": False,
+            "cache_tier": "NONE",
+            "current_node": "response_synthesis_node",
+        }
+
+    def synthesize(self, state: AgentState) -> Dict[str, Any]:
         """Main synthesis orchestrator generating response text and unified UI payload."""
         intent = state.get("intent", "PRODUCT_SEARCH")
         query = state.get("query", "")
@@ -199,41 +223,47 @@ class SynthesisService:
                 for p in retrieved:
                     pid = p.get("product_id")
                     if pid:
-                        cards.append({
-                            "type": "PRODUCT_CARD",
-                            "product_id": pid,
-                            "name": p.get("name"),
-                            "price": p.get("discounted_price", p.get("price")),
-                            "original_price": p.get("original_price"),
-                            "image_url": p.get("image_url", f"/products/{pid}.jpg"),
-                            "badge": p.get("badge", "Catalog Item"),
-                        })
+                        cards.append(
+                            {
+                                "type": "PRODUCT_CARD",
+                                "product_id": pid,
+                                "name": p.get("name"),
+                                "price": p.get("discounted_price", p.get("price")),
+                                "original_price": p.get("original_price"),
+                                "image_url": p.get("image_url", f"/products/{pid}.jpg"),
+                                "badge": p.get("badge", "Catalog Item"),
+                            }
+                        )
             elif details and details.get("product_id"):
-                cards.append({
-                    "type": "PRODUCT_DETAIL_CARD",
-                    "product_id": details.get("product_id"),
-                    "name": details.get("name"),
-                    "price": details.get("discounted_price", details.get("price")),
-                    "original_price": details.get("original_price"),
-                    "image_url": details.get("image_url", f"/products/{details.get('product_id')}.jpg"),
-                    "materials": details.get("materials", []),
-                    "care_instructions": details.get("care_instructions"),
-                    "sizes": details.get("sizes", []),
-                    "stock_status": details.get("stock_status", "IN_STOCK"),
-                })
+                cards.append(
+                    {
+                        "type": "PRODUCT_DETAIL_CARD",
+                        "product_id": details.get("product_id"),
+                        "name": details.get("name"),
+                        "price": details.get("discounted_price", details.get("price")),
+                        "original_price": details.get("original_price"),
+                        "image_url": details.get("image_url", f"/products/{details.get('product_id')}.jpg"),
+                        "materials": details.get("materials", []),
+                        "care_instructions": details.get("care_instructions"),
+                        "sizes": details.get("sizes", []),
+                        "stock_status": details.get("stock_status", "IN_STOCK"),
+                    }
+                )
             elif bundles:
                 for b in bundles:
                     pid = b.get("product_id")
                     if pid:
-                        cards.append({
-                            "type": "BUNDLE_CARD",
-                            "product_id": pid,
-                            "name": b.get("name"),
-                            "price": b.get("price"),
-                            "bundle_price": b.get("bundle_price"),
-                            "discount_pct": b.get("discount_pct", "15% OFF"),
-                            "image_url": b.get("image_url", f"/products/{pid}.jpg"),
-                        })
+                        cards.append(
+                            {
+                                "type": "BUNDLE_CARD",
+                                "product_id": pid,
+                                "name": b.get("name"),
+                                "price": b.get("price"),
+                                "bundle_price": b.get("bundle_price"),
+                                "discount_pct": b.get("discount_pct", "15% OFF"),
+                                "image_url": b.get("image_url", f"/products/{pid}.jpg"),
+                            }
+                        )
 
         default_chips = ["View Cart", "Checkout Now", "Top Deals"]
         existing_chips = list(existing_ui.get("action_chips") or [])
@@ -244,13 +274,15 @@ class SynthesisService:
             for c in cards:
                 pid = c.get("product_id")
                 if pid:
-                    citations.append({
-                        "product_id": pid,
-                        "title": c.get("name", f"Product {pid}"),
-                        "url": f"/shopper/browse/{pid}",
-                        "price": float(c.get("discounted_price") or c.get("bundle_price") or c.get("price") or 0.0),
-                        "badge": c.get("badge") or c.get("discount_pct") or "Deal",
-                    })
+                    citations.append(
+                        {
+                            "product_id": pid,
+                            "title": c.get("name", f"Product {pid}"),
+                            "url": f"/shopper/browse/{pid}",
+                            "price": float(c.get("discounted_price") or c.get("bundle_price") or c.get("price") or 0.0),
+                            "badge": c.get("badge") or c.get("discount_pct") or "Deal",
+                        }
+                    )
 
         final_ui_payload: Dict[str, Any] = {
             "type": ui_type,
@@ -273,6 +305,12 @@ class SynthesisService:
             policy=policy,
         )
 
+        clarification = state.get("clarification")
+        has_content = bool(retrieved or details or bundles or cart or order_status or policy)
+        if clarification and not has_content:
+            # Nothing to ground an answer in: ask the question instead of calling the LLM
+            return self._clarification_only(clarification, intent, final_ui_payload)
+
         llm_text = self.generate_llm_rag(context_block, query)
         final_text = (
             llm_text
@@ -289,6 +327,9 @@ class SynthesisService:
             )
         )
 
+        if clarification:
+            final_text = f"{final_text}\n\n{clarification}"
+
         ai_msg = AIMessage(
             content=final_text,
             additional_kwargs={
@@ -298,12 +339,15 @@ class SynthesisService:
         )
 
         # Cache synthesized response in Tier-0 (6h Redis) and Tier-1 (pgvector Semantic Cache)
-        # Stateful mutations (CART_ACTIONS) must never be cached!
-        if not state.get("is_cache_hit") and query and intent != "CART_ACTIONS":
+        # Personal answers (cart, order tracking) must never be cached!
+        user_id = state.get("user_id")
+        if not state.get("is_cache_hit") and query and user_id and self._is_cacheable(state, intent):
             try:
                 from ai.services.cache_service import cache_service
+
                 cache_service.store_exact_llm_response(
                     raw_query=query,
+                    user_id=user_id,
                     response_message=final_text,
                     ui_payload=final_ui_payload,
                     target_intents=state.get("target_intents") or ([intent] if intent else []),
@@ -315,12 +359,13 @@ class SynthesisService:
                 )
                 cache_service.store_vector_semantic_response(
                     query_text=query,
+                    user_id=user_id,
                     response_text=final_text,
                     ui_payload=final_ui_payload,
                     intent=intent,
                 )
             except Exception as e:
-                logger.debug(f"[SYNTHESIS-SERVICE] Failed to store in cache: {e}")
+                logger.warning(f"[SYNTHESIS-SERVICE] Failed to store in cache: {e}")
 
         return {
             "messages": [ai_msg],

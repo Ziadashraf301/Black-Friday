@@ -1,18 +1,21 @@
-import os
 import json
+import os
+
+from core.config import settings
 from core.db.repository import BlackFridayRepository
+from core.logging import get_logger
 from ml.features.customer_features import CustomerFeatureExtractor
-from ml.segmentation.clustering import CustomerSegmentationEngine, PERSONA_PROFILES
+from ml.pipelines.common import reports_dir
+from ml.segmentation.clustering import PERSONA_PROFILES, CustomerSegmentationEngine
 from ml.tracking.mlflow_tracker import MLflowTracker
 from ml.visualization.visualizer import Visualizer
-from core.config import settings
-from core.logging import get_logger
 
 logger = get_logger(__name__)
 
 
 def run_customer_segmentation():
-    """Extracts customer features, performs Gower hierarchical clustering, logs telemetry to MLflow, and stores persona profiles."""
+    """Extracts customer features, performs Gower hierarchical clustering, logs telemetry to MLflow,
+    and stores persona profiles."""
     repo = BlackFridayRepository()
     tracker = MLflowTracker()
 
@@ -43,7 +46,9 @@ def run_customer_segmentation():
         "k_clusters": float(settings.K_CLUSTERS),
     }
     for persona_name, count in persona_counts.items():
-        clean_key = persona_name.lower().replace(" ", "_").replace("<=", "le").replace(">", "gt").replace("(", "").replace(")", "")
+        clean_key = (
+            persona_name.lower().replace(" ", "_").replace("<=", "le").replace(">", "gt").replace("(", "").replace(")", "")
+        )
         metrics[f"persona_count_{clean_key}"] = float(count)
 
     # Add numeric cluster means to metrics for MLflow tracking
@@ -56,7 +61,7 @@ def run_customer_segmentation():
         if "mean_average_order_value" in row:
             metrics[f"cluster_{cid}_mean_aov"] = float(row["mean_average_order_value"])
 
-    summary_dir = os.path.join(settings.BASE_DIR, "reports", "segmentation")
+    summary_dir = reports_dir("segmentation")
     os.makedirs(summary_dir, exist_ok=True)
     summary_path = os.path.join(summary_dir, "segmentation_summary.json")
 
@@ -69,25 +74,31 @@ def run_customer_segmentation():
     persona_details = []
     for cid, info in PERSONA_PROFILES.items():
         subset = segmented_df[segmented_df["cluster_id"] == cid]
-        persona_details.append({
-            "cluster_id": cid,
-            "persona_name": info["persona"],
-            "recommended_action": info["action"],
-            "customer_count": len(subset),
-            "customer_share": round(len(subset) / max(len(segmented_df), 1), 4)
-        })
+        persona_details.append(
+            {
+                "cluster_id": cid,
+                "persona_name": info["persona"],
+                "recommended_action": info["action"],
+                "customer_count": len(subset),
+                "customer_share": round(len(subset) / max(len(segmented_df), 1), 4),
+            }
+        )
 
     with open(summary_path, "w", encoding="utf-8") as f:
-        json.dump({
-            "params": {
-                "k_clusters": settings.K_CLUSTERS,
-                "clustering_algorithm": "Hierarchical Complete Linkage over Gower Dissimilarity Matrix",
-                "feature_columns": engine.feature_cols
+        json.dump(
+            {
+                "params": {
+                    "k_clusters": settings.K_CLUSTERS,
+                    "clustering_algorithm": "Hierarchical Complete Linkage over Gower Dissimilarity Matrix",
+                    "feature_columns": engine.feature_cols,
+                },
+                "metrics": metrics,
+                "persona_breakdown": persona_details,
+                "cluster_statistics": stats_df.to_dict(orient="records"),
             },
-            "metrics": metrics,
-            "persona_breakdown": persona_details,
-            "cluster_statistics": stats_df.to_dict(orient="records")
-        }, f, indent=2)
+            f,
+            indent=2,
+        )
 
     # 6. Generate Diagnostic Visual Charts (including cluster statistics table chart)
     charts = Visualizer.generate_segmentation_charts(segmented_df, stats_df=stats_df, output_dir=summary_dir)
@@ -96,7 +107,7 @@ def run_customer_segmentation():
         "segmentation_summary": summary_path,
         "cluster_statistics_csv": stats_csv_path,
         "cluster_statistics_json": stats_json_path,
-        **charts
+        **charts,
     }
 
     # 7. Log Run to MLflow
@@ -106,15 +117,15 @@ def run_customer_segmentation():
             "k_clusters": settings.K_CLUSTERS,
             "distance_metric": settings.SEGMENTATION_METRIC,
             "linkage": settings.SEGMENTATION_LINKAGE,
-            "feature_columns": ",".join(engine.feature_cols)
+            "feature_columns": ",".join(engine.feature_cols),
         },
         metrics=metrics,
         tags={
             "pipeline_stage": "customer_segmentation",
             "algorithm": "Gower_Hierarchical_Clustering",
-            "persona_count": str(settings.K_CLUSTERS)
+            "persona_count": str(settings.K_CLUSTERS),
         },
-        artifacts=artifacts
+        artifacts=artifacts,
     )
 
     logger.info(f"Customer segmentation pipeline finished successfully. MLflow Run ID: {run_id}")

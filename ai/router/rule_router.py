@@ -1,17 +1,18 @@
 """
 Deterministic Local Heuristic Router Strategy (Zero-latency CPU fallback).
 """
-from typing import Optional, Dict, Any
-import time
 
-from ai.schemas import RoutingDecision, IntentType, ExtractedEntities
-from ai.router.base import BaseRouterStrategy
+import time
+from typing import Any, Dict, Optional
+
+from ai.classifier.intent_classifier import IntentClassifier
 from ai.extractor.base import BaseEntityExtractor
 from ai.extractor.regex_extractor import RegexEntityExtractor
-from ai.classifier.intent_classifier import IntentClassifier
 from ai.guardrails.base import BaseSafetyFilter
 from ai.guardrails.regex_filter import RegexPreFilter
 from ai.prompts.guardrail_prompts import STANDARD_REFUSAL_MESSAGE
+from ai.router.base import BaseRouterStrategy
+from ai.schemas import ExtractedEntities, IntentType, RoutingDecision
 
 
 class FastRuleRouter(BaseRouterStrategy):
@@ -28,35 +29,54 @@ class FastRuleRouter(BaseRouterStrategy):
         self._extractor = entity_extractor or RegexEntityExtractor()
         self._safety = safety_filter or RegexPreFilter()
 
+    @staticmethod
+    def _blocked(query: str, start_t: float, prob: float, message: Optional[str], metadata: Dict[str, Any]) -> RoutingDecision:
+        """Refusal decision shared by the Tier-0 regex filter and the adversarial intent rule."""
+        return RoutingDecision(
+            query=query,
+            intent=IntentType.ADVERSARIAL_BLOCKED,
+            target_intents=[IntentType.ADVERSARIAL_BLOCKED],
+            confidence=prob,
+            is_safe=False,
+            adversarial_prob=prob,
+            entities=ExtractedEntities(extraction_strategy="none"),
+            steering_response=message or STANDARD_REFUSAL_MESSAGE,
+            strategy_used="FastRuleRouter",
+            prompt_version="local_rules_v1",
+            latency_ms=round((time.perf_counter() - start_t) * 1000, 2),
+            metadata=metadata,
+        )
+
     def route(self, query: str, context: Optional[Dict[str, Any]] = None) -> RoutingDecision:
         start_t = time.perf_counter()
 
         # Step 1: Instant local safety validation via Tier-0 Regex (<0.1ms)
         safety_res = self._safety.evaluate(query)
         if not safety_res.is_safe:
-            latency = (time.perf_counter() - start_t) * 1000
-            return RoutingDecision(
-                query=query,
-                intent=IntentType.ADVERSARIAL_BLOCKED,
-                confidence=safety_res.adversarial_probability,
-                is_safe=False,
-                adversarial_prob=safety_res.adversarial_probability,
-                entities=ExtractedEntities(extraction_strategy="none"),
-                steering_response=safety_res.refusal_message or STANDARD_REFUSAL_MESSAGE,
-                strategy_used="FastRuleRouter",
-                prompt_version="local_rules_v1",
-                latency_ms=round(latency, 2),
+            return self._blocked(
+                query,
+                start_t,
+                prob=safety_res.adversarial_probability,
+                message=safety_res.refusal_message,
                 metadata={"flagged_rules": safety_res.flagged_rules},
             )
 
         # Step 2: Multi-intent classification by rules
         multi_intents = IntentClassifier.classify_multi_by_rules(query)
+        if IntentType.ADVERSARIAL_BLOCKED in multi_intents:
+            return self._blocked(
+                query,
+                start_t,
+                prob=0.90,
+                message=None,
+                metadata={"rule_match": True, "flagged_rules": ["INTENT_RULE_ADVERSARIAL"]},
+            )
         primary_intent = multi_intents[0]
         conf = 0.90 if len(multi_intents) > 1 else 0.85
 
         # Step 3: Entity extraction
         entities = self._extractor.extract(query)
-        
+
         # Partition entities per intent branch
         decomposed_entities: Dict[str, ExtractedEntities] = {}
         for it in multi_intents:

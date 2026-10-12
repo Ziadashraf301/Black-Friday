@@ -1,20 +1,23 @@
+from typing import Any, Dict, List, Optional
+
 import numpy as np
 import pandas as pd
-from typing import Dict, Any, List, Optional
+from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder
-from sklearn.compose import ColumnTransformer
-from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
-from sklearn.ensemble import RandomForestRegressor
-from ml.models.base import AbstractBaseModel
+
 from core.config import settings
 from core.logging import get_logger
+from ml.models.base import AbstractBaseModel
 
 logger = get_logger(__name__)
 
 try:
     from lightgbm import LGBMRegressor
+
     HAS_LIGHTGBM = True
 except ImportError:
     HAS_LIGHTGBM = False
@@ -31,7 +34,7 @@ ALL_FEATURES: List[str] = [
     "product_category_1",
     "product_category_2",
     "product_category_3",
-    "product_id"
+    "product_id",
 ]
 
 NUMERIC_FEATS: List[str] = ["marital_status", "product_category_1", "product_category_2", "product_category_3"]
@@ -43,9 +46,9 @@ def create_tree_preprocessor() -> ColumnTransformer:
     return ColumnTransformer(
         transformers=[
             ("num", "passthrough", NUMERIC_FEATS),
-            ("cat", OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1), CATEGORICAL_FEATS + ["product_id"])
+            ("cat", OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1), CATEGORICAL_FEATS + ["product_id"]),
         ],
-        remainder="drop"
+        remainder="drop",
     )
 
 
@@ -56,17 +59,25 @@ class LinearRegressionModel(AbstractBaseModel):
         self.features = ALL_FEATURES
         self.preprocessor = ColumnTransformer(
             transformers=[
-                ("cat", OneHotEncoder(handle_unknown="ignore", sparse_output=False), [
-                    "gender", "age", "city_category", "stay_in_current_city_years",
-                    "occupation", "marital_status", "product_category_1", "product_category_2", "product_category_3"
-                ])
+                (
+                    "cat",
+                    OneHotEncoder(handle_unknown="ignore", sparse_output=False),
+                    [
+                        "gender",
+                        "age",
+                        "city_category",
+                        "stay_in_current_city_years",
+                        "occupation",
+                        "marital_status",
+                        "product_category_1",
+                        "product_category_2",
+                        "product_category_3",
+                    ],
+                )
             ],
-            remainder="drop"
+            remainder="drop",
         )
-        self.pipeline = Pipeline([
-            ("preprocessor", self.preprocessor),
-            ("regressor", LinearRegression())
-        ])
+        self.pipeline = Pipeline([("preprocessor", self.preprocessor), ("regressor", LinearRegression())])
 
     def fit(self, X: pd.DataFrame, y: pd.Series) -> "LinearRegressionModel":
         logger.info("Fitting Linear Regression model on categorical and product features...")
@@ -87,24 +98,30 @@ class DecisionTreeModel(AbstractBaseModel):
         self,
         max_depth: Optional[int] = settings.DT_MAX_DEPTH,
         min_samples_leaf: int = settings.DT_MIN_SAMPLES_LEAF,
-        random_state: int = settings.RANDOM_SEED
+        random_state: int = settings.RANDOM_SEED,
     ):
         self.features = ALL_FEATURES
         self.max_depth = max_depth if max_depth is not None else 18
         self.min_samples_leaf = min_samples_leaf
         self.random_state = random_state
         self.preprocessor = create_tree_preprocessor()
-        self.pipeline = Pipeline([
-            ("preprocessor", self.preprocessor),
-            ("regressor", DecisionTreeRegressor(
-                max_depth=self.max_depth,
-                min_samples_leaf=self.min_samples_leaf,
-                random_state=self.random_state
-            ))
-        ])
+        self.pipeline = Pipeline(
+            [
+                ("preprocessor", self.preprocessor),
+                (
+                    "regressor",
+                    DecisionTreeRegressor(
+                        max_depth=self.max_depth, min_samples_leaf=self.min_samples_leaf, random_state=self.random_state
+                    ),
+                ),
+            ]
+        )
 
     def fit(self, X: pd.DataFrame, y: pd.Series) -> "DecisionTreeModel":
-        logger.info(f"Fitting Decision Tree Regressor (max_depth={self.max_depth}, min_samples_leaf={self.min_samples_leaf}) on 10 features...")
+        logger.info(
+            f"Fitting Decision Tree Regressor (max_depth={self.max_depth}, "
+            f"min_samples_leaf={self.min_samples_leaf}) on 10 features..."
+        )
         self.pipeline.fit(X[self.features], y)
         return self
 
@@ -117,27 +134,32 @@ class DecisionTreeModel(AbstractBaseModel):
             "features": self.features,
             "max_depth": self.max_depth,
             "min_samples_leaf": self.min_samples_leaf,
-            "random_state": self.random_state
+            "random_state": self.random_state,
         }
 
 
 def _parse_max_features(val: Any) -> Any:
+    """Normalises RF_MAX_FEATURES with sklearn semantics: int = feature count, float in (0, 1] = fraction."""
     if val is None or str(val).lower() in ("none", "null"):
         return 1.0
+    if isinstance(val, str):
+        text = val.strip().lower()
+        if text in ("sqrt", "log2"):
+            return text
+        try:
+            val = int(text)
+        except ValueError:
+            try:
+                val = float(text)
+            except ValueError:
+                return 1.0
     if isinstance(val, int):
-        return val
+        return val if val >= 1 else 1.0
     if isinstance(val, float):
-        return int(val) if val.is_integer() and val >= 1 else val
-    try:
-        f_val = float(val)
-        if 0.0 < f_val <= 1.0:
-            return f_val
-        if f_val.is_integer() and f_val >= 1:
-            return int(f_val)
-    except (ValueError, TypeError):
-        pass
-    if str(val).lower() in ("sqrt", "log2"):
-        return str(val).lower()
+        if 0.0 < val <= 1.0:
+            return val
+        if val.is_integer() and val > 1:
+            return int(val)
     return 1.0
 
 
@@ -151,7 +173,7 @@ class RandomForestModel(AbstractBaseModel):
         max_depth: Optional[int] = settings.RF_MAX_DEPTH,
         min_samples_leaf: int = settings.RF_MIN_SAMPLES_LEAF,
         n_jobs: int = settings.RF_N_JOBS,
-        random_state: int = settings.RANDOM_SEED
+        random_state: int = settings.RANDOM_SEED,
     ):
         self.features = ALL_FEATURES
         self.n_estimators = n_estimators
@@ -161,17 +183,22 @@ class RandomForestModel(AbstractBaseModel):
         self.n_jobs = n_jobs
         self.random_state = random_state
         self.preprocessor = create_tree_preprocessor()
-        self.pipeline = Pipeline([
-            ("preprocessor", self.preprocessor),
-            ("regressor", RandomForestRegressor(
-                n_estimators=self.n_estimators,
-                max_features=self.max_features,
-                max_depth=self.max_depth,
-                min_samples_leaf=self.min_samples_leaf,
-                n_jobs=self.n_jobs,
-                random_state=self.random_state
-            ))
-        ])
+        self.pipeline = Pipeline(
+            [
+                ("preprocessor", self.preprocessor),
+                (
+                    "regressor",
+                    RandomForestRegressor(
+                        n_estimators=self.n_estimators,
+                        max_features=self.max_features,
+                        max_depth=self.max_depth,
+                        min_samples_leaf=self.min_samples_leaf,
+                        n_jobs=self.n_jobs,
+                        random_state=self.random_state,
+                    ),
+                ),
+            ]
+        )
 
     def fit(self, X: pd.DataFrame, y: pd.Series) -> "RandomForestModel":
         logger.info(
@@ -192,7 +219,7 @@ class RandomForestModel(AbstractBaseModel):
             "max_depth": self.max_depth,
             "min_samples_leaf": self.min_samples_leaf,
             "features": self.features,
-            "random_state": self.random_state
+            "random_state": self.random_state,
         }
 
 
@@ -206,9 +233,10 @@ class LightGBMModel(AbstractBaseModel):
         num_leaves: int = settings.LGBM_NUM_LEAVES,
         max_depth: int = settings.LGBM_MAX_DEPTH,
         subsample: float = settings.LGBM_SUBSAMPLE,
+        subsample_freq: int = settings.LGBM_SUBSAMPLE_FREQ,
         colsample_bytree: float = settings.LGBM_COLSAMPLE_BYTREE,
         n_jobs: int = settings.LGBM_N_JOBS,
-        random_state: int = settings.RANDOM_SEED
+        random_state: int = settings.RANDOM_SEED,
     ):
         self.features = ALL_FEATURES
         self.n_estimators = n_estimators
@@ -216,6 +244,7 @@ class LightGBMModel(AbstractBaseModel):
         self.num_leaves = num_leaves
         self.max_depth = max_depth
         self.subsample = subsample
+        self.subsample_freq = subsample_freq
         self.colsample_bytree = colsample_bytree
         self.n_jobs = n_jobs
         self.random_state = random_state
@@ -223,27 +252,36 @@ class LightGBMModel(AbstractBaseModel):
         self.preprocessor = create_tree_preprocessor()
 
         if HAS_LIGHTGBM:
-            self.pipeline = Pipeline([
-                ("preprocessor", self.preprocessor),
-                ("regressor", LGBMRegressor(
-                    n_estimators=self.n_estimators,
-                    learning_rate=self.learning_rate,
-                    num_leaves=self.num_leaves,
-                    max_depth=self.max_depth,
-                    subsample=self.subsample,
-                    colsample_bytree=self.colsample_bytree,
-                    random_state=self.random_state,
-                    n_jobs=self.n_jobs,
-                    verbose=-1
-                ))
-            ])
+            self.pipeline = Pipeline(
+                [
+                    ("preprocessor", self.preprocessor),
+                    (
+                        "regressor",
+                        LGBMRegressor(
+                            n_estimators=self.n_estimators,
+                            learning_rate=self.learning_rate,
+                            num_leaves=self.num_leaves,
+                            max_depth=self.max_depth,
+                            subsample=self.subsample,
+                            subsample_freq=self.subsample_freq,
+                            colsample_bytree=self.colsample_bytree,
+                            random_state=self.random_state,
+                            n_jobs=self.n_jobs,
+                            verbose=-1,
+                        ),
+                    ),
+                ]
+            )
         else:
             self.pipeline = None
 
     def fit(self, X: pd.DataFrame, y: pd.Series) -> "LightGBMModel":
         if not HAS_LIGHTGBM:
             raise RuntimeError("Cannot fit LightGBM: package is not installed.")
-        logger.info(f"Fitting LightGBM Regressor ({self.n_estimators} trees, lr={self.learning_rate}, num_leaves={self.num_leaves}) on 10 features...")
+        logger.info(
+            f"Fitting LightGBM Regressor ({self.n_estimators} trees, lr={self.learning_rate}, "
+            f"num_leaves={self.num_leaves}) on 10 features..."
+        )
         self.pipeline.fit(X[self.features], y)
         return self
 
@@ -260,8 +298,8 @@ class LightGBMModel(AbstractBaseModel):
             "num_leaves": self.num_leaves,
             "max_depth": self.max_depth,
             "subsample": self.subsample,
+            "subsample_freq": self.subsample_freq,
             "colsample_bytree": self.colsample_bytree,
             "features": self.features,
-            "random_state": self.random_state
+            "random_state": self.random_state,
         }
-

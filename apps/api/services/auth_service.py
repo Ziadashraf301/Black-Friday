@@ -1,20 +1,27 @@
 """
 Authentication service — user registration, credential validation, and JWT sessions.
 """
-from typing import Dict, Any
 
+from typing import Any, Dict
+
+from sqlalchemy.exc import IntegrityError
+
+from core.db.repository import BlackFridayRepository
 from core.exceptions import ConflictError, UnauthorizedError
+from core.logging import get_logger
 from core.security import (
+    create_access_token,
+    decode_access_token,
     hash_password,
     verify_password,
     verify_password_with_upgrade,
-    create_access_token,
-    decode_access_token,
 )
-from core.logging import get_logger
-from core.db.repository import BlackFridayRepository
 
 logger = get_logger(__name__)
+
+
+def _normalize_email(email: str) -> str:
+    return email.strip().lower()
 
 
 class AuthService:
@@ -27,19 +34,44 @@ class AuthService:
     decode_token = staticmethod(decode_access_token)
 
     @classmethod
+    def _session_response(cls, user: Dict[str, Any]) -> Dict[str, Any]:
+        """Issues a JWT carrying the shopper profile claims and builds the token response."""
+        token = cls.create_access_token(
+            {
+                "sub": str(user["user_id"]),
+                "name": user["name"],
+                "email": user["email"],
+                "gender": user.get("gender"),
+                "age": user.get("age"),
+                "city_category": user.get("city_category"),
+                "marital_status": user.get("marital_status"),
+                "occupation": user.get("occupation"),
+                "stay_in_current_city_years": user.get("stay_in_current_city_years"),
+            }
+        )
+        return {
+            "access_token": token,
+            "token_type": "bearer",
+            "user_id": user["user_id"],
+            "name": user["name"],
+            "cluster_persona": user.get("cluster_persona", "Preferred Member"),
+        }
+
+    @classmethod
     def register_user(cls, user_data: Dict[str, Any], repo: BlackFridayRepository) -> Dict[str, Any]:
         """Registers a new shopper and generates their session token."""
-        existing = repo.get_user_by_email(user_data["email"])
-        if existing:
-            raise ConflictError(
-                message=f"An account with email '{user_data['email']}' already exists.",
-                code="EMAIL_CONFLICT",
-            )
+        email = _normalize_email(user_data["email"])
+        conflict = ConflictError(
+            message=f"An account with email '{email}' already exists.",
+            code="EMAIL_CONFLICT",
+        )
+        if repo.get_user_by_email(email):
+            raise conflict
 
         pw_hash = cls.hash_password(user_data["password"])
         record = {
             "name": user_data["name"],
-            "email": user_data["email"],
+            "email": email,
             "password_hash": pw_hash,
             "gender": user_data.get("gender", "M"),
             "age": user_data.get("age", "26-35"),
@@ -52,31 +84,21 @@ class AuthService:
             "recommended_action": "Exclusive member promotions",
         }
 
-        user = repo.create_user(record)
-        token = cls.create_access_token({
-            "sub": str(user["user_id"]),
-            "name": user["name"],
-            "email": user["email"],
-            "gender": user.get("gender"),
-            "age": user.get("age"),
-            "city_category": user.get("city_category"),
-            "marital_status": user.get("marital_status"),
-            "occupation": user.get("occupation"),
-            "stay_in_current_city_years": user.get("stay_in_current_city_years"),
-        })
-
-        return {
-            "access_token": token,
-            "token_type": "bearer",
-            "user_id": user["user_id"],
-            "name": user["name"],
-            "cluster_persona": user.get("cluster_persona", "Preferred Member"),
-        }
+        try:
+            user = repo.create_user(record)
+        except IntegrityError:
+            # Concurrent signup with the same email lost the race against the UNIQUE constraint
+            raise conflict
+        return cls._session_response(user)
 
     @classmethod
     def authenticate_user(cls, email: str, password: str, repo: BlackFridayRepository) -> Dict[str, Any]:
         """Validates credentials and returns JWT token."""
-        user = repo.get_user_by_email(email)
+        normalized = _normalize_email(email)
+        # Fall back to the submitted spelling for accounts created before emails were lower-cased
+        user = repo.get_user_by_email(normalized) or (
+            repo.get_user_by_email(email.strip()) if email.strip() != normalized else None
+        )
         if not user:
             raise UnauthorizedError(
                 message="Incorrect email or password.",
@@ -98,25 +120,7 @@ class AuthService:
             except Exception as e:
                 logger.warning(f"Failed to upgrade password hash for user_id={user['user_id']}: {e}")
 
-        token = cls.create_access_token({
-            "sub": str(user["user_id"]),
-            "name": user["name"],
-            "email": user["email"],
-            "gender": user.get("gender"),
-            "age": user.get("age"),
-            "city_category": user.get("city_category"),
-            "marital_status": user.get("marital_status"),
-            "occupation": user.get("occupation"),
-            "stay_in_current_city_years": user.get("stay_in_current_city_years"),
-        })
-
-        return {
-            "access_token": token,
-            "token_type": "bearer",
-            "user_id": user["user_id"],
-            "name": user["name"],
-            "cluster_persona": user.get("cluster_persona", "Preferred Member"),
-        }
+        return cls._session_response(user)
 
 
 auth_service = AuthService()

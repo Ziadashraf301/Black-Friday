@@ -1,9 +1,11 @@
+# flake8: noqa: E501 (long prompt/regex literals)
 """
 Deterministic Response Templating Service (Phase 4).
 Formats structured Markdown assistant responses based on specialist node evidence.
 Decouples template formatting from LLM synthesis orchestration (SRP).
 """
-from typing import Dict, Any, List, Optional
+
+from typing import Any, Dict, List, Optional
 
 
 class ResponseTemplateService:
@@ -28,11 +30,15 @@ class ResponseTemplateService:
         if retrieved:
             rl = retrieved[0].get("relaxation_level", "TIER_1_STRICT")
             if rl == "TIER_2_RELAX_SIZE":
-                response_lines.append(f"We expanded the size filter to show you top-rated Black Friday styles matching **'{query}'**:\n")
+                response_lines.append(
+                    f"We expanded the size filter to show you top-rated Black Friday styles matching **'{query}'**:\n"
+                )
             elif rl == "TIER_3_RELAX_BUDGET":
                 response_lines.append(f"We expanded the price range by up to 25% to find the best deals for **'{query}'**:\n")
             elif rl == "TIER_4_ZERO_DATA_DEALS":
-                response_lines.append(f"We couldn't find exact matches for **'{query}'**, but check out our top-trending Black Friday doorbuster deals!\n")
+                response_lines.append(
+                    f"We couldn't find exact matches for **'{query}'**, but check out our top-trending Black Friday doorbuster deals!\n"
+                )
             else:
                 response_lines.append(f"Here are top-matched Black Friday selections for **'{query}'**:\n")
 
@@ -50,7 +56,9 @@ class ResponseTemplateService:
                 response_lines.append(f"> *{details['tagline']}*\n")
             if details.get("description"):
                 response_lines.append(f"{details['description']}\n")
-            response_lines.append(f"- **Special Price**: ~~${details.get('original_price', 0):.2f}~~ **${details.get('discounted_price', details.get('price', 0)):.2f}**")
+            response_lines.append(
+                f"- **Special Price**: ~~${details.get('original_price', 0):.2f}~~ **${details.get('discounted_price', details.get('price', 0)):.2f}**"
+            )
             response_lines.append(f"- **Materials**: {', '.join(details.get('materials', []))}")
             response_lines.append(f"- **Care**: {details.get('care_instructions')}")
             response_lines.append(f"- **Available Sizes**: {', '.join(details.get('sizes', []))}\n")
@@ -65,7 +73,9 @@ class ResponseTemplateService:
             item_count = cart.get("item_count", 0)
             items = cart.get("items", [])
             if item_count > 0:
-                response_lines.append(f"Your shopping cart has been updated (**{item_count} item{'s' if item_count > 1 else ''}**):\n")
+                response_lines.append(
+                    f"Your shopping cart has been updated (**{item_count} item{'s' if item_count > 1 else ''}**):\n"
+                )
                 for item in items:
                     response_lines.append(
                         f"- **{item.get('name')}** (Size: {item.get('size')}, Qty: {item.get('quantity')}) — **${item.get('total_price', 0):.2f}**"
@@ -76,6 +86,11 @@ class ResponseTemplateService:
                 response_lines.append(f"**Total**: **${cart.get('final_total', 0.0):.2f}**\n")
             else:
                 response_lines.append("Your shopping cart is currently empty.")
+        elif order_status and order_status.get("status") == "Not Found":
+            response_lines.append(
+                "I couldn't find that order on your account. Please check the order number "
+                "(for example ORD-1234) and make sure you are signed in."
+            )
         elif order_status:
             response_lines.append(f"### Order Status: **{order_status.get('order_id')}**\n")
             response_lines.append(f"- **Status**: **{order_status.get('status')}**")

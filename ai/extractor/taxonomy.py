@@ -2,6 +2,7 @@
 Hierarchical Category Taxonomy & Department Mappings.
 Maps fine-grained sub-categories to their parent apparel departments for robust semantic expansion.
 """
+
 from typing import Dict, List
 
 # Hierarchical category mapping: fine-grained category -> parent departments

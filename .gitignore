@@ -35,3 +35,5 @@ Phase1_Implementation_Plan.xlsx
 Phase2_Implementation_Plan.xlsx
 .antigravityignore
 docs/archive/
+# Python bytecode
+*.py[cod]

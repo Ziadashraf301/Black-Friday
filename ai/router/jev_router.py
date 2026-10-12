@@ -3,18 +3,20 @@ Primary Production Strategy: TypeSafe AI Jev System-1 API Router.
 Executes single-pass parallel questions (Noul for safety + Choice for intent)
 delivering calibrated probabilities with zero autoregressive generation hallucination.
 """
-from typing import Optional, Dict, Any, List
-import time
 
-from ai.schemas import RoutingDecision, IntentType, ExtractedEntities
-from ai.router.base import BaseRouterStrategy
-from ai.router.rule_router import FastRuleRouter
+import time
+from typing import Any, Dict, List, Optional
+
+from ai.classifier.intent_classifier import IntentClassifier
 from ai.extractor.base import BaseEntityExtractor
 from ai.extractor.regex_extractor import RegexEntityExtractor
-from ai.classifier.intent_classifier import IntentClassifier
-from ai.prompts.registry import PromptRegistry
-from ai.prompts.guardrail_prompts import STANDARD_REFUSAL_MESSAGE
+from ai.guardrails.regex_filter import RegexPreFilter
 from ai.guardrails.safety_engine import safety_engine
+from ai.prompts.guardrail_prompts import STANDARD_REFUSAL_MESSAGE
+from ai.prompts.registry import PromptRegistry
+from ai.router.base import BaseRouterStrategy
+from ai.router.rule_router import FastRuleRouter
+from ai.schemas import ExtractedEntities, IntentType, RoutingDecision
 from core.config import settings
 from core.logging import get_logger
 
@@ -44,6 +46,7 @@ class JevApiRouter(BaseRouterStrategy):
         if self._api_key:
             try:
                 from typesafe_sdk import TypeSafeClient
+
                 self._client = TypeSafeClient(api_key=self._api_key)
                 logger.info(f"[ROUTER: JEV] TypeSafeClient initialized with prompt version {self._prompt_version}")
             except Exception as e:
@@ -81,7 +84,8 @@ class JevApiRouter(BaseRouterStrategy):
 
         # Step 1: Query Jev System-1 API using versioned prompt spec
         try:
-            from typesafe_sdk import Noul, Choice
+            from typesafe_sdk import Choice, Noul
+
             prompt_spec = PromptRegistry.get(self._prompt_version)
             q_adv = prompt_spec.questions["is_adversarial"]
             q_intent = prompt_spec.questions["intent"]
@@ -101,8 +105,8 @@ class JevApiRouter(BaseRouterStrategy):
             adv_prob = float(response.nouls["is_adversarial"].noul)
             raw_intent = response.choices["intent"].choice if "intent" in response.choices else None
 
-            # Check if Jev flagged query as an adversarial attack
-            if adv_prob >= self._threshold:
+            # Check if Jev flagged query as an adversarial attack (probability or the intent choice itself)
+            if adv_prob >= self._threshold or raw_intent == IntentType.ADVERSARIAL_BLOCKED.value:
                 logger.warning(f"[ROUTER: JEV] Adversarial attack detected (P={adv_prob:.4f})")
                 return RoutingDecision(
                     query=query,
@@ -178,8 +182,12 @@ class JevApiRouter(BaseRouterStrategy):
 
         except Exception as e:
             latency = (time.perf_counter() - start_t) * 1000
-            logger.error(f"[ROUTER: JEV] API call failed: {e}. Falling back to FastRuleRouter.")
-            fallback = FastRuleRouter(entity_extractor=self._extractor).route(query, context)
+            logger.warning(
+                f"[ROUTER: JEV] API call failed ({type(e).__name__}: {e}); falling back to FastRuleRouter with strict rules."
+            )
+            fallback = FastRuleRouter(entity_extractor=self._extractor, safety_filter=RegexPreFilter(strict=True)).route(
+                query, context
+            )
             fallback.strategy_used = "JevApiRouter (Fallback)"
             fallback.latency_ms = round(latency + fallback.latency_ms, 2)
             return fallback

@@ -1,12 +1,15 @@
 """
 Authentication routes — signup, login, and profile.
 """
-from typing import Dict, Any
+
+from typing import Any, Dict
+
 from fastapi import APIRouter, Depends, status
 
-from apps.api.schemas import SignupRequest, LoginRequest, TokenResponse, UserMeResponse
-from apps.api.dependencies import get_repository
 from apps.api.auth import get_current_user
+from apps.api.dependencies import get_repository
+from apps.api.rate_limiting.rate_limiter import auth_rate_limit_dependency
+from apps.api.schemas import LoginRequest, SignupRequest, TokenResponse, UserMeResponse
 from apps.api.services.auth_service import auth_service
 from core.db.repository import BlackFridayRepository
 from core.exceptions import NotFoundError
@@ -14,14 +17,19 @@ from core.exceptions import NotFoundError
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
-@router.post("/signup", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/signup",
+    response_model=TokenResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(auth_rate_limit_dependency)],
+)
 def signup(request: SignupRequest, repo: BlackFridayRepository = Depends(get_repository)):
     """Registers a new shopper and issues a JWT token."""
     res = auth_service.register_user(request.model_dump(), repo)
     return TokenResponse(**res)
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login", response_model=TokenResponse, dependencies=[Depends(auth_rate_limit_dependency)])
 def login(request: LoginRequest, repo: BlackFridayRepository = Depends(get_repository)):
     """Authenticates with email and password, returning a JWT token."""
     res = auth_service.authenticate_user(request.email, request.password, repo)

@@ -2,12 +2,17 @@
 LangGraph State & Tool Schema Definitions (Phase 3).
 Contracts for product search, specs, bundles, cart management, and order support.
 """
-from typing import List, Optional, Dict, Any
+
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, Field
+
+from ai.schemas.identity import GUEST_USER_ID
 
 
 class ProductSearchResult(BaseModel):
     """Unified schema for product search hits returned by search specialists."""
+
     product_id: str
     name: str
     category_name: str
@@ -23,6 +28,7 @@ class ProductSearchResult(BaseModel):
 
 class ProductDetails(BaseModel):
     """Deep product specifications, materials, and care instructions."""
+
     product_id: str
     name: str
     tagline: str
@@ -41,6 +47,7 @@ class ProductDetails(BaseModel):
 
 class BundleItem(BaseModel):
     """Recommended complementary product for market basket cross-selling."""
+
     product_id: str
     name: str
     category_name: str = "Apparel"
@@ -56,6 +63,7 @@ class BundleItem(BaseModel):
 
 class CartItem(BaseModel):
     """Item present in user cart."""
+
     product_id: str
     name: str
     size: str = "M"
@@ -77,7 +85,8 @@ class CartItem(BaseModel):
 
 class CartState(BaseModel):
     """Aggregated cart state with discount computations."""
-    user_id: str = "guest_user"
+
+    user_id: str = GUEST_USER_ID
     session_id: str = "default_session"
     items: List[CartItem] = Field(default_factory=list)
     subtotal: float = 0.0
@@ -100,6 +109,7 @@ class CartState(BaseModel):
 
 class OrderStatus(BaseModel):
     """Order fulfillment status and tracking details."""
+
     order_id: str
     status: str
     carrier: str = "FedEx Priority"
@@ -111,20 +121,9 @@ class OrderStatus(BaseModel):
     return_eligible_until: Optional[str] = None
 
 
-class UserProfile(BaseModel):
-    """Shopper memory profile cached in Redis/Postgres."""
-    user_id: str
-    name: Optional[str] = "Shopper"
-    email: Optional[str] = None
-    preferred_category: Optional[str] = None
-    preferred_size: Optional[str] = None
-    budget_affinity: Optional[str] = None
-    cluster_persona: Optional[str] = None
-    total_lifetime_spend: float = 0.0
-
-
 class AgentResponsePayload(BaseModel):
     """Standardized structured response payload sent to the frontend."""
+
     message: str
     intent: str
     products: List[ProductSearchResult] = Field(default_factory=list)

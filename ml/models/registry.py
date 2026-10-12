@@ -1,13 +1,9 @@
-from typing import Dict, Type, Any, List
-from ml.models.base import AbstractBaseModel
-from ml.models.regression import (
-    LinearRegressionModel,
-    DecisionTreeModel,
-    RandomForestModel,
-    LightGBMModel
-)
+from typing import Any, Dict, List, Type
+
 from core.config import settings
 from core.logging import get_logger
+from ml.models.base import AbstractBaseModel
+from ml.models.regression import DecisionTreeModel, LightGBMModel, LinearRegressionModel, RandomForestModel
 
 logger = get_logger(__name__)
 
@@ -19,15 +15,10 @@ class ModelRegistry:
         "linear_regression": LinearRegressionModel,
         "decision_tree": DecisionTreeModel,
         "random_forest": RandomForestModel,
-        "lightgbm": LightGBMModel
+        "lightgbm": LightGBMModel,
     }
 
-    _ALIAS_MAP: Dict[str, str] = {
-        "lgbm": "lightgbm",
-        "rf": "random_forest",
-        "dt": "decision_tree",
-        "lr": "linear_regression"
-    }
+    _ALIAS_MAP: Dict[str, str] = {"lgbm": "lightgbm", "rf": "random_forest", "dt": "decision_tree", "lr": "linear_regression"}
 
     @classmethod
     def resolve_name(cls, model_name: str) -> str:
@@ -42,7 +33,7 @@ class ModelRegistry:
             return {
                 "max_depth": settings.DT_MAX_DEPTH,
                 "min_samples_leaf": settings.DT_MIN_SAMPLES_LEAF,
-                "random_state": settings.RANDOM_SEED
+                "random_state": settings.RANDOM_SEED,
             }
         elif name == "random_forest":
             return {
@@ -51,7 +42,7 @@ class ModelRegistry:
                 "max_depth": settings.RF_MAX_DEPTH,
                 "min_samples_leaf": settings.RF_MIN_SAMPLES_LEAF,
                 "n_jobs": settings.RF_N_JOBS,
-                "random_state": settings.RANDOM_SEED
+                "random_state": settings.RANDOM_SEED,
             }
         elif name == "lightgbm":
             return {
@@ -60,10 +51,8 @@ class ModelRegistry:
                 "num_leaves": settings.LGBM_NUM_LEAVES,
                 "max_depth": settings.LGBM_MAX_DEPTH,
                 "n_jobs": settings.LGBM_N_JOBS,
-                "random_state": settings.RANDOM_SEED
+                "random_state": settings.RANDOM_SEED,
             }
-        elif name == "linear_regression":
-            return {}
         return {}
 
     @classmethod

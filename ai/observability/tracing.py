@@ -6,22 +6,21 @@ Leverages MLflow GenAI Tracing:
     Guardrail Safety Checks, Progressive Search Relaxation, and Dynamic Bundle Pricing.
   - User & Session Metadata: Propagates mlflow.trace.user and mlflow.trace.session.
 """
-from typing import Optional, Dict, Any, Callable, List
-import time
-import functools
-import os
 
+import functools
+import time
+from typing import Any, Callable, Dict, List
+
+from core.logging import get_logger
 from core.tracking import (
     SpanType,
-    setup_tracking_environment,
-    get_tracking_uri,
-    get_or_create_experiment,
     enable_langchain_autolog,
-    update_current_trace,
+    get_or_create_experiment,
+    get_tracking_uri,
+    setup_tracking_environment,
     trace,
+    update_current_trace,
 )
-from core.config import settings
-from core.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -144,6 +143,7 @@ class AgentTracer:
 
     def trace_span(self, name: str, span_type: str = "AGENT"):
         """Decorator to record custom execution spans with duration."""
+
         def decorator(func: Callable):
             @functools.wraps(func)
             def wrapper(*args, **kwargs):
@@ -151,16 +151,17 @@ class AgentTracer:
                 status = "SUCCESS"
                 try:
                     return func(*args, **kwargs)
-                except Exception as e:
+                except Exception:
                     status = "ERROR"
                     raise
                 finally:
                     duration_ms = (time.perf_counter() - t0) * 1000
                     logger.debug(
-                        f"[TRACE: SPAN] name='{name}', type='{span_type}', "
-                        f"status='{status}', duration={duration_ms:.2f}ms"
+                        f"[TRACE: SPAN] name='{name}', type='{span_type}', " f"status='{status}', duration={duration_ms:.2f}ms"
                     )
+
             return wrapper
+
         return decorator
 
 

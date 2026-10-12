@@ -1,11 +1,14 @@
-import pandas as pd
+from typing import Dict, Tuple
+
 import numpy as np
-from typing import Tuple, Dict, Any
+import pandas as pd
 from sklearn.model_selection import train_test_split
+
 from core.config import settings
 from core.logging import get_logger
 
 logger = get_logger(__name__)
+
 
 class DataPreprocessor:
     """Handles IQR outlier detection, max-scaling, and train-test splits."""
@@ -29,10 +32,15 @@ class DataPreprocessor:
     def tag_outliers(self, df: pd.DataFrame) -> pd.DataFrame:
         """Flags records outside IQR bounds as outliers (identifying predominantly Category 10 orders)."""
         if not self.outlier_bounds:
-            self.compute_outlier_bounds(df["purchase"])
+            raise RuntimeError(
+                "Outlier bounds are not fitted. Call compute_outlier_bounds() on the training split first; "
+                "deriving them from the frame being tagged would leak test data into the bounds."
+            )
 
         result_df = df.copy()
-        is_outlier = (result_df["purchase"] < self.outlier_bounds["lower"]) | (result_df["purchase"] > self.outlier_bounds["upper"])
+        is_outlier = (result_df["purchase"] < self.outlier_bounds["lower"]) | (
+            result_df["purchase"] > self.outlier_bounds["upper"]
+        )
         result_df["is_outlier"] = is_outlier
         outlier_count = is_outlier.sum()
         logger.info(f"Tagged {outlier_count} outliers ({outlier_count / len(df) * 100:.2f}% of data).")

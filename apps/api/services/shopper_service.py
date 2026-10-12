@@ -1,28 +1,26 @@
 """
 Shopper service — product catalog, browsing with smart recommendations, price quotes, and purchase management.
 """
+
 import json
-import re
+from typing import Any, Dict, List, Optional
+
 import pandas as pd
-import numpy as np
-from typing import Dict, Any, List, Optional
 
-from core.exceptions import AppException, NotFoundError, ValidationError
-
-from core.db.repository import BlackFridayRepository
-from apps.api.services.model_service import model_service
 from apps.api.services.helpers import (
-    parse_recommendation_ids,
-    make_price_cache_key,
-    resolve_item_demographics,
     calculate_member_discount_price,
+    make_price_cache_key,
+    parse_recommendation_ids,
+    resolve_item_demographics,
 )
+from apps.api.services.model_service import model_service
 from core.cache import cache_manager
 from core.config import settings
+from core.db.repository import BlackFridayRepository
+from core.exceptions import AppException, DomainError, NotFoundError, ValidationError
 from core.logging import get_logger
 
 logger = get_logger(__name__)
-
 
 
 class ShopperService:
@@ -87,8 +85,14 @@ class ShopperService:
                     "pagerank_score": 0.0,
                     "hub_score": None,
                     "authority_score": None,
-                    "top_associated_product": match["apriori_bundles"][0]["product_id"] if match.get("apriori_bundles") else None,
-                    "highest_lift_rule": float(match["apriori_bundles"][0]["lift"]) if match.get("apriori_bundles") and match["apriori_bundles"][0].get("lift") else None,
+                    "top_associated_product": (
+                        match["apriori_bundles"][0]["product_id"] if match.get("apriori_bundles") else None
+                    ),
+                    "highest_lift_rule": (
+                        float(match["apriori_bundles"][0]["lift"])
+                        if match.get("apriori_bundles") and match["apriori_bundles"][0].get("lift")
+                        else None
+                    ),
                     "apriori_bundles": [b["product_id"] for b in match.get("apriori_bundles", [])],
                     "item2vec_similar": [s["product_id"] for s in match.get("item2vec_similars", [])],
                 }
@@ -180,19 +184,21 @@ class ShopperService:
 
             ckey = make_price_cache_key(product_id, gender, age, occ, city, stay, mar)
             item_keys.append(ckey)
-            item_metas.append({
-                "product_id": product_id,
-                "cat1": cat1,
-                "cat2": cat2,
-                "cat3": cat3,
-                "gender": gender,
-                "age": age,
-                "occupation": occ,
-                "city_category": city,
-                "stay_in_current_city_years": stay,
-                "marital_status": mar,
-                "cache_key": ckey,
-            })
+            item_metas.append(
+                {
+                    "product_id": product_id,
+                    "cat1": cat1,
+                    "cat2": cat2,
+                    "cat3": cat3,
+                    "gender": gender,
+                    "age": age,
+                    "occupation": occ,
+                    "city_category": city,
+                    "stay_in_current_city_years": stay,
+                    "marital_status": mar,
+                    "cache_key": ckey,
+                }
+            )
 
         # 2. Multi-GET from Redis for all items in single network call
         cached_results = cache_manager.mget_json(item_keys)
@@ -210,18 +216,20 @@ class ShopperService:
             matrix_rows = []
             for idx in uncached_indices:
                 meta = item_metas[idx]
-                matrix_rows.append({
-                    "gender": str(meta["gender"] or "M"),
-                    "age": str(meta["age"] or "26-35"),
-                    "occupation": int(meta["occupation"] if meta["occupation"] is not None else 4),
-                    "city_category": str(meta["city_category"] or "A"),
-                    "stay_in_current_city_years": str(meta["stay_in_current_city_years"] or "1"),
-                    "marital_status": int(meta["marital_status"] if meta["marital_status"] is not None else 0),
-                    "product_category_1": int(meta["cat1"]),
-                    "product_category_2": meta["cat2"],
-                    "product_category_3": meta["cat3"],
-                    "product_id": str(meta["product_id"]),
-                })
+                matrix_rows.append(
+                    {
+                        "gender": str(meta["gender"] or "M"),
+                        "age": str(meta["age"] or "26-35"),
+                        "occupation": int(meta["occupation"] if meta["occupation"] is not None else 4),
+                        "city_category": str(meta["city_category"] or "A"),
+                        "stay_in_current_city_years": str(meta["stay_in_current_city_years"] or "1"),
+                        "marital_status": int(meta["marital_status"] if meta["marital_status"] is not None else 0),
+                        "product_category_1": int(meta["cat1"]),
+                        "product_category_2": meta["cat2"],
+                        "product_category_3": meta["cat3"],
+                        "product_id": str(meta["product_id"]),
+                    }
+                )
 
             matrix_df = pd.DataFrame(matrix_rows)
 
@@ -251,7 +259,8 @@ class ShopperService:
             if new_cache_entries:
                 cache_manager.mset_json(new_cache_entries, ttl=settings.REDIS_DEFAULT_TTL)
 
-        return [q for q in final_quotes if q is not None]
+        # Every slot is filled above (cache hit or fresh prediction), so quotes stay aligned with `items`.
+        return final_quotes
 
     @staticmethod
     def estimate_price(
@@ -288,7 +297,9 @@ class ShopperService:
             else:
                 cat1 = 1
 
-        cache_key = make_price_cache_key(product_id, gender, age, occupation, city_category, stay_in_current_city_years, marital_status)
+        cache_key = make_price_cache_key(
+            product_id, gender, age, occupation, city_category, stay_in_current_city_years, marital_status
+        )
         cached = cache_manager.get_json(cache_key)
         if cached:
             return cached
@@ -306,14 +317,21 @@ class ShopperService:
                 stay_in_current_city_years=stay_in_current_city_years,
                 marital_status=marital_status,
             )
-        except ValueError as val_err:
+        except DomainError as domain_err:
             raise ValidationError(
-                message=f"Price Prediction Failed: {val_err}",
+                message=f"Price Prediction Failed: {domain_err.message}",
                 code="PRICE_PREDICTION_FAILED",
             )
-        except RuntimeError as run_err:
+        except ValueError:
+            logger.warning(f"Price prediction rejected input for product '{product_id}'", exc_info=True)
+            raise ValidationError(
+                message="Price Prediction Failed: invalid request features.",
+                code="PRICE_PREDICTION_FAILED",
+            )
+        except RuntimeError:
+            logger.error(f"Inference failure for product '{product_id}'", exc_info=True)
             raise AppException(
-                message=f"Inference Service Failure: {run_err}",
+                message="Inference service is currently unavailable.",
                 code="INFERENCE_FAILURE",
             )
 
@@ -365,15 +383,17 @@ class ShopperService:
             marital_status=marital_status,
         )
 
-        record = repo.record_purchase({
-            "user_id": user_id,
-            "product_id": product_id,
-            "product_category_1": cat1 or 1,
-            "product_category_2": cat2,
-            "product_category_3": cat3,
-            "predicted_usd": quote["predicted_usd"],
-            "model_used": quote["model_used"],
-        })
+        record = repo.record_purchase(
+            {
+                "user_id": user_id,
+                "product_id": product_id,
+                "product_category_1": cat1 or 1,
+                "product_category_2": cat2,
+                "product_category_3": cat3,
+                "predicted_usd": quote["predicted_usd"],
+                "model_used": quote["model_used"],
+            }
+        )
 
         return {
             "id": record["id"],
@@ -417,13 +437,13 @@ class ShopperService:
             user_demographics=user_demographics,
         )
 
-        quote_map = {q["product_id"]: q for q in quotes}
+        if len(quotes) != len(items):
+            raise ValidationError(message="Unable to price all cart items", code="PRICING_UNAVAILABLE")
 
         # 3. Assemble all purchase unit records
         records_to_insert = []
-        for it in items:
+        for it, quote in zip(items, quotes):
             pid = it["product_id"]
-            quote = quote_map.get(pid)
             if not quote:
                 raise ValidationError(
                     message=f"Unable to price product '{pid}'",
@@ -435,15 +455,17 @@ class ShopperService:
             cat3 = it.get("product_category_3")
 
             for _ in range(qty):
-                records_to_insert.append({
-                    "user_id": user_id,
-                    "product_id": pid,
-                    "product_category_1": cat1 or 1,
-                    "product_category_2": cat2,
-                    "product_category_3": cat3,
-                    "predicted_usd": quote["predicted_usd"],
-                    "model_used": quote["model_used"],
-                })
+                records_to_insert.append(
+                    {
+                        "user_id": user_id,
+                        "product_id": pid,
+                        "product_category_1": cat1 or 1,
+                        "product_category_2": cat2,
+                        "product_category_3": cat3,
+                        "predicted_usd": quote["predicted_usd"],
+                        "model_used": quote["model_used"],
+                    }
+                )
 
         # 4. Insert all records in ONE atomic transaction
         records = repo.record_purchases_batch(records_to_insert)
@@ -463,9 +485,7 @@ class ShopperService:
     def get_purchase_history(user_id: int, repo: BlackFridayRepository) -> Dict[str, Any]:
         """Fetches live purchase history. Uncached transaction path."""
         purchases = repo.get_user_purchase_history(user_id)
-        serialized = [
-            {**p, "purchased_at": str(p["purchased_at"])} for p in purchases
-        ]
+        serialized = [{**p, "purchased_at": str(p["purchased_at"])} for p in purchases]
         return {
             "user_id": user_id,
             "total_purchases": len(serialized),

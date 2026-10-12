@@ -6,28 +6,30 @@ Provides dual-mode interaction:
   2. WebSocket /bot/live-ws: Full-duplex continuous live Gemini Multimodal Voice-to-Voice streaming
      with live audio exchange, synchronized product card pushes, and interruption handling.
 """
-import re
-from typing import Optional, Dict, Any, List, AsyncGenerator
-import json
+
 import asyncio
-import base64
-from pydantic import BaseModel
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, Depends, Request
+import json
+import re
+from typing import Any, AsyncGenerator, Dict, Iterator, List, Optional
+
+from fastapi import APIRouter, Depends, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
 from langchain_core.messages import HumanMessage
+from pydantic import BaseModel, Field
 
+from ai.guardrails.strike_tracker import strike_tracker
+from ai.services.cache_service import cache_service
 from ai.workflow.graph import shopping_graph
 from ai.workflow.state import AgentState
-from ai.services.cache_service import cache_service
-from ai.guardrails.strike_tracker import strike_tracker
+from apps.api.client_identity import DEFAULT_SESSION_ID, bot_user_id, guest_user_id, sanitize_session_id
 from apps.api.rate_limiting.rate_limiter import rate_limit_client_dependency
-from core.config import settings
 from core.logging import get_logger
 
 logger = get_logger(__name__)
 
 router = APIRouter(prefix="/bot", tags=["Conversational AI Assistant"])
 
+SESSION_ID_PATTERN = r"^[A-Za-z0-9_.:-]+$"
 TOKEN_STREAM_REGEX = re.compile(r"\S+\s*|\s+")
 
 
@@ -58,53 +60,79 @@ def extract_grounding_citations(ui_payload: Dict[str, Any]) -> List[Dict[str, An
         for p in ui_data.get("products", []):
             pid = p.get("product_id")
             if pid:
-                citations.append({
-                    "product_id": pid,
-                    "title": p.get("name", f"Product {pid}"),
-                    "url": f"/shopper/browse/{pid}",
-                    "price": p.get("discounted_price", 0.0),
-                    "badge": p.get("badge", "Deal"),
-                })
+                citations.append(
+                    {
+                        "product_id": pid,
+                        "title": p.get("name", f"Product {pid}"),
+                        "url": f"/shopper/browse/{pid}",
+                        "price": p.get("discounted_price", 0.0),
+                        "badge": p.get("badge", "Deal"),
+                    }
+                )
     elif ui_type == "product_detail_modal":
         prod = ui_data.get("product", {})
         pid = prod.get("product_id")
         if pid:
-            citations.append({
-                "product_id": pid,
-                "title": prod.get("name", f"Product {pid}"),
-                "url": f"/shopper/browse/{pid}",
-                "price": prod.get("discounted_price", 0.0),
-                "badge": prod.get("badge", "Spec"),
-            })
+            citations.append(
+                {
+                    "product_id": pid,
+                    "title": prod.get("name", f"Product {pid}"),
+                    "url": f"/shopper/browse/{pid}",
+                    "price": prod.get("discounted_price", 0.0),
+                    "badge": prod.get("badge", "Spec"),
+                }
+            )
     elif ui_type == "bundle_card":
         for b in ui_data.get("bundles", []):
             pid = b.get("product_id")
             if pid:
-                citations.append({
-                    "product_id": pid,
-                    "title": b.get("name", f"Product {pid}"),
-                    "url": f"/shopper/browse/{pid}",
-                    "price": b.get("price", 0.0),
-                    "badge": f"{b.get('savings_pct', 15.0):.0f}% Off Bundle",
-                })
+                citations.append(
+                    {
+                        "product_id": pid,
+                        "title": b.get("name", f"Product {pid}"),
+                        "url": f"/shopper/browse/{pid}",
+                        "price": b.get("price", 0.0),
+                        "badge": f"{b.get('savings_pct', 15.0):.0f}% Off Bundle",
+                    }
+                )
     elif ui_type == "multi_card" or "cards" in ui_payload:
         cards = ui_payload.get("cards", [])
         for c in cards:
             pid = c.get("product_id")
             if pid:
-                citations.append({
-                    "product_id": pid,
-                    "title": c.get("name", f"Product {pid}"),
-                    "url": f"/shopper/browse/{pid}",
-                    "price": c.get("price", c.get("discounted_price", 0.0)),
-                    "badge": c.get("badge", "Featured"),
-                })
+                citations.append(
+                    {
+                        "product_id": pid,
+                        "title": c.get("name", f"Product {pid}"),
+                        "url": f"/shopper/browse/{pid}",
+                        "price": c.get("price", c.get("discounted_price", 0.0)),
+                        "badge": c.get("badge", "Featured"),
+                    }
+                )
     return citations
 
 
 # =============================================================================
 # Mode 1: Server-Sent Events (SSE) Text-to-Text Streaming
 # =============================================================================
+def _sse_frames(
+    text: str, ui_payload: Dict[str, Any], citations: List[Dict[str, Any]], done_extra: Dict[str, Any]
+) -> Iterator[str]:
+    """Yields SSE frames: text tokens, synchronized UI card, grounding citations, then the done markers."""
+
+    def frame(event: Dict[str, Any]) -> str:
+        return "data: " + json.dumps(event) + "\n\n"
+
+    for token in tokenize_for_stream(text):
+        yield frame({"type": "token", "content": token})
+    if ui_payload:
+        yield frame({"type": "ui_card", "payload": ui_payload})
+    if citations:
+        yield frame({"type": "grounding", "citations": citations})
+    yield frame({"type": "done", **done_extra})
+    yield "data: [DONE]\n\n"
+
+
 async def sse_response_generator(
     query: str,
     user_id: str,
@@ -113,24 +141,15 @@ async def sse_response_generator(
     """Generates SSE token stream with synchronized UI card and website grounding."""
 
     # 1. Tier-0: 6-Hour Exact Response Cache Check (<1ms)
-    cached = cache_service.get_exact_llm_response(raw_query=query)
+    cached = cache_service.get_exact_llm_response(raw_query=query, user_id=user_id)
     if cached:
         logger.info(f"[SSE: STREAM] Fast-path Tier-0 cache hit for query='{query[:40]}'")
         response_text = cached.get("response_message", "")
         ui_payload = cached.get("ui_payload", {})
         citations = extract_grounding_citations(ui_payload)
 
-        # Stream cached tokens in fast pulses
-        for token in tokenize_for_stream(response_text):
-            yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
-
-        if ui_payload:
-            yield f"data: {json.dumps({'type': 'ui_card', 'payload': ui_payload})}\n\n"
-        if citations:
-            yield f"data: {json.dumps({'type': 'grounding', 'citations': citations})}\n\n"
-
-        yield f"data: {json.dumps({'type': 'done', 'cache_tier': 'TIER_0_HARD_6H'})}\n\n"
-        yield "data: [DONE]\n\n"
+        for frame in _sse_frames(response_text, ui_payload, citations, {"cache_tier": "TIER_0_HARD_6H"}):
+            yield frame
         return
 
     # 2. Invoke LangGraph Multi-Agent Shopping Graph
@@ -151,26 +170,30 @@ async def sse_response_generator(
     ui_payload = result.get("ui_payload") or {}
     citations = extract_grounding_citations(ui_payload)
 
-    # Stream generated tokens
-    for token in tokenize_for_stream(final_text):
-        yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
+    done_extra = {"cache_tier": "NONE", "relaxation_level": result.get("relaxation_level", "TIER_1_STRICT")}
+    for frame in _sse_frames(final_text, ui_payload, citations, done_extra):
+        yield frame
 
-    # Yield Synchronized UI Card
-    if ui_payload:
-        yield f"data: {json.dumps({'type': 'ui_card', 'payload': ui_payload})}\n\n"
 
-    # Yield Website Grounding Citations
-    if citations:
-        yield f"data: {json.dumps({'type': 'grounding', 'citations': citations})}\n\n"
+SSE_HEADERS = {
+    "Cache-Control": "no-cache",
+    "Connection": "keep-alive",
+    "X-Accel-Buffering": "no",
+}
 
-    yield f"data: {json.dumps({'type': 'done', 'cache_tier': 'NONE', 'relaxation_level': result.get('relaxation_level', 'TIER_1_STRICT')})}\n\n"
-    yield "data: [DONE]\n\n"
+
+def _sse_response(query: str, user_id: str, session_id: str) -> StreamingResponse:
+    return StreamingResponse(
+        sse_response_generator(query=query, user_id=user_id, session_id=session_id),
+        media_type="text/event-stream",
+        headers=SSE_HEADERS,
+    )
 
 
 class BotStreamRequest(BaseModel):
     query: str
-    user_id: str = "guest_user"
-    session_id: str = "default_session"
+    user_id: Optional[str] = None  # Deprecated and ignored: identity comes from the Bearer JWT
+    session_id: str = Field(DEFAULT_SESSION_ID, pattern=SESSION_ID_PATTERN, max_length=64)
     mode: str = "text"
 
 
@@ -180,23 +203,16 @@ class BotStreamRequest(BaseModel):
     dependencies=[Depends(rate_limit_client_dependency)],
 )
 async def bot_stream_get_endpoint(
+    request: Request,
     query: str = Query(..., description="User search or conversational inquiry"),
-    user_id: str = Query("guest_user", description="Shopper identifier"),
-    session_id: str = Query("default_session", description="Session identifier"),
+    session_id: str = Query(DEFAULT_SESSION_ID, pattern=SESSION_ID_PATTERN, max_length=64, description="Session identifier"),
 ):
     """
     Server-Sent Events endpoint streaming token-by-token responses,
     synchronized product cards, and website catalog citations via GET.
     """
-    return StreamingResponse(
-        sse_response_generator(query=query, user_id=user_id, session_id=session_id),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",
-        },
-    )
+    user_id = bot_user_id(request, session_id)
+    return _sse_response(query, user_id, session_id)
 
 
 @router.post(
@@ -204,21 +220,13 @@ async def bot_stream_get_endpoint(
     summary="Text-to-Text SSE Stream with Product Cards (POST)",
     dependencies=[Depends(rate_limit_client_dependency)],
 )
-async def bot_stream_post_endpoint(payload: BotStreamRequest):
+async def bot_stream_post_endpoint(request: Request, payload: BotStreamRequest):
     """
     Server-Sent Events endpoint streaming token-by-token responses,
     synchronized product cards, and website catalog citations via POST.
     """
-    return StreamingResponse(
-        sse_response_generator(query=payload.query, user_id=payload.user_id, session_id=payload.session_id),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",
-        },
-    )
-
+    user_id = bot_user_id(request, payload.session_id)
+    return _sse_response(payload.query, user_id, payload.session_id)
 
 
 # =============================================================================
@@ -247,6 +255,7 @@ async def bot_live_websocket(websocket: WebSocket):
     if token:
         try:
             from core.security import decode_access_token
+
             payload = decode_access_token(token)
             if payload.get("sub"):
                 auth_user_id = str(payload.get("sub"))
@@ -263,9 +272,6 @@ async def bot_live_websocket(websocket: WebSocket):
     logger.info(f"[WS: LIVE] Accepted live voice connection from {client_ip} (user={auth_user_id})")
 
     try:
-        api_key = getattr(settings, "GEMINI_API_KEY", None)
-        live_supported = bool(api_key and api_key != "test_api_key_placeholder")
-
         while True:
             # Receive frame from client (JSON or text or binary)
             message = await websocket.receive()
@@ -277,6 +283,9 @@ async def bot_live_websocket(websocket: WebSocket):
                 try:
                     data = json.loads(message["text"])
                 except Exception:
+                    data = None
+                if not isinstance(data, dict):
+                    # Plain text or a non-object JSON frame (list/number/string) is treated as a raw query
                     data = {"type": "text", "query": message["text"]}
             elif "bytes" in message:
                 data = {"type": "audio", "bytes": message["bytes"]}
@@ -294,15 +303,18 @@ async def bot_live_websocket(websocket: WebSocket):
 
             # Process User Query (from voice transcription or text)
             query_text = data.get("query") or data.get("text") or ""
-            user_id = data.get("user_id", "guest_voice_shopper")
-            session_id = data.get("session_id", "live_session")
+            session_id = sanitize_session_id(data.get("session_id", "live_session"))
+            # client-supplied user_id is ignored; guests get a per-(address, session) id
+            user_id = auth_user_id or guest_user_id(client_ip, session_id)
 
             if user_id and strike_tracker.is_banned(str(user_id)):
-                await websocket.send_json({
-                    "type": "error",
-                    "error_code": "SECURITY_STRIKE_LOCKOUT",
-                    "message": "Access revoked due to repeated security policy violations. Lockout expires in 24 hours.",
-                })
+                await websocket.send_json(
+                    {
+                        "type": "error",
+                        "error_code": "SECURITY_STRIKE_LOCKOUT",
+                        "message": "Access revoked due to repeated security policy violations. Lockout expires in 24 hours.",
+                    }
+                )
                 await websocket.close(code=1008)
                 return
 
@@ -333,29 +345,33 @@ async def bot_live_websocket(websocket: WebSocket):
 
             # 1. Push Synchronized UI Card FIRST so shopper's screen updates immediately
             if ui_payload:
-                await websocket.send_json({
-                    "type": "ui_card",
-                    "payload": ui_payload,
-                    "citations": citations,
-                })
+                await websocket.send_json(
+                    {
+                        "type": "ui_card",
+                        "payload": ui_payload,
+                        "citations": citations,
+                    }
+                )
 
             # 2. Stream Voice Audio Chunks / Tokens
             # When Gemini Live is connected, audio bytes stream directly;
             # here we send audio packet metadata and speech text frames
-            await websocket.send_json({
-                "type": "voice_response",
-                "text": final_text,
-                "sample_rate": 24000,
-                "audio_format": "pcm_16bit",
-                "done": True,
-            })
+            await websocket.send_json(
+                {
+                    "type": "voice_response",
+                    "text": final_text,
+                    "sample_rate": 24000,
+                    "audio_format": "pcm_16bit",
+                    "done": True,
+                }
+            )
 
     except WebSocketDisconnect:
         logger.info(f"[WS: LIVE] Client disconnected: {client_ip}")
     except Exception as e:
-        logger.error(f"[WS: LIVE] Error in live voice session: {e}")
+        logger.error(f"[WS: LIVE] Error in live voice session: {e}", exc_info=True)
         try:
-            await websocket.send_json({"type": "error", "message": str(e)})
+            await websocket.send_json({"type": "error", "message": "Live session failed. Please try again."})
         except Exception:
             pass
 

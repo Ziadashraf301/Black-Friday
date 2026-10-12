@@ -4,13 +4,16 @@ Decoupled orchestrator following SOLID principles:
 - Uses BlackFridayRepository for data persistence (Repository Pattern)
 - Uses core.ai.embedding_service for vector generation (Strategy & Dependency Injection)
 """
+
 import json
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
+
 from core.config import settings
 from core.db.repository import BlackFridayRepository
-from core.embeddings import embedding_service, EmbeddingService
+from core.embeddings import EmbeddingService, embedding_service
 from core.logging import get_logger
+from ml.pipelines.common import invalidate_caches
 
 logger = get_logger(__name__)
 
@@ -42,13 +45,7 @@ class CuratedCatalogSeeder:
         self.repo.seed_curated_products(products)
         logger.info(f"Seeded {len(products)} products into warehouse.")
 
-        try:
-            from core.cache import cache_manager
-            cache_manager.delete_pattern("analytics:*")
-            cache_manager.delete_pattern("shopper:*")
-            logger.info("Invalidated analytics and shopper catalog cache entries.")
-        except Exception as e:
-            logger.warning(f"Cache invalidation warning: {e}")
+        invalidate_caches("analytics:*", "shopper:*")
 
         # 2. Incremental vector embedding skip logic
         if force_reembed:
@@ -61,18 +58,26 @@ class CuratedCatalogSeeder:
 
         logger.info(f"Incremental embeddings: {len(items_to_embed)} items to embed, {skipped_count} skipped.")
         if items_to_embed:
-            logger.info(f"[CATALOG INGESTION] Embedding {len(items_to_embed)} items via Strategy: {self.embedder.provider_name} (dim={self.embedder.provider.dimension})")
+            logger.info(
+                f"[CATALOG INGESTION] Embedding {len(items_to_embed)} items via Strategy: {self.embedder.provider_name} "
+                f"(dim={self.embedder.provider.dimension})"
+            )
 
         for item in items_to_embed:
             pid = item["product_id"]
-            context = " ".join(filter(None, [
-                item.get("name"),
-                item.get("tagline"),
-                item.get("description"),
-                item.get("category_name"),
-                item.get("style"),
-                item.get("brand"),
-            ]))
+            context = " ".join(
+                filter(
+                    None,
+                    [
+                        item.get("name"),
+                        item.get("tagline"),
+                        item.get("description"),
+                        item.get("category_name"),
+                        item.get("style"),
+                        item.get("brand"),
+                    ],
+                )
+            )
             vector = self.embedder.generate_embedding(context)
             self.repo.update_product_embedding(pid, vector, context)
             embedded_count += 1
@@ -91,4 +96,3 @@ def run_seed_curated_catalog(force_reembed: bool = False) -> Dict[str, Any]:
 
 if __name__ == "__main__":
     run_seed_curated_catalog(force_reembed=False)
-

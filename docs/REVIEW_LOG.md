@@ -1,0 +1,417 @@
+# Code Review Log — Round 1
+
+Branch: `review/round-1` · Plan: [REVIEW_PLAN.md](REVIEW_PLAN.md)
+
+Severity: high / medium / low · Status: open / fixed / deferred / won't fix
+
+## Summary
+
+Round 1 closed on 2026-10-12, branch `review/round-1`. 105 findings over 10 areas: **100 fixed, 5 deferred**, none open and none "won't fix".
+
+### Findings by area and severity
+
+| Area | high | medium | low | not rated in the table | fixed | deferred |
+|---|---|---|---|---|---|---|
+| Core (CORE-1..16) | 0 | 4 | 12 | 0 | 15 | 1 (CORE-16) |
+| Security (SEC-1..9) | 1 | 4 | 3 | 1 (SEC-8) | 8 | 1 (SEC-9) |
+| API (API-1..8) | 0 | 0 | 0 | 8 | 8 | 0 |
+| AI (AI-1..14, UI-4) | 2 | 7 | 6 | 0 | 15 | 0 |
+| Frontend (UI-1..3, 5..7) | 0 | 4 | 2 | 0 | 6 | 0 |
+| ML serving / models (SRV-1..6) | 0 | 2 | 4 | 0 | 6 | 0 |
+| ML pipelines / features (PIPE-1..14) | 0 | 6 | 8 | 0 | 13 | 1 (PIPE-13) |
+| ML analytics (ANL-1..11) | 0 | 2 | 9 | 0 | 10 | 1 (ANL-9) |
+| Infra (INF-1..20) | 1 | 6 | 13 | 0 | 19 | 1 (INF-12) |
+| **Total** | **4** | **35** | **57** | **9** | **100** | **5** |
+
+(Severity was missing from the log rows for API-1..8 and SEC-8; they were not rated after the fact.) All 4 high findings (SEC-1, AI-2, AI-6, INF-2) are fixed. Per the runbook only high/medium bugs were fixed by default; many low findings were fixed too, with the user's approval.
+
+### Tests, before and after
+
+| | Baseline (step 0) | Now |
+|---|---|---|
+| Collected | 531 | 530 (1 exact duplicate removed) |
+| Whole-suite run | unusable on Windows: `test_api.py` hung, so the run needed `--deselect` and took about 8 min | `make test-unit` 254 passed in 44s; `make test-slow` 124 passed in 3m25s |
+| Integration (27 files, run one by one) | part of the flat suite | 112 passed |
+| E2E (6 files, run one by one) | part of the flat suite | 40 passed |
+| Failures | hang (CORE-1), circular import (AI-1), stale rate-limit test, stale bot timeout test | none: 254 + 124 + 112 + 40 = 530, all passing |
+
+Final-run fix: `tests/unit/conftest.py` now sets `MLFLOW_HTTP_REQUEST_MAX_RETRIES=0`. With the MLflow server up, the unit network guard refused the connection and MLflow retried with backoff for over 60s, so `test_node_logging.py::test_specialist_node_execution_logs_through_core_logger` timed out (it also broke `make test-unit`). It now fails fast and passes (3 tests in 19s).
+
+### Lint, before and after
+
+| Check | Baseline | Now |
+|---|---|---|
+| flake8 (ai, apps, core, evaluation, ml, tests) | 494 violations | 258 (97 outside `tests/`, was 337) |
+| black | 205 of 228 files would be reformatted (default line length 88) | 93 of 272 files (config: line length 127) |
+| isort | 203 files | 45 files |
+| `make lint-ci` (`ai/ core/`, what CI runs) | no lint in CI | fails locally with black 26.10: 7 files, all formatted with black 25.x. CI pins `black>=25.1,<26` (INF-14), so run `pip install -r requirements-dev.txt` first. |
+
+Lint was never clean repo-wide. It is now enforced for `ai/` and `core/` only.
+
+## Round-2 items (from the deferred findings and the notes in this log)
+
+Deferred findings:
+1. **CORE-16** (low): make the ORM the real schema (missing `CustomerSegment` columns, a `semantic_query_cache` model, JSONB, NUMERIC) and migrate with Alembic.
+2. **SEC-9** (low): `X-Forwarded-For` / trusted-proxy handling, so rate limits and bans work behind a reverse proxy.
+3. **PIPE-13** (low): `frequency` counts distinct products, not purchases. Fixing it changes clusters and personas, so retrain and re-check them.
+4. **ANL-9** (medium): Item2Vec `window=5` over baskets in arbitrary order; use the whole basket as the window. Changes embeddings, recommendations and the graph.
+5. **INF-12** (low): run the API and UI containers as non-root (needs a decision on bind-mount ownership).
+
+Not deferred in the table, but left undone in the notes:
+6. Repo-wide `black`/`isort`/flake8 pass (`apps/`, `ml/`, `evaluation/`, `tests/`), then widen `LINT_CLEAN_PATHS`.
+7. Lock file for the Python dependencies (INF-10), and check that the API runs on the slim `requirements.txt` (INF-17: built, not exercised beyond the health check).
+8. UI image installs bun/npm packages at every start; do it at build time. `ShoppingState.handle_bot_trigger_click` returns a `bool` (Reflex `TypeError`) (INF-19).
+9. UI-7 leftovers: validate prices once at the catalog boundary and replace the other inline `$x.2f` sites.
+10. CORE-15: the HNSW index is filtered by `user_key` after the vector search; revisit if the semantic cache grows.
+11. SRV-5: `LGBM_SUBSAMPLE` only takes effect with `LGBM_SUBSAMPLE_FREQ > 0`; evaluate it on the champion. `SEGMENTATION_METRIC` is still unused (ANL-11).
+12. INF-11: newer minio / mc tags are unconfirmed (registry not queryable from here).
+13. The Gemini model `gemini-2.0-flash` is retired (404), so e2e LLM calls fall back to templates. Update `LLM_MODEL` and re-run the e2e suite against a live model.
+14. Structural ideas skipped in the step 7 simplify pass (validator on `RoutingDecision`, shared `is_cacheable`, `track_order` returning `Optional`, scoped cache view) and the shared product-id normaliser.
+15. Test hygiene: the unit network guard hides MLflow tracing at import time; consider a lazy tracer so importing `ai.observability.tracing` makes no network call.
+
+## Baseline (step 0)
+
+Recorded 2026-10-11 on `review/round-1` (no fixes applied). Local Postgres, Redis and MLflow are reachable, and the Docker API container is running.
+
+### Tests
+
+A single `pytest tests/` run is unusable on Windows. `test_api.py` hangs, and pytest-timeout's thread method kills the whole process. The baseline below comes from running each file separately with `--timeout=45`. 53 of 56 files pass.
+
+| Test / file | Result | Cause |
+|---|---|---|
+| `tests/test_api.py::test_shopper_predict_and_purchase_flow` | **HANG** (killed at the timeout) | `MagicMock` repo returns a `MagicMock` from `get_curated_products()`. `ShopperService.get_curated_catalog` (`shopper_service.py:48`) passes it to `cache_manager.set_json`. `_json_serializer` (`core/cache/redis_client.py:20`) calls `.item()` on it. Each `.item()` returns another mock, so the `json.dumps` default hook never ends. The other 4 tests in the file pass. |
+| `tests/test_fix_wp7_logging.py` | collection ERROR | Circular import: `ai.nodes.router_node` → `ai.workflow.state` → `ai/workflow/__init__` → `ai.workflow.graph` → `ai.nodes.router_node` (partially initialised). |
+| `tests/test_phase1_infra_frontend.py::test_redis_rate_limit_5_min_20_day` | FAIL | `RateLimitExceededError: Max 5 requests per minute`. The test uses the live Redis (DB 15), so state left over from earlier runs likely matters. Not confirmed. |
+
+Passing but noisy: `test_phase3`, `test_phase4_*` and `test_phase2` log MLflow warnings ("Failed to send trace… interpreter shutdown"). `test_phase3_langgraph_agent` takes about 50s. Other slow files are `test_drift_retrain` (30s) and `test_phase4_caching_and_fanout` (28s).
+
+### Lint (`make lint`)
+
+| Tool | Result |
+|---|---|
+| flake8 | 494 violations (337 outside `tests/`). Mostly F401 unused imports, E402, W291/W293 and E501. |
+| black | 205 of 228 files would be reformatted. |
+| isort | 203 files have incorrectly sorted imports. |
+
+The lint baseline is effectively "never enforced". Treat lint as a per-file check on touched files for the rest of the review. A repo-wide `black`/`isort` pass would be a separate round-2 item.
+
+### Addendum: full-suite run with pytest-timeout (2026-10-11)
+
+Whole-suite run: `pytest tests/ --timeout=30 -q --deselect tests/test_api.py::test_shopper_predict_and_purchase_flow`.
+Result: **299 passed, 1 failed, 1 deselected (the hang)**, 301 tests, ~8 min. Collection alone takes ~97s (shap, mlflow, evidently imports). `pytest-timeout` was installed locally and is not in `requirements.txt`. With `--timeout-method=thread` the timeout kills the whole process, so the hanging test has to be deselected to get a summary.
+
+- **Hang:** same cause as CORE-1. The dump shows the worker thread inside `json.dumps` → `_json_serializer` → `MagicMock.item()` → `_increment_mock_call`.
+- **`test_redis_rate_limit_5_min_20_day`** is a stale test, not leftover Redis state. In this run the limiter was reset first, the first 5 calls passed and the 6th was correctly blocked. The failure is at `tests/test_phase1_infra_frontend.py:173`: the test expects `HTTPException` from `RedisRateLimiter.enforce()`, but `apps/api/rate_limiting/rate_limiter.py:237` raises `core.exceptions.RateLimitExceededError`. The test needs updating to the new exception.
+- **`test_fix_wp7_logging.py`** collected fine in the whole-suite run, so the circular import (AI-1) depends on import order. The earlier per-file run hit it.
+- **Slowest tests**, probably real LLM calls or connection timeouts rather than mocks (not confirmed): `test_phase3_langgraph_agent` (support 25.8s, multi-turn 23.7s, cart 20.9s, search 11.0s), `test_phase4_e2e_production::test_multi_intent_fan_out_and_aggregation` 20.5s, `test_phase4_caching_and_fanout` fan-out 20.4s, `test_fix_7_2_shopper_performance` setup 16.4s, `test_fix_wp11_imputer` ONNX imputer 15.5s, `test_drift_retrain` monitor 14.3s, `test_frontend_bot_auth_check` 11.5s.
+- **`make lint` stops at flake8** (exit 2), so black and isort never run through it. The counts above come from running each tool with the Makefile's arguments. There is no `pyproject.toml`, `setup.cfg` or `.flake8`, so black runs at line length 88 and isort without `profile=black`, against flake8's 127. That explains why nearly every file fails both. CI runs only pytest, not lint.
+
+## Findings
+
+| ID | Area | Finding | File:line | Severity | Status | Commit |
+|----|------|---------|-----------|----------|--------|--------|
+| CORE-1 | Core | `_json_serializer` called `.item()` on any object with an `.item` attribute. A `MagicMock` returns another mock each time, so `json.dumps` never ended and `tests/test_api.py::test_shopper_predict_and_purchase_flow` hung. Now only numpy scalars/arrays are unwrapped, everything else falls back to `str()`; the test fixture also returns a real `get_curated_products()` list. All 5 `test_api.py` tests pass. | `core/cache/redis_client.py:20` | medium | fixed | e48702d |
+| CORE-2 | Core | `_resolve_cache_key` returned the unformatted key template when formatting failed, so every call shared one cache key and returned another call's data. A failing key callable also raised outside the try. Now an unresolvable key bypasses the cache. | `core/cache/decorators.py:30` | medium | fixed | c672a9a |
+| CORE-3 | Core | After the cooldown, every concurrent caller of `is_available` reconnected in turn (each up to 2s). Now re-checked under an `RLock` so only one attempt is made. | `core/cache/redis_client.py:72` | low | fixed | 6a45ec1 |
+| CORE-4 | Core | Bulk load used COPY text format with `to_csv` output. Fields containing tab, quote, newline or backslash are CSV-quoted by pandas, which text format reads literally, so the data was corrupted or the COPY failed and silently fell back to slow `to_sql`. Now `FORMAT csv`. Test fails on the old code. | `core/db/repositories/base.py:90` | medium | fixed | 17decce |
+| CORE-5 | Core | RRF candidate CTEs used `LIMIT` without `ORDER BY` (relied on window output order), the sparse ranking sorted NULLs first, and the size filter JSON was built by f-string (a size containing `"` raised a JSON error). Explicit ordering and `json.dumps` now. In practice Postgres already returned the right rows, so this is hardening. | `core/db/repositories/warehouse_repo.py` (`_execute_rrf_query`) | low | fixed | d4a25be |
+| CORE-6 | Core | Every logger created its own `RotatingFileHandler` on the same file: duplicate handles, and rotation fails on Windows. One shared handler now. | `core/logging.py` | low | fixed | aec577b |
+| CORE-7 | Core | Embeddings shorter than 768 dims were passed through and would fail at the pgvector insert; `GOOGLE_API_KEY` was read via `getattr` but is not a setting. Short vectors now raise. | `core/embeddings/service.py:97` | low | fixed | 46f04a1 |
+| CORE-8 | Core | Unauthorized analytics column raised a bare `ValueError`, which API-8 now maps to a generic 500. Raises `ValidationError` (400-style) instead. | `core/db/repositories/analytics_repo.py:36` | low | fixed | a25f961 |
+| CORE-9 | Core | DB pool size / overflow / recycle were hard-coded (CLAUDE.md: config via settings). Added `DB_POOL_SIZE`, `DB_MAX_OVERFLOW`, `DB_POOL_RECYCLE` with the same defaults. | `core/db/session.py:11` | low | fixed | 9b2ab71 |
+| CORE-10 | Core | `import mlflow.langchain` at module top shared a try block with `import mlflow`; semantic-cache insert failures were logged at debug. Top-level langchain import removed (autolog imports it lazily), failures log at warning. | `core/tracking/client.py:11`, `warehouse_repo.py` (`save_semantic_cache_entry`) | low | fixed | 8f15e24 |
+| CORE-11 | Core | `check_product_stock` ignored `quantity` and there is no inventory table. Decision: no inventory; renamed to `is_size_offered(product_id, size)` (no quantity), documented as catalog membership + listed sizes only, caller `ai/tools/cart_tools.py` and log wording updated. | `core/db/repositories/warehouse_repo.py` (`is_size_offered`) | low | fixed | 39a71df |
+| CORE-12 | Core | `POSTGRES_PASSWORD` / `MINIO_ROOT_PASSWORD` public defaults. Decision: rejected outside dev like `SECRET_KEY` (one validator, error lists every offending field). CI keeps working because it runs with `ENVIRONMENT=development`; any deployment that sets another `ENVIRONMENT` must now set both passwords (the compose file passes them from `.env`). | `core/config.py` | low | fixed | bb0f9b0 |
+| CORE-13 | Core | Schema drift. Compared the ORM (via `create_all` on a scratch DB), `init_schema.sql` and the live DB. `ensure_user_tables` created `user_purchases.user_id` nullable (ORM and init_schema.sql: NOT NULL), so the live table was nullable. Fixed: DDL is NOT NULL, and a guarded `ALTER ... SET NOT NULL` upgrades old tables (warns instead of failing if NULL rows exist; live has 0). `init_schema.sql` now also enforces the ORM NOT NULLs on `black_friday_cleaned` (`is_outlier`, `normalized_purchase`) and `curated_products` (7 columns); live data has no NULLs in any of them, and `init_schema.sql` only runs on a fresh database. A test applies the file to a scratch DB and fails if any ORM NOT NULL column is nullable. The live DB was not altered. | `core/db/repositories/user_repo.py`, `docker/postgres/init_schema.sql` | low | fixed | 30f6e7e |
+| CORE-14 | Core | A missing `stay_in_current_city_years` reached the model as the string `"None"`. Training has no missing category (`"0"`..`"4+"`, unseen strings encode to -1). Now maps to `"1"`: the training mode (35% of rows) and the existing batch-pricing fallback. | `core/db/repositories/user_repo.py` (`DEFAULT_STAY_IN_CITY_YEARS`) | low | fixed | e0021bd |
+| CORE-15 | Core | The semantic query cache had no TTL and was keyed on the query embedding only, so stale prices or another shopper's personalised answer could be served; the Redis exact cache (and the `bot.py` SSE fast path) had the same sharing problem. Fixed for both tiers: `user_id` is now a required argument everywhere (`TwoTierCacheService.user_key` = sha256(user_id)[:32]; an empty id raises). pgvector rows carry `user_key`, lookups match only the same key and rows younger than `SEMANTIC_CACHE_TTL_SECONDS` (new setting, default 6h); saving replaces that user's earlier row for the same query and purges expired rows. `_ensure_semantic_cache_schema` adds the column and index idempotently on first use (the live DB was altered that way; `init_schema.sql` and the migration script updated). Rows from before the column have NULL `user_key`, never match, and are purged by expiry. Caveat: the HNSW index is filtered by `user_key` after the vector search, so with many users a lookup can miss an existing entry; revisit if the cache grows. | `core/db/repositories/warehouse_repo.py`, `ai/services/cache_service.py` | medium | fixed | e6a27d8 |
+| CORE-16 | Core | Remaining ORM vs SQL drift that was deliberately NOT aligned, because making the SQL match the ORM would break the pipelines or lose features: ORM `CustomerSegment` lacks columns the segmentation pipeline writes (`age_group`, `popular_category`, `purchase_amount_variability`, `updated_at`), and has no `semantic_query_cache` model; ORM uses `JSON` where SQL has `JSONB` (needed for `::jsonb @>` and indexes), `Float` where SQL has `NUMERIC`, and `String(1)` for gender/city where SQL has VARCHAR(8)/(4). The live `product_network_metrics` is not even SQL-shaped (text columns, written by pandas `replace`). Round-2 item: make the ORM the real schema (add the missing columns/model, JSONB, NUMERIC) and migrate with Alembic. | `core/db/models/warehouse.py`, `docker/postgres/init_schema.sql` | low | deferred | |
+| SEC-1 | Security | `SECRET_KEY` has a hardcoded public default. If `.env` omits it, the app starts silently and anyone can forge valid JWTs for any `sub`. There is no startup check when `ENVIRONMENT` is not dev. | `core/config.py:180` | high | fixed | 07b8b95 |
+| SEC-2 | Security | Rate-limit identity trusts caller-controlled `X-User-ID` header and `user_id` query param ahead of the client IP. Rotating the header gives a fresh bucket per request, so the per-minute/day limits on `/bot/*` are bypassable. | `apps/api/rate_limiting/rate_limiter.py:280` | medium | fixed | 6fcc1b7 |
+| SEC-3 | Security | `SecurityBanMiddleware` prefers unverified `X-User-ID`/`user_id` over the JWT `sub`. A locked-out authenticated user sends `X-User-ID: <anything>` to skip the user-level ban check; only the IP check remains. | `apps/api/middleware/security_ban_middleware.py:26` | medium | fixed | 6fcc1b7 |
+| SEC-4 | Security | `/auth/login` and `/auth/signup` have no rate limiting, so there is no brute-force or credential-stuffing protection. | `apps/api/routes/auth.py:17,24` | medium | fixed | 656fa4a |
+| SEC-5 | Security | `/bot/*` endpoints are unauthenticated and take `user_id` from query/body, so any caller can act as any shopper in the assistant (history, personalisation). | `apps/api/routes/bot.py:184,213` | medium | fixed | 149639d |
+| SEC-6 | Security | `get_current_user` echoes the raw JWT exception text to the client (`Invalid or expired token: {e}`). Information leak. | `apps/api/auth.py:44` | low | fixed | 8193f96 |
+| SEC-7 | Security | JWT has no `iss`/`aud` claims and no revocation. CORS uses `allow_methods=["*"]` and `allow_headers=["*"]` with credentials. | `core/security.py:99`, `apps/api/main.py:64` | low | fixed | a92508c |
+| SEC-8 | Security | All unauthenticated bot users share the single `guest_user` identity (`guest_voice_shopper` on the WebSocket), so history, cart or personalisation state could be shared between strangers. Fixed: guests get an HMAC(SECRET_KEY) id from peer IP + session_id (`guest_<24 hex>`); `session_id` is validated (`[A-Za-z0-9_.:-]{1,64}`). Residual (guests behind one NAT sharing a `session_id`) closed by UI-1: the Reflex client now sends a random per-browser id. | `apps/api/client_identity.py` (`GUEST_USER_ID`), `apps/api/routes/bot.py:298` | fixed | 159a174 | |
+| SEC-9 | Security | No `X-Forwarded-For` / trusted-proxy handling. The client IP is the socket peer, so behind a reverse proxy every caller shares the proxy IP for rate limits and bans. | `apps/api/client_identity.py` (`client_ip`) | low | deferred | |
+| API-1 | API | `ShopperBatchPurchaseItem.quantity` and `items` lists have no upper bound. `process_batch_purchase` builds one record per unit, so an authenticated user can send `quantity=10**9` and exhaust memory / the DB. `predict-price-batch` (unauthenticated, no rate limit) is also uncapped. | `apps/api/schemas.py:147,214,224`, `apps/api/services/shopper_service.py:437` | fixed | 6a819fa | |
+| API-2 | API | `GET /shopper/catalog?limit=` is unbounded and each value gets its own Redis key (`shopper:catalog:{limit}`). Negative or huge values hit the DB, and unique values pollute the cache. | `apps/api/routes/shopper.py:31`, `apps/api/services/shopper_service.py:54` | fixed | 5724579 | |
+| API-3 | API | `/shopper/predict-price-batch` is open to guests with no rate limit, unlike `/predict-price`. Each call runs ONNX inference and DB lookups. Fixed: now `rate_limit_dependency` (auth + rate limit). Reflex only calls it with a token. | `apps/api/routes/shopper.py:50` | fixed | 5724579 | |
+| API-4 | API | `process_batch_purchase` keys quotes by `product_id` only. Two cart lines for the same product with different demographic overrides get the same (last) quote. | `apps/api/services/shopper_service.py:420` | fixed | b4f6dfb | |
+| API-5 | API | Purchase price depends on demographics taken from the request body (`gender`, `age`, ...), so a shopper can pick the demographic that gives the lowest member price. Design question rather than a bug. Decision: logged-in users are priced from their account demographics (body overrides ignored); no guest pricing endpoint exists, so guest-supplied demographics are not needed yet. | `apps/api/routes/shopper.py:112`, `apps/api/schemas.py:133` | fixed | 260aaa5 | |
+| API-6 | API | Signup does not normalise the email (case) and has a check-then-insert race, so a duplicate surfaces as a 500 (`IntegrityError`) and `A@x.com` / `a@x.com` can both register. `email` is a plain `str`, not validated. Fixed: emails are trimmed/lower-cased; duplicate-insert race maps to 409; login falls back to the submitted spelling for legacy mixed-case accounts. | `apps/api/services/auth_service.py:32`, `apps/api/schemas.py:93` | fixed | 8791fa0 | |
+| API-7 | API | The WebSocket error path sends `str(e)` to the client, which can leak internals. A non-object JSON frame (list/number) raises `AttributeError` on `data.get` and ends the session. | `apps/api/routes/bot.py:359,288` | fixed | 304eb6d | |
+| API-8 | API | The global `ValueError` handler returns `str(exc)` for any uncaught `ValueError` in the app, which can expose internals. Decision: added core.exceptions.DomainError for user-safe messages; bare ValueError and RuntimeError now return generic text (details are logged). | `apps/api/handlers.py:20` | fixed | 316bdb2 | |
+| AI-1 | AI | Circular import: `ai.nodes.router_node` → `ai.workflow.state` → `ai/workflow/__init__` → `ai.workflow.graph` → `ai.nodes.router_node` (partially initialised). It broke `tests/test_fix_wp7_logging.py` when it imported `ai.nodes` first. Fixed by moving `AgentState` and its reducers to `ai.schemas.state`; `ai.workflow.state` re-exports them and the nodes import the schema module. A test imports 8 entry points first in fresh interpreters. | `ai/workflow/__init__.py:6`, `ai/workflow/graph.py:9`, `ai/nodes/router_node.py:8` | medium | fixed | 472d5e7 |
+| AI-2 | AI | `track_order` queried `user_purchases` by order number with no ownership check, so any caller (guests included) could read any order; an unknown id silently returned the caller's latest purchase labelled with the requested id; unknown ids otherwise got invented "In Transit" demo data; and the tracking number used the per-process `hash()`. Now the lookup is scoped to the numeric caller id (no id = latest own order), guests own no orders, a missing or foreign order is `Not Found` (same answer for both) and the template says so. Only the three fixed demo ids (ORD-9842, ORD-1102, ORD-5541) still answer for everyone, with a stable tracking number. | `ai/tools/order_tools.py`, `ai/nodes/support_node.py`, `ai/services/template_service.py` | high | fixed | 8f7f454 |
+| AI-3 | AI | A query that `IntentClassifier` rules (or the Jev intent choice) labelled ADVERSARIAL_BLOCKED but that the Tier-0 regex did not match ("leak keys", "override safety") came back `is_safe=True` and was routed to the search specialist. Now both routers return an unsafe decision and the edge sends any adversarial intent to the refusal node. | `ai/router/rule_router.py`, `ai/router/jev_router.py`, `ai/workflow/edges.py` | medium | fixed | a605622 |
+| AI-4 | AI | Cart action detection used substring tests: `"from" in q and "to" in q` turned "add the jacket from the sale page to my cart" into a size change, and `"drop"` matched "droplet". Whole-word regexes now, extracted as `detect_cart_action`. | `ai/nodes/cart_node.py` | medium | fixed | 91251e0 |
+| AI-5 | AI | The router node read both response caches before any ban check, so a locked-out user was served cached answers and never reached the guardrail refusal. The ban check now runs first. | `ai/nodes/router_node.py` | medium | fixed | fdfa5f8 |
+| AI-6 | AI | Only `intent == CART_ACTIONS` was excluded from the caches, so a multi-intent answer containing the cart, or any answer containing order tracking, was stored and replayed to other shoppers. Nothing is cached when the intents include CART_ACTIONS or the state carries `cart` / `order_status`; policy and catalog answers still are. | `ai/services/synthesis_service.py` | high | fixed | 48a68fe |
+| AI-7 | AI | The router node reads `bypass_cache`, but it was not declared in `AgentState`, so LangGraph dropped it. Declared. (Nothing in the repo sets it yet.) | `ai/schemas/state.py` | low | fixed | a769bf5 |
+| AI-8 | AI | Embedding, vector-cache and LLM failures that silently degrade the answer were logged at debug. Now warning. | `ai/services/cache_service.py`, `ai/services/synthesis_service.py` | low | fixed | a139fb6 |
+| AI-9 | AI | Strike counter: `INCR` then `EXPIRE` only when the count was 1, so a crash in between left a counter that never expired. Now one transaction with `EXPIRE NX` (also repairs counters without a TTL; needs Redis 7, which compose pins). | `ai/guardrails/strike_tracker.py` | low | fixed | 071f9ba |
+| AI-10 | AI | The synthesis prompt put retrieved text and the user query after the rules with no statement that they are data. Rule 4 added. A prompt change cannot prove robustness; it only states the intent. | `ai/prompts/synthesis_prompts.py` | low | fixed | 5ad72e6 |
+| AI-11 | AI | `JevSafetyFilter` fails open: on a TypeSafe API error it returns safe, so only the Tier-0 regex protected during an outage. Decision: stay fail-open (failing closed would block all shopping), but every fallback now logs a warning with the error (Jev filter, Jev router, Jev extractor), and while Jev is down the stricter Tier-0 set (`RegexPreFilter(strict=True)`: system-prompt/hidden-instruction probes, role overrides, rule-bypass phrasing, credential requests, extra SQLi/HTML shapes) is applied: by `SafetyEngine` when the filter returns the `JEV_API_FALLBACK` flag, and by the router's `FastRuleRouter` fallback. Strict rules are not used when Jev is simply not configured. Nine ordinary shopping phrasings are pinned as still passing. | `ai/guardrails/`, `ai/router/jev_router.py`, `ai/extractor/jev_extractor.py` | medium | fixed | 5ecb991 |
+| AI-12 | AI | `RedisSessionCheckpointer` and `UserProfileStore` were unused (and the store used fields the `UserProfile` model does not have). Decision: delete. Removed `ai/memory/`, the `UserProfile` schema and its export, and the unused import in `test_phase3_langgraph_agent.py`; a test pins that nothing references them. Only archived docs still mention them. | `ai/memory/`, `ai/schemas/` | low | fixed | f540db2 |
+| AI-13 | AI | Details, bundle and cart-add silently used `P00025442` when no product resolved; `cart_tools` added a made-up "Product P…" at $49.99 for an unknown id; demo orders answered for every shopper. Decision: never invent. Specialists now return a `clarification` question (new `AgentState` field, joined across parallel nodes) that synthesis answers with: alone when nothing else was found (no LLM call), appended otherwise, never cached. `cart_tools` raises `DomainError` for a missing or unknown product and the cart is left untouched; the demo orders are gone from `order_tools` (unknown or foreign order = Not Found). Left as is: `ProductDetailsTool` still fills missing fields of a real product (materials, brand, prices) with defaults, which is a data-quality question rather than an invented product. | `ai/nodes/`, `ai/tools/`, `ai/services/synthesis_service.py`, `ai/schemas/` | medium | fixed | 352535f |
+| AI-14 | AI | The `guest_user` fallback was repeated in four places. Decision: one `GUEST_USER_ID` constant (`ai/schemas/identity.py`), used by the router, cart and support nodes and `CartState`. The shared-namespace behaviour for graph callers without a `user_id` is unchanged and documented on the constant; the API never relies on it. The Reflex client still sends its own `guest_user` literal because the UI talks to the API over HTTP only. | `ai/schemas/identity.py`, `ai/nodes/` | low | fixed | a91c7af |
+| UI-1 | Frontend | The Reflex client sent the shared `session_guest_user` session id and a `guest_user` user id literal (the API ignores the id), so guests behind one NAT shared assistant state (SEC-8 residual). Now a random `bf_<uuid>` is generated once per browser (LocalStorage `bf_session_id`) and sent as `session_id`; no `user_id` is sent. | `apps/reflex_app/reflex_app/state.py` | medium | fixed | 853c99d |
+| UI-2 | Frontend | `P00025442` was hard-coded as the hero fallback id, in the chevron button and in default hero name/tagline. The hero card now follows the catalog's real hero product (`has_hero`) and renders nothing when there is none; the chevron uses `open_hero_detail`. | `state.py`, `components/hero_card.py` | medium | fixed | 9d2e675, 06ffb2e |
+| UI-3 | Frontend | Invented prices: 49.99 on add-to-cart, 49.90/99.90 on the hero and quick view, 69/59 on recommendations, 149/79/89/69 on a product fetched from the API, and a made-up member price (`price * 0.85`) when a cart line had no quote. Now a missing price shows "Price unavailable" (blank for the strikethrough original), a product with no price is not added, and an unquoted cart line keeps its catalog price. | `state.py` | medium | fixed | e87672d, 06ffb2e |
+| UI-4 | AI | `cart_tools` priced a product with no `discounted_price` at 49.99 (and original 99.99). A row without a usable price is now skipped; if the product is known but unpriced, `DomainError(code=PRICE_UNAVAILABLE)` is raised and the cart is untouched. | `ai/tools/cart_tools.py` | medium | fixed | 88f6bac |
+| UI-5 | Frontend | When the assistant API was unreachable the UI showed canned "deals" with made-up products and prices, or the raw exception text. Now one fixed unavailable message. | `state.py` (`_execute_bot_query`) | medium | fixed | 7b276fb |
+| UI-6 | Frontend | A checkout network failure showed `str(e)` to the shopper. Fixed message instead; the cart is kept. | `state.py` (`checkout`) | low | fixed | 9829a72 |
+| UI-7 | Frontend | Remaining invented data. A product outside the loaded catalog got a made-up name/brand/style ("Archive", "Vintage") from `_fetch_product_from_api`; it is deleted and such a product is now skipped (nothing opens). A missing price was stored as 0.0; `estimated_price_usd`, `active_product_sale_price`, `active_product_original_price` and `RecProduct.price` are now `Optional[float]` (None = unavailable). `product_card.py` formatted `discounted_price` unguarded; catalog cards now read a guarded `price_display` added in `filtered_products` (blank when missing). Not done: validating prices once at the catalog boundary, and the other inline `$x.2f` sites (cart lines always have a price). | `state.py`, `components/product_card.py` | low | fixed | 196aa5b |
+| SRV-1 | ML serving | `_parse_max_features` turned a float `1.0` (the `RF_MAX_FEATURES` default) into the int `1`, so a Random Forest built from defaults used one feature per split; the string `"1.0"` from `.env` was fine. Now int = count, float in (0, 1] = fraction, as in sklearn. | `ml/models/regression.py` | medium | fixed | 38f6882 |
+| SRV-2 | ML serving | `ONNXPredictor.predict` silently skipped model inputs missing from the DataFrame, so ORT failed with an unclear error. Now raises `ValueError` naming the missing columns. | `ml/serving/predictor.py` | medium | fixed | 808c764 |
+| SRV-3 | ML serving | `_save_onnx` crashed on a bare filename (`os.makedirs("")`). | `ml/models/onnx_exporter.py` | low | fixed | 132a88b |
+| SRV-4 | ML serving | `export_imputer` converted and wrote the same ONNX file once per MissForest iteration and listed duplicate steps in the metadata. Now one step per column (the last fit, which is what serving used already). | `ml/models/onnx_exporter.py` | low | fixed | 319128e |
+| SRV-5 | ML models | `LGBM_SUBSAMPLE` had no effect because `subsample_freq` stayed 0. Decision: do not change the champion. Added `LGBM_SUBSAMPLE_FREQ` (default 0, so behaviour is unchanged), passed to `LGBMRegressor` and the model params, and documented in `core/config.py` that subsample needs freq > 0. Test checks the default and an explicit freq. | `core/config.py`, `ml/models/regression.py` | low | fixed | b4a85df |
+| SRV-6 | ML models | `cross_validate` leaves the model fitted on the last fold (both callers refit afterwards). Documented in the docstring only. | `ml/models/metrics.py` | low | fixed | 75dbe87 |
+| PIPE-1 | ML pipelines | Retrain and train exported `{model}.onnx`, but serving only loads `champion_model.onnx`, `lightgbm.onnx` or `lgbm.onnx`, so a promoted non-LightGBM champion was never served; the monitor looked for a `champion.onnx` that nothing writes. Promotion now also publishes `champion_model.onnx` (atomic rename), and the monitor scores with it first. The API process still needs a restart to load it. | `ml/pipelines/retrain.py`, `train.py`, `monitor.py`, new `common.py` | medium | fixed | 88c0383 |
+| PIPE-2 | ML pipelines | Retrain compared the candidate's R2 on a fresh random holdout with the champion's registry R2 from another split (in demo/cron mode the "new" data is the original test split). The local champion ONNX is now scored on the candidate's own holdout; the registry metrics remain the fallback. The source is logged in the audit JSON and as an MLflow tag. | `ml/pipelines/retrain.py` (`_score_local_champion`) | medium | fixed | 532b73c |
+| PIPE-3 | ML pipelines | `ingest` and `preprocess` truncated the table and inserted in separate transactions; a failed load left an empty table. New `replace_raw_batch` / `replace_cleaned_batch` do both in one transaction. | `core/db/repositories/warehouse_repo.py`, `ml/pipelines/ingest.py`, `preprocess.py` | medium | fixed | 9863153 |
+| PIPE-4 | ML pipelines | Nothing flushed `price:*` after a champion change, and the cron cycle did not flush `price:*`/`shopper:*`/`analytics:*` as documented, so stale prices were served for up to 6h. `invalidate_caches` helper added; train, retrain and cron use it. | `ml/pipelines/common.py`, `train.py`, `retrain.py`, `cron_scheduler.py` | medium | fixed | 17d65ce |
+| PIPE-5 | ML pipelines | The cron drift batch used an unordered `LIMIT 5000` and kept outliers, while the reference excludes them, so it could flag spurious target drift. Now outliers are excluded and the 5000 rows are a seeded sample. | `ml/pipelines/cron_scheduler.py` | medium | fixed | 108c744 |
+| PIPE-6 | ML pipelines | The repository was built outside the cron `try`, the daemon loop died on any cycle error, and `make cron` ran a single cycle and exited. The daemon now survives failed cycles and is the default; `--once` runs one cycle. | `ml/pipelines/cron_scheduler.py` | low | fixed | 23c01d0 |
+| PIPE-7 | ML pipelines | Retrain did not resolve model aliases (`lgbm` vs `lightgbm`), so artifacts and tags used the alias. | `ml/pipelines/retrain.py` | low | fixed | e87a94e |
+| PIPE-8 | ML pipelines | `missing_product_category_{2,3}_imputed` was a hard-coded 0.0; it now reports the imputer's remaining-missing counts. | `ml/pipelines/preprocess.py` | low | fixed | 9b035dd |
+| PIPE-9 | ML features | `tag_outliers` silently fitted IQR bounds on whatever frame it was given (leakage if called on test first). It now raises unless `compute_outlier_bounds` ran. | `ml/features/preprocessor.py` | low | fixed | 42766a2 |
+| PIPE-10 | ML pipelines | `run_market_basket_pipeline(graph_source=...)` was never used, only logged. Argument removed; the logged source is the real one (`apriori+item2vec`). | `ml/pipelines/market_basket.py` | low | fixed | c831f23 |
+| PIPE-11 | ML pipelines | CSVs left over from an earlier run were uploaded to MLflow when the current run wrote none. Only files written by this run are logged. | `ml/pipelines/market_basket.py` | low | fixed | 3c446fc |
+| PIPE-12 | ML pipelines | `make train` always promotes the best model of that run to champion, even if it is worse than the current champion (e.g. `MODEL=decision_tree`), and picks it on the same test split it reports. Decision: `make train` promotes only if the best model beats the current champion scored on the same current test split (`score_local_champion`, shared with retrain); with no scorable champion it promotes. Otherwise the champion is kept and a warning is logged. | `ml/pipelines/train.py` | medium | fixed | 050d394 |
+| PIPE-13 | ML features | `frequency` in the customer features is the number of distinct products, not the number of purchases. Changing it alters the clusters and personas. Decision: no behaviour change; documented in the docstring and a log line, and a test pins it. Deferred to round 2. | `ml/features/customer_features.py` | low | deferred | 9b01263 |
+| PIPE-14 | ML pipelines | Report directories are relative to the cwd in preprocess/train/retrain/monitor but use `BASE_DIR` in segmentation/market basket. Decision: a `reports_dir()` helper anchors every report path at `BASE_DIR`. | `ml/pipelines/*.py` | low | fixed | 5c330bc |
+| ANL-1 | ML analytics | The VIP rule in `resolve_cluster_persona` ignored gender, so a high-spending female cluster got the male-only persona 9/10. Now only non-female clusters can be VIP; females fall through to personas 1-8. Live data is unaffected (its VIP clusters are male). | `ml/segmentation/clustering.py` | medium | fixed | 4465b99 |
+| ANL-2 | ML analytics | Several raw clusters can resolve to the same persona and are silently reported as one, so fewer than 10 personas result. A warning now names the collapsed persona ids. Live run still gives all 10. | `ml/segmentation/clustering.py` | low | fixed | 22a1a5e |
+| ANL-3 | ML analytics | VIP thresholds (2.5M LTV, 300 products) were hard-coded. Now `SEGMENT_VIP_MIN_LTV` / `SEGMENT_VIP_MIN_FREQUENCY`, same defaults. | `core/config.py`, `ml/segmentation/clustering.py` | low | fixed | 1fc9c2b |
+| ANL-4 | ML analytics | `k_clusters=settings.K_CLUSTERS` was bound at import time; fewer than 2 customers crashed inside scipy. Default is read at construction and a clear `ValueError` is raised. | `ml/segmentation/clustering.py` | low | fixed | 4a9e2ed |
+| ANL-5 | ML analytics | Rules with lift below 1 were labelled `1-2`. They now get `<1`. Nothing in the code reads `lift_level`. | `ml/market_basket/apriori_engine.py` | low | fixed | 8707620 |
+| ANL-6 | ML analytics | `mine_rules` left the previous run's rules in `self.rules` when a later run found nothing. Reset at the start. | `ml/market_basket/apriori_engine.py` | low | fixed | 831af3d |
+| ANL-7 | ML analytics | Item2Vec trained with 4 workers, so runs were not reproducible. Now one worker and `RANDOM_SEED`. The test does not fail on the old code with tiny data; the gensim default seed was already fixed, so the guarantee comes from `workers=1`. | `ml/market_basket/item2vec.py` | low | fixed | 18adeef |
+| ANL-8 | ML analytics | Class defaults (`min_count=5`) differed from settings (2); `get_all_similar_products` swallowed every exception. Defaults follow settings and the try/except is gone. | `ml/market_basket/item2vec.py` | low | fixed | 64e9846 |
+| ANL-9 | ML analytics | Item2Vec uses `window=5` on baskets listed in first-appearance order, which has no meaning, so which products count as co-bought depends on row order. The Item2Vec paper uses the whole basket as the window (slower, changes every embedding, the recommendations and the graph). Modelling decision. | `ml/market_basket/item2vec.py`, `ml/features/basket_encoder.py` | medium | deferred | |
+| ANL-10 | ML analytics | HITS ignores edge weights (undocumented) and the fallback caught every exception. Documented; only `PowerIterationFailedConvergence` falls back. | `ml/market_basket/network_graph.py` | low | fixed | 87e1747 |
+| ANL-11 | ML analytics | `SEGMENTATION_LINKAGE` was a setting nobody read (linkage was hard-coded `complete`). Now used, same default. `SEGMENTATION_METRIC` is still unused (Gower is the only metric implemented). | `ml/segmentation/clustering.py` | low | fixed | bf7bfa7 |
+| INF-1 | Infra | Postgres, Redis (no password), MinIO and MLflow ports were published on all interfaces. Now bound to `${BIND_HOST:-127.0.0.1}`; the API and UI ports stay public. | `docker-compose.yml` | medium | fixed | 57d9df6 |
+| INF-2 | Infra | The API container got no `SECRET_KEY`, `ENVIRONMENT`, `CORS_ORIGINS`, `GEMINI_API_KEY` or `TYPESAFE_API_KEY`, so it always ran with the public default JWT key and without the LLM keys. `env_file: .env` (optional) added; the explicit container hostnames still override localhost. | `docker-compose.yml` | high | fixed | 6768c4e |
+| INF-3 | Infra | Missing `.env` values (passwords, user and db names) became empty strings. Required variables now abort with a message. | `docker-compose.yml` | low | fixed | 6a22f2c |
+| INF-4 | Infra | `mlflow` waited only for `minio` to start, so it could race the `minio-init` bucket creation. Now waits for `minio-init` to complete. | `docker-compose.yml` | low | fixed | d6728c2 |
+| INF-5 | Infra | `uv:latest` in both Dockerfiles. Pinned to 0.5.11 (tag verified). `minio`/`mc` stay `:latest`: their tags could not be verified offline (see deferred INF-11). | `docker/Dockerfile.api`, `Dockerfile.ui` | low | fixed | d5f72de |
+| INF-6 | Infra | pytest, locust, black, flake8 and isort were installed in the API image. Split into `requirements-dev.txt` (adds `pytest-timeout`); CI installs it; `pgvector` moved to runtime. | `requirements*.txt`, CI | low | fixed | c988a83 |
+| INF-7 | Infra | CI had no token permissions, job timeout or per-test timeout (a hang would run 6h). Added `contents: read`, 30 min job timeout, `--timeout=60`, concurrency cancel. CI still runs only pytest (no lint; see baseline). | `.github/workflows/ci-cd.yml` | medium | fixed | 7130b3b |
+| INF-8 | Infra | Makefile used `docker-compose` (v1), `cron` was missing from `.PHONY`/help and ignored `ARGS` (`--once`), `test` help promised coverage. | `Makefile` | low | fixed | 4c9f050 |
+| INF-9 | Infra | `.env.example` lacked `SECRET_KEY`, `CORS_ORIGINS`, `BIND_HOST`, `TYPESAFE_API_KEY` and listed unused `STREAMLIT_PORT`. | `.env.example` | low | fixed | dda0660 |
+| INF-10 | Infra | MLflow client was unconstrained (local 3.16.1) while the server image is `v2.20.0`. Decision: pin the client to the server's major, `>=2.20.0,<3` (lock file stays a round-2 item). The API image now uses `mlflow-skinny` of the same range (INF-17); full `mlflow` is in `requirements-ml.txt`. | `requirements*.txt` | medium | fixed | 33ebe0a, 0a1c61f |
+| INF-11 | Infra | `minio`/`mc` were `:latest`. Pinned to the tags already running, read from the images: minio `RELEASE.2025-09-07T16-13-09Z`, mc `RELEASE.2025-08-13T08-35-41Z`. The registry (quay.io) cannot be queried anonymously from here, so newer tags (GitHub lists minio 2025-10-15 as a source release) are unconfirmed; the local images were re-tagged with the pinned names so compose does not try to pull. | `docker-compose.yml` | low | fixed | 24d5b5d |
+| INF-12 | Infra | API and UI containers run as root. Adding `USER` needs a decision on bind-mounted `models/`, `data/`, `logs/` ownership on Linux hosts; not testable here. | `docker/Dockerfile.*` | low | deferred | |
+| INF-13 | Infra | `Dockerfile.api` did `COPY models/` and `COPY data/`; `models/` is gitignored, so an image build from a clean checkout failed. Both copies removed (compose bind-mounts them). Running the image without compose needs the same mounts. | `docker/Dockerfile.api` | low | fixed | a160f3f |
+| INF-14 | Infra | Lint was not enforced. `pyproject.toml` (black/isort, line length 127, profile black) and `.flake8` added; `make lint` runs all three and fails at the end; CI runs `make lint-ci` on `LINT_CLEAN_PATHS` (`ai/ core/`) only, nothing was reformatted repo-wide. black is pinned `>=25.1,<26` (black 26 flags 6 `core/` files that were formatted with 25.x; one `ai/` file in the 26 style, `order_tools.py`, was reformatted). Locally black is 26.10, so run `pip install -r requirements-dev.txt` before `make lint-ci`. Everything else is still unlinted (round 2). | `pyproject.toml`, `.flake8`, `Makefile`, CI | low | fixed | dca8810 |
+| INF-15 | Infra | `init-multiple-dbs.sh` interpolated the MLflow password into SQL. Names and password are now psql variables quoted with `format(%I, %L)`. Tested on a scratch pgvector container with a password containing quotes, a backslash and `$(...)`; the role logs in with it. | `docker/postgres/init-multiple-dbs.sh` | low | fixed | 3ab3ab5 |
+| INF-16 | Infra | The API image build failed after 19 minutes: `Failed to download pyarrow ... network timeout (UV_HTTP_TIMEOUT 30s)`. `UV_HTTP_TIMEOUT=300`. | `docker/Dockerfile.api` | low | fixed | 41cdae2 (not built, see status) |
+| INF-17 | Infra | The API image installed the whole training stack (199 packages, incl. pyarrow, polars, scikit-learn, shap, evidently). `requirements.txt` is now what `apps.api.main` imports at startup (found by importing the app and listing `sys.modules`), 87 packages resolved; everything else moved unchanged to `requirements-ml.txt` (pipelines: `make train` etc. need it), dev tools and `reflex` stay in `requirements-dev.txt`, which includes both. The ML file was deliberately not optimised (polars extra, redundant pins left as they were). Not verified by running the API on the lean set. | `requirements*.txt`, CI cache key, `CLAUDE.md` | medium | fixed | 0a1c61f (not built, see status) |
+| INF-18 | Infra | `uv pip install --no-cache` discarded every downloaded wheel, so each failed build restarted from zero. BuildKit cache mount for `/root/.cache/uv` and `uv -v` so a stalled download is visible. | `docker/Dockerfile.api` | low | fixed | 307cf7f (not built, see status) |
+| INF-19 | Infra | A recreated `blackfriday_ui` crash-loops: `SystemPackageMissingError: System package 'unzip' is missing` (reflex `install_bun`). The old container only worked because bun was already in its writable layer. `unzip` added to the image. Not built or verified. Related, not fixed: the UI downloads bun and npm packages at every container start, which needs network and is slow; installing them at build time (`reflex init`/export in the Dockerfile) would fix that. Also open from its logs: a handler `ShoppingState.handle_bot_trigger_click` returns a `bool` (Reflex `TypeError`), `apps/reflex_app/reflex_app/state.py`; not investigated. | `docker/Dockerfile.ui`, `apps/reflex_app/` | medium | fixed (unverified) | 992533d |
+| INF-20 | Infra | After the rebuild `blackfriday_ui` ran but stayed `unhealthy`: the unpinned `reflex>=0.7` now installs Reflex 0.10, which in prod mode serves the frontend and the backend on one port (8001). The healthcheck and the `3000:3000` mapping pointed at port 3000, where nothing listens. Healthcheck now `curl localhost:8001/ping` with a 180s start period; host port 3000 maps to container 8001 (README URL still valid). The unpinned Reflex version is part of INF-10. | `docker/Dockerfile.ui`, `docker-compose.yml` | medium | fixed | 7ebd808 |
+
+- Housekeeping: 4145d34 untracked the 12 committed `.pyc` files and added `*.py[cod]` to `.gitignore` (`__pycache__/` was already listed).
+
+## Test reorganization (step 9.5)
+
+Flat `tests/test_*.py` split into `tests/unit/{core,ml,ai,api,ui}`, `tests/integration`, `tests/e2e`, `tests/architecture`, `tests/load`. Files moved with `git mv`; test logic untouched except imports, `Path(__file__)` depth, and the cases listed below. Markers `unit`/`integration`/`e2e`/`slow` are applied per folder (conftest hook), `slow` also on the slow files; default timeout 60s (`pyproject.toml`, `pytest.ini` removed). `tests/unit` has an autouse guard that refuses socket/PostgreSQL connections to the project's services, so a test that needs a live service cannot stay there.
+
+**Count:** baseline `pytest --collect-only` = 531; after = 530 (531 minus 1 exact duplicate). Per marker: 414 unit (incl. architecture and load), 86 integration, 30 e2e at the first count; a few tests moved between folders afterwards (e.g. the JEV router pipeline to e2e), the total is unchanged.
+
+**Removed duplicate:** `test_core12_custom_service_passwords_allowed_in_production` (`test_sec1_secret_key.py`) had a body identical to `test_custom_secret_allowed_in_production`. An AST scan of all test bodies found no other exact duplicates.
+
+**Changes beyond a pure move**
+- `test_pytest_ini_registers_benchmark_marker` is now `test_pyproject_registers_benchmark_marker` in `tests/architecture/test_pytest_config.py` (reads `pyproject.toml`).
+- `test_redis_rate_limit_5_min_20_day` (now `tests/integration/test_rate_limiter_redis.py`): expects `RateLimitExceededError` (it was `HTTPException`, stale since the limiter raises the domain error) and resets its Redis keys in `finally`.
+- Tests that need live services were cut out of mixed files into `tests/integration`: the Lua execution and login-throttling tests (from the rate limiter file), the spoofed-header ban test (from the client identity file), the PostgreSQL replace-load test (from the pipelines file), the bot drawer test (from the phase 1 file).
+- UI tests: the repeated `sys.path.insert(... reflex_app)` lines moved into `tests/unit/ui/conftest.py`.
+
+**Baseline vs now (each file run separately):** baseline 520 passed, 2 failed, and `test_phase3_langgraph_agent.py` hit the 45s per-file timeout (the Gemini model `gemini-2.0-flash` returns 404 and the LLM falls back to the template). Now every file in `integration`, `e2e`, `architecture` and `load` passes, and `tests/unit` in one command gives 382 passed, 1 failed (about 5 min with the slow tests, about 2.5 min with `-m "not slow"`).
+
+**Follow-up fixes (after step 9.5)**
+- The stale bot timeout test was updated to the UI-5 unavailable message (commit 22e390a): the code was right (UI-5 removed the invented deals), only the assertion was stale. `tests/unit` now passes completely (383 passed).
+- `make test-unit` runs in about 47s (41s in pytest, 254 tests; it was about 5 minutes). Collecting the test modules was the main cost (45s of imports: ai, mlflow, shap, evidently, pandera). Changes: `tests/integration/test_response_caching.py` and `test_ui_payload.py` (they build a real Gemini client and run the graph) moved out of unit; 7 single tests that attempt a network or PostgreSQL connection and fall back, and the files that train or load a model, hash passwords with bcrypt, or import a heavy library are `@pytest.mark.slow`; `-m "not slow"` skips whole slow files at collection (`tests/conftest.py`) so their imports never load. The slow unit tests (124) pass in about 3 minutes with `make test-slow`; CI runs fast and slow together. Total collected tests unchanged at 530.
+
+**Previously failing (now fixed)**
+
+| Test | Cause |
+|---|---|
+| `tests/unit/ui/test_bot_chat.py::test_bot_stream_timeout_leaves_ui_usable` | Stale assertion: it expects "deal"/"offline" in the bot message, but UI-5 changed it to "The shopping assistant is unavailable right now." Failed in the baseline too. |
+
+**Depends on the API / UI containers (moved to integration; at the time of step 9.5 the images were not touched)**
+
+| Test | Dependency |
+|---|---|
+| `tests/integration/test_bot_drawer.py::test_frontend_bot_auth_check` | The action chips call the bot endpoint of the running API; it passes only while the API container is up. |
+
+No test failed because the API or UI image was missing or stale. The UI container itself was broken (stale image, INF-19/INF-20) and is fixed above. The e2e tests use the in-process app plus the live Redis/PostgreSQL; their LLM calls fall back to templates because the Gemini model is retired (external cause).
+
+**Old file → new file**
+
+| New file | Old file(s) |
+|---|---|
+| `architecture/test_architecture.py` | `test_architecture.py` |
+| `architecture/test_evaluation_layering.py` | `test_evaluation_layering.py` |
+| `architecture/test_pytest_config.py` | `test_fix_wp7_jev_router_benchmark.py` (one test) |
+| `load/locustfile.py`, `load/locust_auth.py`, `load/test_locust_auth.py` | same names in `tests/` |
+| `unit/core/test_redis_client.py` | `test_core1_json_serializer.py`, `test_core3_redis_reconnect.py` |
+| `unit/core/test_cache_decorators.py` | `test_core2_cache_key_fallback.py` |
+| `unit/core/test_logging.py` | `test_core6_shared_file_handler.py`, `test_fix_1_3_logging.py` |
+| `unit/core/test_config.py` | `test_fix_1_2_config.py`, `test_sec1_secret_key.py` |
+| `unit/core/test_security.py` | `test_fix_2_3_passwords.py` |
+| `unit/core/test_warehouse_repo.py` | `test_core11_size_offered.py` |
+| `unit/core/test_user_repo.py` | `test_core14_stay_years_default.py` |
+| `unit/core/test_embeddings.py` | `test_fix_wp7_embeddings.py` |
+| `unit/core/test_db_and_embedding_guards.py` | `test_core7_low_fixes.py` |
+| `unit/core/test_repository_facade.py` | `test_fix_8_1_composition.py` |
+| `unit/core/test_session.py` | `test_fix_9_3_session.py` |
+| `unit/ml/test_segmentation_and_market_basket.py` | `test_anl_step6.py`, `test_segmentation.py` |
+| `unit/ml/test_pipelines.py` | `test_pipe_step5.py`, `test_fix_5_5_monitor_target.py` |
+| `unit/ml/test_model_registry.py` | `test_fix_2_5_model_registry_export.py`, `test_fix_3_5_train_aliases.py` |
+| `unit/ml/test_data_contract.py` | `test_fix_3_4_data_contract_stay_years.py` |
+| `unit/ml/test_champion_gate.py` | `test_fix_2_4_champion_gate.py` |
+| `unit/ml/test_model_card.py` | `test_fix_10_3_model_card_features.py` |
+| `unit/ml/test_drift_retrain.py` | `test_drift_retrain.py` |
+| `unit/ml/test_features.py` | `test_features.py`, `test_fix_4_2_preprocessor_dedup.py` |
+| `unit/ml/test_imputer.py` | `test_fix_wp11_imputer.py` |
+| `unit/ml/test_models.py` | `test_models.py`, `test_srv_step4.py`, `test_fix_4_3_onnx_optimization.py` |
+| `unit/ai/test_import_cycle.py` | `test_ai1_import_cycle.py` |
+| `unit/ai/test_node_logging.py` | `test_fix_wp7_logging.py` |
+| `unit/ai/test_synthesis_prompts.py` | `test_ai10_rag_prompt_untrusted.py` |
+| `unit/ai/test_guardrails.py` | `test_ai11_jev_outage_fallback.py` |
+| `unit/ai/test_routers.py` | `test_ai3_adversarial_routing.py`, `test_fix_wp7_jev_router_benchmark.py` |
+| `unit/ai/test_memory_removed.py` | `test_ai12_memory_removed.py` |
+| `unit/ai/test_cart_tools.py` | `test_ui4_cart_tool_no_invented_prices.py`, `test_ai4_cart_action_detection.py` |
+| `unit/ai/test_guest_identity.py` | `test_ai14_guest_user_constant.py` |
+| `unit/ai/test_response_caching.py` | `test_ai5_banned_user_cache.py`, `test_ai6_personal_answers_not_cached.py`, `test_ai7_bypass_cache_state.py`, `test_ai8_cache_failures_logged.py` |
+| `unit/ai/test_extractor.py` | `test_fix_wp7_extractor.py` |
+| `unit/ai/test_policy_kb.py` | `test_fix_wp7_policy_kb.py` |
+| `unit/ai/test_ui_payload.py` | `test_fix_wp7_ui_payload.py` |
+| `unit/ai/test_tracing.py` | `test_phase4_tracing.py` |
+| `unit/api/test_rate_limiter.py` | `test_fix_5_3_rate_limiter.py`, `test_sec4_auth_rate_limit.py` |
+| `unit/api/test_client_identity.py` | `test_sec2_3_client_identity.py`, `test_sec8_guest_identity.py` |
+| `unit/api/test_bot_routes.py` | `test_sec5_bot_identity.py`, `test_fix_7_1_bot_stream.py`, `test_api7_ws_robustness.py` |
+| `unit/api/test_ban_middleware.py` | `test_fix_5_2_ban_middleware.py` |
+| `unit/api/test_auth_dependencies.py` | `test_fix_4_4_optional_user.py`, `test_sec6_token_error_leak.py` |
+| `unit/api/test_jwt_claims_and_cors.py` | `test_sec7_jwt_claims_cors.py` |
+| `unit/api/test_shopper_routes.py` | `test_api1_batch_limits.py`, `test_api2_3_shopper_routes.py`, `test_fix_6_1_shopper_routes.py` |
+| `unit/api/test_account_demographics.py` | `test_api5_account_demographics.py` |
+| `unit/api/test_error_handlers.py` | `test_fix_5_1_cors_errors.py`, `test_api8_domain_error.py` |
+| `unit/api/test_auth_service.py` | `test_api6_email_normalization.py` |
+| `unit/api/test_shopper_service.py` | `test_api4_batch_quote_alignment.py` |
+| `unit/api/test_currency_conversion.py` | `test_fix_9_4_currency_conversion.py` |
+| `unit/ui/test_session_id.py` | `test_ui1_session_id.py` |
+| `unit/ui/test_hero_product.py` | `test_ui2_hero_product.py` |
+| `unit/ui/test_price_display.py` | `test_ui3_no_invented_prices.py`, `test_ui7_no_invented_product_data.py` |
+| `unit/ui/test_cart_checkout.py` | `test_fix_wp8a_cart_checkout.py`, `test_ui6_checkout_error.py` |
+| `unit/ui/test_bot_chat.py` | `test_fix_wp8b_bot_streaming.py`, `test_ui5_bot_offline_message.py` |
+| `unit/ui/test_auth_state.py` | `test_fix_wp8c_auth_persistence.py`, `test_api_client.py` |
+| `unit/ui/test_components.py` | `test_fix_wp9_frontend_components.py` |
+| `integration/test_redis_cache.py` | `test_fix_2_2_redis_client.py` |
+| `integration/test_base_repo.py` | `test_fix_2_1_base_repo.py` |
+| `integration/test_create_app_tables.py` | `test_fix_3_1_mro_and_tables.py` |
+| `integration/test_warehouse_indexes.py` | `test_fix_3_2_warehouse_index.py`, `test_fix_9_1_recommendation_repo.py` |
+| `integration/test_bulk_copy.py` | `test_core4_copy_format.py` (+ the replace-load test from `test_pipe_step5.py`) |
+| `integration/test_rrf_search.py` | `test_core5_rrf_candidates.py` |
+| `integration/test_schema_alignment.py` | `test_core13_schema_alignment.py` |
+| `integration/test_semantic_cache.py` | `test_core15_semantic_cache.py` |
+| `integration/test_warehouse_repo.py` | `test_fix_4_1_param_and_ddl.py` |
+| `integration/test_analytics_cache.py` | `test_fix_9_2_analytics_cache.py` |
+| `integration/test_auth_tables.py` | `test_fix_6_2_auth_no_ddl.py` |
+| `integration/test_shopper_service.py` | `test_fix_7_2_shopper_performance.py` |
+| `integration/test_batch_purchase.py` | `test_fix_batch_purchase.py` |
+| `integration/test_strike_tracker.py` | `test_fix_3_7_strike_tracker.py`, `test_ai9_strike_counter_expiry.py` |
+| `integration/test_cart_persistence.py` | `test_fix_4_5_cart_tools.py`, `test_phase4_cart_durability.py` |
+| `integration/test_bundle_tools.py` | `test_fix_8_3_bundle_tools.py`, `test_phase4_bundles.py` |
+| `integration/test_search_relaxation.py` | `test_phase4_search_relaxation.py` |
+| `integration/test_no_invented_products.py` | `test_ai13_no_invented_products.py` |
+| `integration/test_order_tools.py` | `test_ai2_order_ownership.py` |
+| `integration/test_curated_catalog.py` | `test_phase1_infra_frontend.py` (catalog tests) |
+| `integration/test_rate_limiter_redis.py` | `test_phase1_infra_frontend.py` (rate limit test, fixed) |
+| `integration/test_bot_drawer.py` | `test_phase1_infra_frontend.py` (bot drawer test) |
+| `integration/test_rate_limiter_lua.py`, `test_auth_rate_limit.py` | cut from `test_fix_5_3_rate_limiter.py`, `test_sec4_auth_rate_limit.py` |
+| `integration/test_banned_identity.py` | cut from `test_sec2_3_client_identity.py` |
+| `e2e/test_api_flows.py` | `test_api.py` |
+| `e2e/test_langgraph_agent.py` | `test_phase3_langgraph_agent.py` |
+| `e2e/test_production_flows.py` | `test_phase4_e2e_production.py` |
+| `e2e/test_caching_and_fanout.py` | `test_phase4_caching_and_fanout.py` |
+| `e2e/test_security_strikes.py` | `test_phase4_security_strikes.py` |
+| `e2e/test_jev_router_pipeline.py` | `test_phase2_jev_router.py` (calls the real JEV LLM API) |
+
+## Refactors (step 8)
+
+- 06ffb2e one blank-when-missing path for the original price, hero image url without the unreachable branch
+
+Skipped from /simplify: typed `Optional[float]` prices and catalog-boundary price validation (UI-7), moving the `known_without_price` flag into `_product_info` (the repository `try/except` would swallow the error), migrating the other inline `$x.2f` sites.
+
+Related tests (each file run separately): tests/test_ui1..ui6, test_fix_wp9_frontend_components, test_fix_wp8a_cart_checkout, test_ai13, test_fix_4_5, test_ai4, test_phase4_cart_durability, test_sec8, test_architecture.
+
+## Refactors (step 7, behaviour-preserving)
+
+- 02ec980 router node: one `_cache_hit_update` for both cache tiers, module-level cart regex, hoisted `re`/`AIMessage`
+- 036a472 rule router: one `_blocked` decision builder for the Tier-0 and intent-rule refusals
+- 856b9fd cache service: shared `_trace_lookup` and `_embed`, each query hashed once
+- 88faa83 unused imports and variables removed, synthesis service imports `AgentState` directly
+- df70dfc details/support nodes: precompiled regexes, query lower-cased once
+- 53b8fdb black/isort (line length 127) on all of `ai/`, flake8 clean; E501 waived per file where long prompt and regex literals cannot wrap
+
+Skipped from /simplify: a shared product-id normaliser and card-builder module (the aggregator uses `price` only while the nodes fall back from `discounted_price`, so unifying changes output), one shared stopword set (touches extraction), `safe_trace` wrapper and hoisting `agent_tracer` / `cache_service` imports (the tracer connects to MLflow at import and the cache tests patch the module attribute), the aggregator dict index, hoisting the order SQL, a second `is_banned` Redis read per request (the guardrail service re-checks on purpose), and the structural ideas (validator on `RoutingDecision`, `is_cacheable` shared by read and write sides, a `personal` flag set by nodes, `track_order` returning `Optional`, a scoped cache view). Those change behaviour or design and are round-2 candidates.
+
+Related tests (each file run separately): tests/test_ai1..ai10, test_core15, test_core7, test_phase2/3/4*, test_fix_wp7*, test_fix_wp8b, test_fix_7_1, test_fix_4_5, test_fix_8_3, test_fix_3_7, test_sec5, test_sec8, test_architecture.
+
+## Refactors (step 6, behaviour-preserving)
+
+- persona lookup as one table, one column-mapping loop, black/isort (line length 127) on `ml/segmentation`
+- lift buckets as a table, single best-edge lookup, black/isort on `ml/market_basket`
+
+Skipped from /simplify: a shared similarity-map helper between `Item2VecRecommender` and `ProductNetworkGraph._extract_similarity_map` (the fallback serves raw gensim models and changes error handling), vectorising the `iterrows` loops (not hot).
+
+Related tests (each file run separately): tests/test_anl_step6, test_segmentation, test_pipe_step5, test_architecture, test_phase4_bundles.
+
+## Refactors (step 5, behaviour-preserving)
+
+- 85e8434 `onnx_dir()` / `imputer_onnx_dir()` used everywhere, one `prepare_batch` for monitor and retrain (replaces two copies of the imputation block), cron reuses `MODEL_CACHE_PATTERNS`, unused imports removed
+- e8d9d13 black/isort (line length 127) and flake8 clean-up of `ml/pipelines` and `ml/features`; E402 is waived per file where env vars must be set before imports
+
+Skipped from /simplify: SQL-side sampling of the drift batch (not the same rows as the seeded sample), moving `CHAMPION_ONNX_NAME` to `core` so `apps` can share it (layering; the coupling is commented), removing the now-unused `truncate_*`/`insert_*_batch` repo methods (public API, outside this step), hoisting imports in the new test file.
+
+Related tests (each file run separately): tests/test_pipe_step5, test_drift_retrain, test_features, test_fix_4_2_preprocessor_dedup, test_fix_wp11_imputer, test_fix_3_4_data_contract_stay_years, test_core4_copy_format, test_architecture, test_fix_2_5_model_registry_export, test_models, test_api.
+
+## Refactors (step 4, behaviour-preserving)
+
+- 498d97e black/isort (line length 127) and flake8 clean-up of `ml/serving` and `ml/models`; the exporter reuses `ALL_FEATURES`. `ml/models` is in `.gitignore` (tracked files only), so `black`/`isort` must be given explicit file paths and new files need `git add -f`.
+
+Related tests (each file run separately): tests/test_srv_step4, test_models, test_fix_wp11_imputer, test_fix_4_3_onnx_optimization, test_fix_2_5_model_registry_export, test_fix_10_3_model_card_features, test_architecture. All pass.
+
+## Refactors (step 3, behaviour-preserving)
+
+- 93b1910 cache decorators: shared read/write helpers for sync and async wrappers
+- 81275b3 user repo: one demographics mapping and one purchase INSERT statement
+- 363fd51 warehouse repo: relaxation ladder as a tier loop, redundant imports and double commit removed
+- f672e53 dead `LOG_FILE_PATH` and redundant `getattr` on declared settings removed
+- 78fae60 black/isort (line length 127) applied to `core`, flake8 clean
+
+Related tests (each file run separately, `--timeout`): tests/test_core1..7, test_api, test_architecture, test_fix_2_1/2_2/1_3/1_2, test_sec1, test_fix_9_1/9_3, test_fix_wp7_embeddings, test_fix_8_1, test_fix_3_2, test_phase4_search_relaxation/cart_durability/tracing, test_fix_batch_purchase, test_fix_2_3, test_sec7. All pass. Not touched: the stale `test_redis_rate_limit_5_min_20_day` (baseline) and AI-1.
+
+## Refactors (step 2, behaviour-preserving)
+
+- 4cd6c22 unused imports and dead local removed
+- 770ab4d auth service token/response building shared
+- 7bf6440 bot SSE frame emission and StreamingResponse deduplicated
+- a16db80 black/isort applied to apps/api, flake8 clean
+
+- 0769606 Locust: signup/login retried on 429 (all simulated users share one IP and /auth/* is limited per IP), so every user holds a token for authenticated tasks. Note: per-user limits (RATE_LIMIT_MINUTE=60) still make heavy load runs return 429s on predict endpoints; raise them via env for load tests.
+
+## Refactors (step 9)
+
+None: infra changes only.
+
+### Step 9 status: images rebuilt (2026-10-12)
+
+Superseded the earlier "images NOT rebuilt" note. The UI was crash-looping on the stale image (`unzip` missing, INF-19; the Dockerfile already had the fix). `docker compose config --quiet` passed and `docker compose up -d --build --force-recreate` rebuilt the API and UI images from the current Dockerfiles (the Debian package download ran at about 94 kB/s, so the UI build took about 25 minutes). The UI then ran but stayed `unhealthy` (INF-20); after that fix all services are up: API, postgres, redis and UI `healthy`, minio and mlflow `Up` (they define no healthcheck), and `http://localhost:3000` answers 200. The API image built with the slimmed requirements without the earlier `pyarrow` timeout.

@@ -1,22 +1,45 @@
 """
 Shopper routes — catalog browsing, recommendations, tailored pricing, and purchase history.
 """
-from typing import List, Dict, Any, Optional
-from fastapi import APIRouter, Depends
 
-from apps.api.schemas import (
-    CatalogProductItem, BrowseProductResponse,
-    ShopperPredictRequest, ShopperPredictResponse,
-    ShopperBatchPredictRequest, ShopperBatchPredictResponse,
-    CuratedProductItem,
-    ShopperPurchaseResponse, ShopperBatchPurchaseRequest, ShopperBatchPurchaseResponse,
-    PurchaseHistoryResponse
-)
+from typing import Any, Dict, List
+
+from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel
+
+from apps.api.auth import get_current_user
 from apps.api.dependencies import get_repository
-from apps.api.auth import get_current_user, get_optional_user
 from apps.api.rate_limiting.rate_limiter import rate_limit_dependency
+from apps.api.schemas import (
+    BrowseProductResponse,
+    CatalogProductItem,
+    CuratedProductItem,
+    PurchaseHistoryResponse,
+    ShopperBatchPredictRequest,
+    ShopperBatchPredictResponse,
+    ShopperBatchPurchaseRequest,
+    ShopperBatchPurchaseResponse,
+    ShopperPredictRequest,
+    ShopperPredictResponse,
+    ShopperPurchaseResponse,
+)
 from apps.api.services.shopper_service import shopper_service
 from core.db.repository import BlackFridayRepository
+
+DEMOGRAPHIC_FIELDS = (
+    "gender",
+    "age",
+    "occupation",
+    "city_category",
+    "stay_in_current_city_years",
+    "marital_status",
+)
+
+
+def _without_demographics(item: BaseModel) -> Dict[str, Any]:
+    """Item payload minus client-sent demographics: authenticated pricing uses the account's own profile."""
+    return item.model_dump(exclude=set(DEMOGRAPHIC_FIELDS))
+
 
 router = APIRouter(prefix="/shopper", tags=["Shopper Experience"])
 
@@ -29,7 +52,7 @@ def get_curated_catalog():
 
 @router.get("/catalog", response_model=List[CatalogProductItem])
 def get_product_catalog(
-    limit: int = 100,
+    limit: int = Query(100, ge=1, le=500),
     repo: BlackFridayRepository = Depends(get_repository),
 ):
     """Returns top products for catalog browsing."""
@@ -50,21 +73,24 @@ def browse_product(
 @router.post("/predict-price-batch", response_model=ShopperBatchPredictResponse)
 def predict_price_batch(
     request: ShopperBatchPredictRequest,
-    current_user: Optional[Dict[str, Any]] = Depends(get_optional_user),
+    current_user: Dict[str, Any] = Depends(rate_limit_dependency),
     repo: BlackFridayRepository = Depends(get_repository),
 ):
     """Calculates personalized batch quotes for high-concurrency cart processing."""
-    user_id = current_user.get("user_id") if current_user else None
+    user_id = current_user.get("user_id")
     user_demo = {
-        "gender": current_user.get("gender") if current_user else None,
-        "age": current_user.get("age") if current_user else None,
-        "city_category": current_user.get("city_category") if current_user else None,
-        "marital_status": current_user.get("marital_status") if current_user else None,
-        "occupation": current_user.get("occupation") if current_user else None,
-        "stay_in_current_city_years": current_user.get("stay_in_current_city_years") if current_user else None,
+        key: current_user.get(key)
+        for key in (
+            "gender",
+            "age",
+            "city_category",
+            "marital_status",
+            "occupation",
+            "stay_in_current_city_years",
+        )
     }
     quotes = shopper_service.estimate_price_batch(
-        items=[item.model_dump() for item in request.items],
+        items=[_without_demographics(item) for item in request.items],
         repo=repo,
         user_id=user_id,
         user_demographics=user_demo,
@@ -109,13 +135,13 @@ def record_purchase(
         cat1=request.product_category_1,
         cat2=request.product_category_2,
         cat3=request.product_category_3,
-        gender=request.gender or current_user.get("gender"),
-        age=request.age or current_user.get("age"),
-        occupation=request.occupation if request.occupation is not None else current_user.get("occupation"),
-        city_category=request.city_category or current_user.get("city_category"),
-        stay_in_current_city_years=request.stay_in_current_city_years or current_user.get("stay_in_current_city_years"),
-        marital_status=request.marital_status if request.marital_status is not None else current_user.get("marital_status"),
-        repo=repo
+        gender=current_user.get("gender"),
+        age=current_user.get("age"),
+        occupation=current_user.get("occupation"),
+        city_category=current_user.get("city_category"),
+        stay_in_current_city_years=current_user.get("stay_in_current_city_years"),
+        marital_status=current_user.get("marital_status"),
+        repo=repo,
     )
     return ShopperPurchaseResponse(**res)
 
@@ -130,7 +156,7 @@ def record_batch_purchase(
     user_id = current_user["user_id"]
     results = shopper_service.process_batch_purchase(
         user_id=user_id,
-        items=[item.model_dump() for item in request.items],
+        items=[_without_demographics(item) for item in request.items],
         repo=repo,
         user_demographics=current_user,
     )
@@ -141,7 +167,6 @@ def record_batch_purchase(
         total_items=len(purchases),
         total_amount=total_amount,
     )
-
 
 
 @router.get("/history", response_model=PurchaseHistoryResponse)

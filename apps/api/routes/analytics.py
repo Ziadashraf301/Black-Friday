@@ -1,13 +1,13 @@
 """
 Analytics routes — executive KPIs and demographic significance tests.
 """
-from typing import List, Dict, Any
+
 from fastapi import APIRouter, Depends
 
-from apps.api.schemas import EDASummaryResponse
 from apps.api.dependencies import get_repository
-from core.db.repository import BlackFridayRepository
+from apps.api.schemas import EDASummaryResponse
 from apps.api.services.analytics_service import analytics_service
+from core.db.repository import BlackFridayRepository
 
 router = APIRouter(prefix="/analytics", tags=["Analytics & EDA"])
 

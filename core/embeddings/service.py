@@ -4,10 +4,13 @@ Provides an abstract base interface and concrete provider strategies for 768-dim
   - GeminiEmbeddingProvider (models/gemini-embedding-2)
   - DeterministicSemanticProvider (Deterministic fallback)
 """
-from abc import ABC, abstractmethod
-from typing import List, Optional, Any
+
 import hashlib
+from abc import ABC, abstractmethod
+from typing import Any, List, Optional
+
 import numpy as np
+
 from core.config import settings
 from core.logging import get_logger
 
@@ -42,7 +45,7 @@ class GeminiEmbeddingProvider(BaseEmbeddingProvider):
         model_name: str = "models/gemini-embedding-2",
         client: Optional[Any] = None,
     ):
-        self._api_key = api_key or getattr(settings, "GEMINI_API_KEY", None) or getattr(settings, "GOOGLE_API_KEY", None)
+        self._api_key = api_key or settings.GEMINI_API_KEY
         self._model_name = model_name
         self._client = client
 
@@ -57,6 +60,7 @@ class GeminiEmbeddingProvider(BaseEmbeddingProvider):
             logger.warning("[EMBEDDING-PROVIDER: GEMINI] GEMINI_API_KEY not found in environment.")
             raise ValueError("GEMINI_API_KEY not configured.")
         from google import genai
+
         self._client = genai.Client(api_key=self._api_key)
         return self._client
 
@@ -66,6 +70,7 @@ class GeminiEmbeddingProvider(BaseEmbeddingProvider):
 
         try:
             from google.genai import types
+
             config = types.EmbedContentConfig(
                 task_type="RETRIEVAL_DOCUMENT",
                 output_dimensionality=768,
@@ -92,6 +97,9 @@ class GeminiEmbeddingProvider(BaseEmbeddingProvider):
             raw_vec = [float(x) for x in res["embeddings"][0]["values"]]
         else:
             raise ValueError(f"Unexpected response structure from embed_content: {res}")
+
+        if len(raw_vec) < 768:
+            raise ValueError(f"Embedding has {len(raw_vec)} dimensions; expected at least 768.")
 
         # Matryoshka Representation Learning: slice and L2-normalize to exact 768 dimensions
         if len(raw_vec) != 768:
@@ -130,20 +138,28 @@ class EmbeddingService:
 
     def __init__(self, provider: Optional[BaseEmbeddingProvider] = None):
         self._provider = provider or self._resolve_default_provider()
-        logger.info(f"[EMBEDDING-SERVICE] Initialized with active provider: {self.provider_name} (dim={self._provider.dimension})")
+        logger.info(
+            f"[EMBEDDING-SERVICE] Initialized with active provider: {self.provider_name} (dim={self._provider.dimension})"
+        )
 
     @staticmethod
     def _resolve_default_provider() -> BaseEmbeddingProvider:
-        key = getattr(settings, "GEMINI_API_KEY", None) or getattr(settings, "GOOGLE_API_KEY", None)
+        key = settings.GEMINI_API_KEY
         if key and key != "test_api_key_placeholder":
             try:
                 from google import genai  # noqa: F401
+
                 logger.info("[EMBEDDING-SERVICE] Active strategy: GeminiEmbeddingProvider (models/gemini-embedding-2).")
                 return GeminiEmbeddingProvider(api_key=key)
             except ImportError:
-                logger.warning("[EMBEDDING-SERVICE] google-genai package not installed. Falling back to DeterministicSemanticProvider.")
+                logger.warning(
+                    "[EMBEDDING-SERVICE] google-genai package not installed. Falling back to DeterministicSemanticProvider."
+                )
         else:
-            logger.info("[EMBEDDING-SERVICE] No GEMINI_API_KEY detected in environment. Using DeterministicSemanticProvider (offline / testing mode, 768-dim).")
+            logger.info(
+                "[EMBEDDING-SERVICE] No GEMINI_API_KEY detected in environment. "
+                "Using DeterministicSemanticProvider (offline / testing mode, 768-dim)."
+            )
         return DeterministicSemanticProvider()
 
     @property

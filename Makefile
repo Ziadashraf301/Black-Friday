@@ -1,4 +1,4 @@
-.PHONY: help up down restart ps logs ingest preprocess segmentation basket train monitor retrain eval eval-ml eval-ai test lint clean
+.PHONY: help up down restart ps logs ingest preprocess segmentation basket train monitor retrain cron eval eval-ml eval-ai test test-unit test-slow test-integration test-e2e lint lint-ci clean
 
 # Default target: display help
 help:
@@ -22,29 +22,35 @@ help:
 	@echo "  make retrain      - Run Champion vs Challenger continuous retraining"
 	@echo "                      Example: make retrain NEW_DATA=path/to/new.csv [MODEL=lgbm]"
 	@echo "                      Example: make retrain DEMO=1 (test with warehouse split)"
+	@echo "  make cron         - Start the 6-hour pipeline scheduler (ARGS=--once for one cycle)"
 	@echo "  make eval         - Run regression and router evaluation suites"
 	@echo "  make eval-ml      - Run standalone ML regression/imputation evaluation"
 	@echo "  make eval-ai      - Run AI System-1 router and extractor benchmarks"
-	@echo "  make test         - Run pytest suite with coverage"
-	@echo "  make lint         - Run flake8 and black code quality checks"
+	@echo "  make test         - Run every test folder (unit, architecture, load helpers, integration, e2e)"
+	@echo "  make test-unit    - Fast tests, mocks only (tests/unit, tests/architecture, tests/load; skips @slow)"
+	@echo "  make test-slow    - The slow unit tests (subprocess imports, drift/retrain, ONNX imputer)"
+	@echo "  make test-integration - Needs live PostgreSQL / Redis / MLflow (tests/integration)"
+	@echo "  make test-e2e     - Full API / graph flows (tests/e2e)"
+	@echo "  make lint         - Run flake8, black and isort on everything (all three always run)"
+	@echo "  make lint-ci      - Same, limited to LINT_CLEAN_PATHS (what CI enforces)"
 	@echo "  make clean        - Remove temporary cache files and __pycache__"
 	@echo "======================================================================"
 
 # Docker Container Orchestration
 up:
-	docker-compose up -d --build
+	docker compose up -d --build
 
 down:
-	docker-compose down
+	docker compose down
 
 restart:
-	docker-compose restart
+	docker compose restart
 
 ps:
-	docker-compose ps
+	docker compose ps
 
 logs:
-	docker-compose logs -f
+	docker compose logs -f
 
 # Data & ML Pipelines (Local or Container Execution)
 ingest:
@@ -69,7 +75,7 @@ retrain:
 	python -m ml.pipelines.retrain $(if $(NEW_DATA),--new-data $(NEW_DATA),) $(if $(OLD_DATA),--old-data $(OLD_DATA),) $(if $(MODEL),--model $(MODEL),) $(if $(DEMO),--demo,) $(ARGS)
 
 cron:
-	python -m ml.pipelines.cron_scheduler
+	python -m ml.pipelines.cron_scheduler $(ARGS)
 
 # Model & System Evaluation Suites
 eval-ml:
@@ -82,13 +88,33 @@ eval: eval-ml eval-ai
 
 
 # Quality Assurance & Code Standards
-test:
-	pytest tests/ -v
+# Test layout: tests/unit (mocks only), tests/integration (live services), tests/e2e (full flows),
+# tests/architecture (layering), tests/load (locust). Each test has a 60s timeout (pyproject.toml).
+test: test-unit test-slow test-integration test-e2e
+
+test-unit:
+	pytest tests/unit tests/architecture tests/load -m "not slow" -v
+
+test-slow:
+	pytest tests/unit tests/load -m slow -v
+
+test-integration:
+	pytest tests/integration -v
+
+test-e2e:
+	pytest tests/e2e -v
+
+# Everything is checked by `make lint`; most of apps/, evaluation/, ml/ and tests/ predates the black/isort
+# config in pyproject.toml, so CI enforces only the directories that are already clean. Add a directory to
+# LINT_CLEAN_PATHS once it passes.
+LINT_PATHS = ai/ apps/ core/ evaluation/ ml/ tests/
+LINT_CLEAN_PATHS = ai/ core/
 
 lint:
-	flake8 ai/ apps/ core/ evaluation/ ml/ tests/ --max-line-length=127
-	black --check ai/ apps/ core/ evaluation/ ml/ tests/
-	isort --check ai/ apps/ core/ evaluation/ ml/ tests/
+	@rc=0; flake8 $(LINT_PATHS) || rc=1; black --check $(LINT_PATHS) || rc=1; isort --check $(LINT_PATHS) || rc=1; exit $$rc
+
+lint-ci:
+	@rc=0; flake8 $(LINT_CLEAN_PATHS) || rc=1; black --check $(LINT_CLEAN_PATHS) || rc=1; isort --check $(LINT_CLEAN_PATHS) || rc=1; exit $$rc
 
 clean:
 	python -c "import pathlib, shutil; [shutil.rmtree(p, ignore_errors=True) for p in pathlib.Path('.').rglob('__pycache__')]; [p.unlink() for p in pathlib.Path('.').rglob('*.pyc')]; [p.unlink() for p in pathlib.Path('.').rglob('*.pyo')]; shutil.rmtree('.pytest_cache', ignore_errors=True); shutil.rmtree('htmlcov', ignore_errors=True); pathlib.Path('.coverage').unlink(missing_ok=True)"

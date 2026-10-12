@@ -6,6 +6,7 @@ Handles auth, catalog, filters, quick view, ONNX pricing, cart, history, and das
 import json
 import httpx
 import asyncio
+import uuid
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
@@ -23,6 +24,25 @@ _OCCUPATION_MAP = {
     12: "Agriculture", 13: "Media", 14: "Transport", 15: "Arts & Design",
     16: "Freelance", 17: "Real Estate", 18: "Retired", 19: "Homemaker", 20: "Other",
 }
+
+
+PRICE_UNAVAILABLE = "Price unavailable"
+BOT_UNAVAILABLE_MESSAGE = "The shopping assistant is unavailable right now. Please try again in a moment."
+CHECKOUT_NETWORK_ERROR = "Checkout could not reach the store. Please check your connection and try again."
+
+
+def _price_or_none(value: Any) -> Optional[float]:
+    """A usable positive price, or None. Missing prices are never replaced by made-up numbers."""
+    try:
+        price = float(value)
+    except (TypeError, ValueError):
+        return None
+    return price if price > 0 else None
+
+
+def _format_price(value: Any, missing: str = PRICE_UNAVAILABLE) -> str:
+    price = _price_or_none(value)
+    return f"${price:.2f}" if price is not None else missing
 
 
 def _parse_auth_error(resp: httpx.Response) -> str:
@@ -148,8 +168,8 @@ class RecProduct(BaseModel):
     product_id: str = ""
     name: str = ""
     image_url: str = ""
-    price: float = 0.0
-    price_display: str = "$0.00"
+    price: Optional[float] = None
+    price_display: str = PRICE_UNAVAILABLE
     badge_label: str = ""
 
 
@@ -158,6 +178,8 @@ class ShoppingState(rx.State):
 
     # --- Auth state ---
     auth_token: str = rx.LocalStorage("", name="bf_access_token")
+    # Random per-browser id sent as the assistant session_id; the API derives guest identity from it
+    session_id: str = rx.LocalStorage("", name="bf_session_id")
     user_name: str = ""
     user_id: int = 0
     user_email: str = ""
@@ -208,7 +230,7 @@ class ShoppingState(rx.State):
 
     # --- ONNX pricing ---
     cached_price_estimates: Dict[str, float] = {}
-    estimated_price_usd: float = 0.0
+    estimated_price_usd: Optional[float] = None
     price_prediction_model: str = ""
     is_predicting_price: bool = False
 
@@ -268,20 +290,24 @@ class ShoppingState(rx.State):
 
     # ── Hero product computed vars ──────────────────────────────────────
     @rx.var
+    def has_hero(self) -> bool:
+        return bool(self.hero_product.get("product_id"))
+
+    @rx.var
     def hero_id(self) -> str:
-        return str(self.hero_product.get("product_id", "P00025442"))
+        return str(self.hero_product.get("product_id", ""))
 
     @rx.var
     def hero_name(self) -> str:
-        return str(self.hero_product.get("name", "Artisan Paisley Silk Kimono"))
+        return str(self.hero_product.get("name", ""))
 
     @rx.var
     def hero_tagline(self) -> str:
-        return str(self.hero_product.get("tagline", "Heritage 1970s emerald botanical archive robe"))
+        return str(self.hero_product.get("tagline", ""))
 
     @rx.var
     def hero_image_url(self) -> str:
-        return str(self.hero_product.get("image_url", f"/products/{self.hero_id}.jpg"))
+        return str(self.hero_product.get("image_url") or f"/products/{self.hero_id}.jpg")
 
     @rx.var
     def hero_badge_label(self) -> str:
@@ -289,23 +315,15 @@ class ShoppingState(rx.State):
 
     @rx.var
     def hero_original_price_display(self) -> str:
-        try:
-            p = float(self.hero_product.get("original_price", 99.90))
-        except (ValueError, TypeError):
-            p = 99.90
-        return f"${p:.2f}"
+        return _format_price(self.hero_product.get("original_price"), missing="")
 
     @rx.var
     def hero_discounted_price_display(self) -> str:
-        try:
-            p = float(self.hero_product.get("discounted_price", 49.90))
-        except (ValueError, TypeError):
-            p = 49.90
-        return f"${p:.2f}"
+        return _format_price(self.hero_product.get("discounted_price"))
 
     def open_hero_detail(self):
-        if self.hero_product:
-            self.open_product_detail(str(self.hero_product.get("product_id", "P00025442")))
+        if self.has_hero:
+            self.open_product_detail(self.hero_id)
 
     # ── Dynamic Filter Options ──────────────────────────────────────────
     @rx.var
@@ -351,7 +369,7 @@ class ShoppingState(rx.State):
                 continue
             if self.selected_season != "All" and p.get("season") != self.selected_season:
                 continue
-            result.append(p)
+            result.append({**p, "price_display": _format_price(p.get("discounted_price"), missing="")})
         return result
 
     @rx.var
@@ -419,24 +437,25 @@ class ShoppingState(rx.State):
         return f"{self.active_product_orders:,} orders"
 
     @rx.var
-    def active_product_original_price(self) -> float:
-        return float(self.active_product.get("original_price", 0.0))
+    def active_product_original_price(self) -> Optional[float]:
+        return _price_or_none(self.active_product.get("original_price"))
 
     @rx.var
-    def active_product_sale_price(self) -> float:
-        return float(self.active_product.get("discounted_price", 0.0))
+    def active_product_sale_price(self) -> Optional[float]:
+        return _price_or_none(self.active_product.get("discounted_price"))
 
     @rx.var
     def active_sale_price_display(self) -> str:
-        return f"${self.active_product_sale_price:.2f}"
+        return _format_price(self.active_product_sale_price)
 
     @rx.var
     def active_original_price_display(self) -> str:
-        return f"Original: ${self.active_product_original_price:.2f}"
+        price = _format_price(self.active_product_original_price, missing="")
+        return f"Original: {price}" if price else ""
 
     @rx.var
     def active_estimated_price_display(self) -> str:
-        return f"${self.estimated_price_usd:.2f}"
+        return _format_price(self.estimated_price_usd)
 
     @rx.var
     def active_product_badge(self) -> str:
@@ -446,7 +465,7 @@ class ShoppingState(rx.State):
     def active_product_sizes(self) -> List[str]:
         return self.active_product.get("sizes", ["S", "M", "L", "XL"]) if self.active_product else ["S", "M", "L", "XL"]
 
-    def _extract_recs(self, key: str, default_name: str, default_price: float, badge: str) -> List[RecProduct]:
+    def _extract_recs(self, key: str, default_name: str, badge: str) -> List[RecProduct]:
         raw = self.active_product.get(key, []) if self.active_product else []
         active_id = str(self.active_product.get("product_id", ""))
         seen = {active_id}
@@ -456,13 +475,13 @@ class ShoppingState(rx.State):
             if not pid or pid in seen:
                 continue
             seen.add(pid)
-            p = float(item.get("price", default_price))
+            p = _price_or_none(item.get("price"))
             res.append(RecProduct(
                 product_id=pid,
                 name=str(item.get("name", default_name)),
                 image_url=str(item.get("image_url", f"/products/{pid}.jpg")),
                 price=p,
-                price_display=f"${p:.2f}",
+                price_display=_format_price(p),
                 badge_label=badge,
             ))
             if len(res) >= 3:
@@ -471,11 +490,11 @@ class ShoppingState(rx.State):
 
     @rx.var
     def active_apriori_bundles_list(self) -> List[RecProduct]:
-        return self._extract_recs("apriori_bundles", "Curated Bundle", 69.0, "Bundle Rule")
+        return self._extract_recs("apriori_bundles", "Curated Bundle", "Bundle Rule")
 
     @rx.var
     def active_item2vec_similars_list(self) -> List[RecProduct]:
-        return self._extract_recs("item2vec_similars", "Similar Piece", 59.0, "Similar Style")
+        return self._extract_recs("item2vec_similars", "Similar Piece", "Similar Style")
 
     # ── Dashboard computed vars ─────────────────────────────────────────
     @rx.var
@@ -692,7 +711,13 @@ class ShoppingState(rx.State):
         self.show_dashboard = False
 
     # ── Catalog actions ─────────────────────────────────────────────────
+    def _ensure_session_id(self) -> str:
+        if not self.session_id:
+            self.session_id = f"bf_{uuid.uuid4().hex}"
+        return self.session_id
+
     def load_catalog(self):
+        self._ensure_session_id()
         self.is_loading = True
         try:
             with httpx.Client(timeout=4.0) as client:
@@ -746,53 +771,16 @@ class ShoppingState(rx.State):
         target = next((p for p in self.products if p.get("product_id") == product_id), None)
         if not target and self.hero_product.get("product_id") == product_id:
             target = self.hero_product
-        if not target:
-            target = self._fetch_product_from_api(product_id)
+        # A product outside the loaded catalog is skipped: nothing is made up for it
         if target:
             self.active_product = target
             self.active_selected_size = "M"
             self.is_quick_view_open = True
-            base_price = float(target.get("discounted_price", 49.90))
+            base_price = _price_or_none(target.get("discounted_price"))
             self.estimated_price_usd = base_price
-            self.price_prediction_model = "Catalog Price"
+            self.price_prediction_model = "Catalog Price" if base_price else PRICE_UNAVAILABLE
             if self.is_authenticated:
                 self.fetch_ai_price_estimate(target)
-
-    def _fetch_product_from_api(self, product_id: str) -> Optional[Dict[str, Any]]:
-        try:
-            with httpx.Client(timeout=3.0) as client:
-                resp = client.get(f"{API_BASE_URL}/shopper/browse/{product_id}")
-                if resp.status_code == 200:
-                    d = resp.json()
-                    return {
-                        "product_id": product_id,
-                        "name": f"Product {product_id}",
-                        "tagline": "Curated Archive Piece",
-                        "description": f"Archival collection item with {d.get('order_count', 0):,} verified purchases.",
-                        "category_name": "Archive",
-                        "product_category_1": 1,
-                        "image_url": f"/products/{product_id}.jpg",
-                        "original_price": 149.0,
-                        "discounted_price": 79.0,
-                        "order_count": d.get("order_count", 0),
-                        "sizes": ["S", "M", "L", "XL"],
-                        "badge": "Vintage",
-                        "gender": "Unisex",
-                        "brand": "Archive",
-                        "style": "Vintage",
-                        "season": "All-Season",
-                        "apriori_bundles": [
-                            {"product_id": pid, "name": f"Archive {pid}", "image_url": f"/products/{pid}.jpg", "price": 89.0}
-                            for pid in d.get("apriori_bundles", [])[:3]
-                        ],
-                        "item2vec_similars": [
-                            {"product_id": pid, "name": f"Similar {pid}", "image_url": f"/products/{pid}.jpg", "price": 69.0}
-                            for pid in d.get("item2vec_similar", [])[:3]
-                        ],
-                    }
-        except Exception:
-            pass
-        return None
 
     def navigate_to_rec(self, product_id: str):
         """Switch quick-view directly to a recommendation product without modal flicker."""
@@ -892,8 +880,9 @@ class ShoppingState(rx.State):
                     return
         except Exception:
             pass
-        self.estimated_price_usd = float(product.get("discounted_price", 0.0))
-        self.price_prediction_model = "Catalog Price"
+        catalog_price = _price_or_none(product.get("discounted_price"))
+        self.estimated_price_usd = catalog_price
+        self.price_prediction_model = "Catalog Price" if catalog_price else PRICE_UNAVAILABLE
         self.is_predicting_price = False
 
     # ── Hero ─────────────────────────────────────────────────────────────
@@ -911,7 +900,9 @@ class ShoppingState(rx.State):
             return
 
         key = f"{product_id}_{size}"
-        base_price = float(target.get("discounted_price", target.get("original_price", 49.99)))
+        base_price = _price_or_none(target.get("discounted_price")) or _price_or_none(target.get("original_price"))
+        if base_price is None:
+            return
 
         # Determine personalized price if logged in
         pers_price = 0.0
@@ -920,7 +911,7 @@ class ShoppingState(rx.State):
             if product_id in self.cached_price_estimates and self.cached_price_estimates[product_id] > 0:
                 pers_price = self.cached_price_estimates[product_id]
                 has_pers = True
-            elif self.active_product.get("product_id") == product_id and self.estimated_price_usd > 0:
+            elif self.active_product.get("product_id") == product_id and self.estimated_price_usd:
                 pers_price = self.estimated_price_usd
                 has_pers = True
 
@@ -994,7 +985,10 @@ class ShoppingState(rx.State):
                     pid_to_price = {q["product_id"]: float(q["predicted_usd"]) for q in quotes}
                     updated_items = []
                     for item in self.cart_items:
-                        p_price = pid_to_price.get(item.product_id, item.price * 0.85)
+                        p_price = pid_to_price.get(item.product_id)
+                        if p_price is None:
+                            updated_items.append(item)
+                            continue
                         updated_items.append(CartItem(
                             key=item.key,
                             product_id=item.product_id,
@@ -1030,8 +1024,8 @@ class ShoppingState(rx.State):
             self.is_cart_open = True
 
     def add_hero_to_cart(self):
-        if self.hero_product:
-            self._add_with_size(self.hero_product.get("product_id", ""), self.hero_selected_size)
+        if self.has_hero:
+            self._add_with_size(self.hero_id, self.hero_selected_size)
             self.is_cart_open = True
 
     def remove_cart_item(self, key: str):
@@ -1105,8 +1099,8 @@ class ShoppingState(rx.State):
                     except Exception:
                         err_detail = f"Checkout failed with status {resp.status_code}."
                     self.checkout_error = str(err_detail)
-        except Exception as e:
-            self.checkout_error = f"Checkout network error: {str(e)}"
+        except Exception:
+            self.checkout_error = CHECKOUT_NETWORK_ERROR
 
         if success:
             self.cart_items = []
@@ -1259,8 +1253,7 @@ class ShoppingState(rx.State):
 
     async def _execute_bot_query(self, query: str):
         """Executes query through backend API endpoint (/bot/stream) over async HTTP SSE stream."""
-        user_id = str(self.user_id) if self.user_id else "guest_user"
-        session_id = f"session_{user_id}"
+        session_id = self._ensure_session_id()
 
         self.bot_loading = True
         self.bot_active_cards = []
@@ -1278,9 +1271,9 @@ class ShoppingState(rx.State):
                 async with client.stream(
                     "POST",
                     f"{API_BASE_URL}/bot/stream",
+                    headers={"Authorization": f"Bearer {self.auth_token}"} if self.auth_token else None,
                     json={
                         "query": query,
-                        "user_id": user_id,
                         "session_id": session_id,
                         "mode": self.bot_mode,
                     },
@@ -1396,21 +1389,9 @@ class ShoppingState(rx.State):
                             self.bot_messages.append({"role": "assistant", "content": "Here are the top catalog selections:"})
                         yield
 
-        except Exception as e:
-            # Offline fallback if API server is not running locally
-            chip_lower = query.lower()
-            if "deal" in chip_lower:
-                reply = "Here are our top recommended deals today: Check out the Artisan Paisley Silk Kimono Shirt ($49.90, 50% off) and the Midnight Ribbed Merino Wool Duster Coat ($119.90)!"
-            elif "sale" in chip_lower:
-                reply = "We currently have archival discounts across Jackets, Silks, and Knitwear! Explore our Sale badges for member-exclusive pricing."
-            elif "under $50" in chip_lower or "50" in chip_lower:
-                reply = "Top archival finds under $50: Vintage Brushed Flannel Camp Shirt ($44.90), Retro Gum-Sole Court Sneakers ($49.00), and Artisan Paisley Silk Kimono ($49.90)."
-            elif "style" in chip_lower or "advisor" in chip_lower:
-                persona = self.user_cluster_persona or "Modern Vintage"
-                reply = f"Based on your {persona} profile, I recommend pairing tailored high-waist trousers with our hand-knitted cable cardigans and leather footwear."
-            else:
-                reply = f"Assistant offline: Unable to reach assistant service ({str(e)})."
-
+        except Exception:
+            # No canned deals or prices here: say plainly that the assistant is unreachable
+            reply = BOT_UNAVAILABLE_MESSAGE
             if self.bot_messages and self.bot_messages[-1].get("role") == "assistant":
                 self.bot_messages[-1]["content"] = reply
             else:

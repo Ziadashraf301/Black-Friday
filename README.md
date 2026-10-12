@@ -125,7 +125,7 @@ An enterprise-grade, end-to-end Data Engineering, Data Science, and Machine Lear
 
 ### Locust Load Test Benchmarks (50 Concurrent Users, 10 Spawn Rate)
 
-API endpoints were load tested using **Locust** (`tests/locustfile.py`) under high-concurrency headless testing conditions (50 concurrent users, spawn rate = 10 users/sec, host `http://127.0.0.1:8000`).
+API endpoints were load tested using **Locust** (`tests/load/locustfile.py`) under high-concurrency headless testing conditions (50 concurrent users, spawn rate = 10 users/sec, host `http://127.0.0.1:8000`).
 
 | Endpoint Path                              | Request Type | Target Module                          | Total Requests |  Median Latency  |  Average Latency  |   Min Latency   |    Max Latency    |   Throughput (RPS)   |   Error Rate   |      Status      |
 | :----------------------------------------- | :-----------: | :------------------------------------- | :------------: | :---------------: | :---------------: | :--------------: | :---------------: | :-------------------: | :-------------: | :--------------: |
@@ -228,7 +228,7 @@ The platform features an interactive, reactive web UI built entirely in Python u
 
 ## Architectural Layering Rules & Guidelines
 
-To maintain decoupling and production maintainability, the codebase enforces strict layering verified via AST analysis (`pytest tests/test_architecture.py`):
+To maintain decoupling and production maintainability, the codebase enforces strict layering verified via AST analysis (`pytest tests/architecture/test_architecture.py`):
 
 ```
 core/        config, logging, security, exceptions, cache/, db/, tracking/ (MLflow SSOT), embeddings/
@@ -272,7 +272,7 @@ reflex run
 To run the Locust load testing suite interactively via web browser UI:
 
 ```powershell
-locust -f tests/locustfile.py --host http://127.0.0.1:8000
+locust -f tests/load/locustfile.py --host http://127.0.0.1:8000
 ```
 
 Open `http://localhost:8089` in your web browser, enter `50` users and spawn rate `10`, then click **Start Swarm**.
@@ -280,7 +280,7 @@ Open `http://localhost:8089` in your web browser, enter `50` users and spawn rat
 To run headlessly and save CSV reports:
 
 ```powershell
-locust -f tests/locustfile.py --headless -u 50 -r 10 --run-time 15s --host http://127.0.0.1:8000 --csv=reports/locust_summary
+locust -f tests/load/locustfile.py --headless -u 50 -r 10 --run-time 15s --host http://127.0.0.1:8000 --csv=reports/locust_summary
 ```
 
 ---

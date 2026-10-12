@@ -1,0 +1,14 @@
+# Test, load-test and lint tooling (not installed in the Docker images); includes the ML pipeline packages
+-r requirements-ml.txt
+
+# Frontend (the UI image uses requirements-ui.txt; tests import reflex)
+reflex==0.10.0
+
+pytest>=8.1.0
+pytest-asyncio>=0.23.5
+pytest-cov>=4.1.0
+pytest-timeout>=2.3.0
+locust>=2.24.0
+flake8>=7.0.0
+black>=25.1.0,<26
+isort>=5.13.2

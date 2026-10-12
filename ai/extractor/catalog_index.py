@@ -1,10 +1,12 @@
 """
 In-Memory Catalog Index for sub-millisecond lookup and token-overlap fuzzy matching.
 """
-from typing import Dict, List, Any, Optional
+
 import json
 import re
 from pathlib import Path
+from typing import Any, Dict, List, Optional
+
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -12,6 +14,7 @@ logger = get_logger(__name__)
 
 class CatalogIndex:
     """Singleton index providing fast sub-millisecond catalog lookup and fuzzy token-matching."""
+
     _LOADED: bool = False
     _ID_TO_PRODUCT: Dict[str, Dict[str, Any]] = {}
     _PRODUCT_LOOKUP: List[Dict[str, Any]] = []
@@ -37,9 +40,36 @@ class CatalogIndex:
                     logger.warning(f"[CATALOG-INDEX] Failed to read {p}: {e}")
 
         stopwords = {
-            "a", "an", "the", "and", "or", "in", "on", "for", "with", "to", "of", "my",
-            "your", "this", "that", "from", "into", "can", "i", "is", "it", "me", "do",
-            "you", "have", "looking", "how", "much", "what", "made"
+            "a",
+            "an",
+            "the",
+            "and",
+            "or",
+            "in",
+            "on",
+            "for",
+            "with",
+            "to",
+            "of",
+            "my",
+            "your",
+            "this",
+            "that",
+            "from",
+            "into",
+            "can",
+            "i",
+            "is",
+            "it",
+            "me",
+            "do",
+            "you",
+            "have",
+            "looking",
+            "how",
+            "much",
+            "what",
+            "made",
         }
 
         for prod in products:
@@ -49,13 +79,15 @@ class CatalogIndex:
             if pid:
                 cls._ID_TO_PRODUCT[pid] = prod
                 tokens = [w.lower() for w in re.findall(r"\b[a-zA-Z0-9]+\b", name) if w.lower() not in stopwords]
-                cls._PRODUCT_LOOKUP.append({
-                    "id": pid,
-                    "name": name,
-                    "cat": cat,
-                    "tokens": set(tokens),
-                    "name_lower": name.lower(),
-                })
+                cls._PRODUCT_LOOKUP.append(
+                    {
+                        "id": pid,
+                        "name": name,
+                        "cat": cat,
+                        "tokens": set(tokens),
+                        "name_lower": name.lower(),
+                    }
+                )
 
         cls._LOADED = True
 

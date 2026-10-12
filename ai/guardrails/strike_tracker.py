@@ -3,8 +3,10 @@ Automated Adversarial Strike Tracker & Ban Gateway Engine (Phase 4 - Task P4-07)
 Tracks security policy violation strikes per user/IP in Redis (TTL 24 hours).
 Enforces a 3-strike limit with an automatic 24-hour lockout.
 """
-from typing import Optional, Dict
+
 import time
+from typing import Dict, Optional
+
 from core.cache.redis_client import RedisCacheManager, cache_manager
 from core.logging import get_logger
 
@@ -75,9 +77,11 @@ class StrikeTracker:
         if self._cache.is_available and self._cache.client is not None:
             try:
                 raw_client = self._cache.client
-                strikes = raw_client.incr(strike_key)
-                if strikes == 1:
-                    raw_client.expire(strike_key, ttl)
+                # One transaction, so a crash between INCR and EXPIRE cannot leave a counter that never expires
+                pipe = raw_client.pipeline(transaction=True)
+                pipe.incr(strike_key)
+                pipe.expire(strike_key, ttl, nx=True)
+                strikes = int(pipe.execute()[0])
                 if strikes >= self.MAX_STRIKES:
                     raw_client.setex(ban_key, ttl, "BANNED_FOR_24H")
                     logger.warning(
@@ -97,8 +101,7 @@ class StrikeTracker:
         if strikes >= self.MAX_STRIKES:
             self._in_memory_bans[clean_id] = time.time() + ttl
             logger.warning(
-                f"[SECURITY: GATEWAY] User/IP '{clean_id}' reached {strikes} strikes. "
-                f"In-memory lockout applied."
+                f"[SECURITY: GATEWAY] User/IP '{clean_id}' reached {strikes} strikes. " f"In-memory lockout applied."
             )
 
         return strikes

@@ -3,20 +3,23 @@ LangGraph Multi-Agent Shopping Graph (Phase 3).
 Orchestrates guardrail routing, conditional specialist dispatch,
 multi-tier memory checkpointing, and response synthesis.
 """
-from typing import Optional, Any
-from langgraph.graph import StateGraph, END
-from ai.workflow.state import AgentState
-from ai.nodes.router_node import guardrail_router_node
-from ai.nodes.refusal_node import refusal_node
-from ai.nodes.steering_node import steering_node
-from ai.nodes.search_node import search_agent_node
-from ai.nodes.details_node import details_agent_node
+
+from typing import Any, Optional
+
+from langgraph.graph import END, StateGraph
+
+from ai.nodes.aggregator_node import retrieval_aggregator_join
 from ai.nodes.bundle_node import bundle_agent_node
 from ai.nodes.cart_node import cart_agent_node
+from ai.nodes.details_node import details_agent_node
+from ai.nodes.refusal_node import refusal_node
+from ai.nodes.router_node import guardrail_router_node
+from ai.nodes.search_node import search_agent_node
+from ai.nodes.steering_node import steering_node
 from ai.nodes.support_node import support_agent_node
-from ai.nodes.aggregator_node import retrieval_aggregator_join
 from ai.nodes.synthesis_node import response_synthesis_node
 from ai.workflow.edges import route_after_guardrail
+from ai.workflow.state import AgentState
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -86,4 +89,3 @@ __all__ = [
     "build_shopping_graph",
     "shopping_graph",
 ]
-

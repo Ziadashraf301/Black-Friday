@@ -1,9 +1,12 @@
+from typing import List
+
 import pandas as pd
-from typing import List, Tuple
 from mlxtend.preprocessing import TransactionEncoder
+
 from core.logging import get_logger
 
 logger = get_logger(__name__)
+
 
 class TransactionBasketEncoder:
     """Encodes transactions into boolean basket vectors for Apriori association mining."""

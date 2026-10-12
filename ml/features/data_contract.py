@@ -1,9 +1,13 @@
-import pandas as pd
-from core.logging import get_logger
+# flake8: noqa: E402  (env vars must be set before the imports below)
 import os
+
+import pandas as pd
+
+from core.logging import get_logger
+
 os.environ["DISABLE_PANDERA_IMPORT_WARNING"] = "True"
 
-from pandera.pandas import Column, Check, DataFrameSchema
+from pandera.pandas import Check, Column, DataFrameSchema
 
 logger = get_logger(__name__)
 
@@ -25,7 +29,7 @@ RawTransactionSchema = DataFrameSchema(
         "purchase": Column(float, Check.greater_than(0), nullable=False),
     },
     coerce=True,
-    strict=False
+    strict=False,
 )
 
 CleanedTransactionSchema = DataFrameSchema(
@@ -44,11 +48,12 @@ CleanedTransactionSchema = DataFrameSchema(
         "purchase": Column(float, Check.greater_than(0), nullable=False),
         "is_outlier": Column(bool, nullable=False),
         "normalized_purchase": Column(float, Check.in_range(0.0, 1.5), nullable=False),
-        "split": Column(str, Check.isin(["train", "test"]), nullable=False)
+        "split": Column(str, Check.isin(["train", "test"]), nullable=False),
     },
     coerce=True,
-    strict=False
+    strict=False,
 )
+
 
 def validate_raw_data(df: pd.DataFrame) -> pd.DataFrame:
     """Validates raw DataFrame against Pandera Data Contract."""
@@ -56,6 +61,7 @@ def validate_raw_data(df: pd.DataFrame) -> pd.DataFrame:
     validated_df = RawTransactionSchema.validate(df)
     logger.info("Raw Data Contract validation passed successfully.")
     return validated_df
+
 
 def validate_cleaned_data(df: pd.DataFrame) -> pd.DataFrame:
     """Validates cleaned DataFrame against Pandera Data Contract."""

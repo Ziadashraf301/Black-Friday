@@ -1,10 +1,12 @@
 """
 Business logic services layer.
 """
-from apps.api.services.model_service import model_service, ModelService
-from apps.api.services.auth_service import auth_service, AuthService
-from apps.api.services.analytics_service import analytics_service, AnalyticsService
-from apps.api.services.shopper_service import shopper_service, ShopperService
+
+from apps.api.services.analytics_service import AnalyticsService, analytics_service
+from apps.api.services.auth_service import AuthService, auth_service
+from apps.api.services.model_service import ModelService, model_service
+from apps.api.services.shopper_service import ShopperService, shopper_service
+
 __all__ = [
     "model_service",
     "ModelService",
@@ -15,4 +17,3 @@ __all__ = [
     "shopper_service",
     "ShopperService",
 ]
-

@@ -1,9 +1,10 @@
 """
 Domain and serving helper utilities for API services.
 """
+
 import json
 import re
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 
 def parse_recommendation_ids(value: Any) -> List[str]:
@@ -38,7 +39,7 @@ def parse_recommendation_ids(value: Any) -> List[str]:
     except Exception:
         pass
 
-    matches = re.findall(r'P\d+', s)
+    matches = re.findall(r"P\d+", s)
     return matches if matches else []
 
 
@@ -61,10 +62,7 @@ def make_price_cache_key(
     return f"price:{product_id}:{g}:{a}:{o}:{c}:{s}:{m}"
 
 
-def resolve_item_demographics(
-    item: Dict[str, Any],
-    user_demographics: Optional[Dict[str, Any]] = None
-) -> Dict[str, Any]:
+def resolve_item_demographics(item: Dict[str, Any], user_demographics: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Resolves item demographic overrides against user account demographics."""
     demo = user_demographics or {}
     return {
@@ -85,4 +83,3 @@ def calculate_member_discount_price(base_price: float, normalized_prediction: fl
     if member_price >= base_price:
         return round(base_price * 0.85, 2)
     return member_price
-

@@ -1,12 +1,15 @@
 """
 Base repository providing generic table lifecycle and high-speed PostgreSQL COPY operations.
 """
-import io
+
 import csv
+import io
 import json
-import pandas as pd
 from typing import List, Optional
+
+import pandas as pd
 from sqlalchemy import text
+
 from core.db.session import get_db_engine
 from core.logging import get_logger
 
@@ -37,6 +40,7 @@ class BaseRepository:
             if conn.dialect.name == "postgresql":
                 conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
         from core.db.models import Base
+
         Base.metadata.create_all(bind=self.engine)
 
     def truncate_table(self, table_name: str, restart_identity: bool = False):
@@ -54,7 +58,7 @@ class BaseRepository:
         df: pd.DataFrame,
         if_exists: str = "append",
         chunksize: int = 50000,
-        json_cols: Optional[List[str]] = None
+        json_cols: Optional[List[str]] = None,
     ):
         """High-performance bulk insertion using PostgreSQL native COPY streaming (100x faster than to_sql multi)."""
         if table_name not in self.VALID_TABLES:
@@ -70,7 +74,9 @@ class BaseRepository:
             for col in json_cols:
                 if col in data.columns:
                     data[col] = data[col].apply(
-                        lambda x: json.dumps(x) if isinstance(x, (list, dict)) else (x if isinstance(x, str) else json.dumps([]))
+                        lambda x: (
+                            json.dumps(x) if isinstance(x, (list, dict)) else (x if isinstance(x, str) else json.dumps([]))
+                        )
                     )
 
         logger.info(f"Writing {len(data):,} records to '{table_name}' (mode='{if_exists}')...")
@@ -81,13 +87,16 @@ class BaseRepository:
                 if if_exists == "replace":
                     conn.execute(text(f"TRUNCATE TABLE {table_name} RESTART IDENTITY;"))
 
-                dbapi_conn = conn.connection.dbapi_connection if hasattr(conn.connection, "dbapi_connection") else conn.connection
+                dbapi_conn = (
+                    conn.connection.dbapi_connection if hasattr(conn.connection, "dbapi_connection") else conn.connection
+                )
                 buffer = io.StringIO()
                 data.to_csv(buffer, index=False, header=False, sep="\t", na_rep="\\N", quoting=csv.QUOTE_MINIMAL)
                 buffer.seek(0)
 
                 columns_str = ", ".join([f'"{c}"' for c in data.columns])
-                copy_sql = f"COPY {table_name} ({columns_str}) FROM STDIN WITH (FORMAT text, NULL '\\N')"
+                # CSV format: to_csv quotes fields holding tabs, quotes or newlines, which text format would misread.
+                copy_sql = f"COPY {table_name} ({columns_str}) FROM STDIN WITH (FORMAT csv, DELIMITER E'\\t', NULL '\\N')"
 
                 with dbapi_conn.cursor() as cur:
                     cur.copy_expert(sql=copy_sql, file=buffer)
@@ -98,12 +107,5 @@ class BaseRepository:
             with self.engine.begin() as conn:
                 if if_exists == "replace":
                     conn.execute(text(f"TRUNCATE TABLE {table_name} RESTART IDENTITY;"))
-                data.to_sql(
-                    name=table_name,
-                    con=conn,
-                    if_exists="append",
-                    index=False,
-                    chunksize=chunksize,
-                    method="multi"
-                )
+                data.to_sql(name=table_name, con=conn, if_exists="append", index=False, chunksize=chunksize, method="multi")
             logger.info(f"Batch write to '{table_name}' complete.")

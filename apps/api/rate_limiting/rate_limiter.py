@@ -6,18 +6,21 @@ Enforces:
 Uses atomic Redis Lua script evaluation for strict concurrency safety.
 Thread-safe, bounded memory fallback when Redis is offline.
 """
+
+import threading
 import time
 import uuid
-import threading
-from typing import Dict, Any, Optional, Tuple, List
-from fastapi import Request, Depends
-import redis
+from typing import Any, Dict, List, Optional, Tuple
 
-from core.exceptions import RateLimitExceededError
+import redis
+from fastapi import Depends, Request
+
+from apps.api.auth import get_current_user
+from apps.api.client_identity import client_ip, resolve_client_identity
 from core.cache import cache_manager
 from core.config import settings
+from core.exceptions import RateLimitExceededError
 from core.logging import get_logger
-from apps.api.auth import get_current_user, decode_access_token
 
 logger = get_logger(__name__)
 
@@ -112,7 +115,7 @@ class RedisRateLimiter:
             # Evict keys with the oldest timestamps
             sorted_keys = sorted(
                 self._in_memory_windows.keys(),
-                key=lambda k: self._in_memory_windows[k][-1] if self._in_memory_windows[k] else 0.0
+                key=lambda k: self._in_memory_windows[k][-1] if self._in_memory_windows[k] else 0.0,
             )
             for k in sorted_keys[:excess]:
                 self._in_memory_windows.pop(k, None)
@@ -257,6 +260,18 @@ rate_limiter = RedisRateLimiter(
 )
 
 
+# Dedicated, stricter limiter for unauthenticated credential endpoints (own buckets, keyed by IP)
+auth_rate_limiter = RedisRateLimiter(
+    minute_limit=settings.AUTH_RATE_LIMIT_MINUTE,
+    day_limit=settings.AUTH_RATE_LIMIT_DAY,
+)
+
+
+async def auth_rate_limit_dependency(request: Request):
+    """FastAPI route dependency throttling login/signup attempts per client IP."""
+    auth_rate_limiter.enforce(f"auth:{client_ip(request)}")
+
+
 async def rate_limit_dependency(
     current_user: Dict[str, Any] = Depends(get_current_user),
 ) -> Dict[str, Any]:
@@ -267,21 +282,8 @@ async def rate_limit_dependency(
 
 
 def extract_client_identifier(request: Request) -> str:
-    """Extracts user ID from Bearer JWT, X-User-ID header, query parameter, or client IP."""
-    auth_header = request.headers.get("Authorization")
-    if auth_header and auth_header.startswith("Bearer "):
-        try:
-            token = auth_header.split(" ", 1)[1].strip()
-            payload = decode_access_token(token)
-            if payload.get("sub"):
-                return str(payload.get("sub"))
-        except Exception:
-            pass
-    return (
-        request.headers.get("X-User-ID")
-        or request.query_params.get("user_id")
-        or (request.client.host if request.client else "anonymous")
-    )
+    """Verified JWT subject, falling back to client IP. Caller-supplied IDs are never trusted."""
+    return resolve_client_identity(request)
 
 
 async def rate_limit_client_dependency(request: Request):

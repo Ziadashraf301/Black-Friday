@@ -1,10 +1,13 @@
-import json
-import decimal
 import datetime
+import decimal
+import json
 import threading
 import time
-from typing import Optional, Any, List, Dict
+from typing import Any, Dict, List, Optional
+
+import numpy as np
 import redis
+
 from core.config import settings
 from core.logging import get_logger
 
@@ -17,8 +20,10 @@ def _json_serializer(obj: Any) -> Any:
         return float(obj)
     if isinstance(obj, (datetime.date, datetime.datetime)):
         return obj.isoformat()
-    if hasattr(obj, "item"):  # handles numpy scalar types
+    if isinstance(obj, np.generic):
         return obj.item()
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
     return str(obj)
 
 
@@ -31,7 +36,7 @@ class RedisCacheManager:
         self._db = db
         self._last_failure_time: float = 0.0
         self._cooldown_seconds: float = 15.0
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         self._connect()
 
     def _connect(self):
@@ -50,7 +55,9 @@ class RedisCacheManager:
                 self._client.ping()
                 self._is_available = True
                 self._last_failure_time = 0.0
-                logger.info(f"Redis Cache Service initialized cleanly at {settings.REDIS_HOST}:{settings.REDIS_PORT} (DB {target_db})")
+                logger.info(
+                    f"Redis Cache Service initialized cleanly at {settings.REDIS_HOST}:{settings.REDIS_PORT} (DB {target_db})"
+                )
             except Exception as err:
                 self._is_available = False
                 self._client = None
@@ -76,11 +83,14 @@ class RedisCacheManager:
     def is_available(self) -> bool:
         if self._is_available and self._client is not None:
             return True
-        now = time.monotonic()
-        if now - self._last_failure_time < self._cooldown_seconds:
-            return False
-        self._connect()
-        return self._is_available
+        with self._lock:
+            # Re-check under the lock: another thread may have reconnected (or failed) while we waited.
+            if self._is_available and self._client is not None:
+                return True
+            if time.monotonic() - self._last_failure_time < self._cooldown_seconds:
+                return False
+            self._connect()
+            return self._is_available
 
     @property
     def client(self) -> Optional[redis.Redis]:
@@ -222,4 +232,3 @@ class RedisCacheManager:
 
 
 cache_manager = RedisCacheManager()
-

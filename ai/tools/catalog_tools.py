@@ -3,9 +3,11 @@ Product Details Retrieval Tool (Phase 3).
 Provides comprehensive specifications, fabrics, materials, care instructions,
 and sizing availability for specific catalog items.
 """
-from typing import Optional, Dict, Any
-from ai.schemas import ProductDetails
+
+from typing import Any, Dict, Optional
+
 from ai.extractor.catalog_index import CatalogIndex
+from ai.schemas import ProductDetails
 from core.db.repository import BlackFridayRepository
 from core.logging import get_logger
 

@@ -2,9 +2,11 @@
 LangGraph Conditional Edges & Routing Logic (Phase 3).
 Maps System-1 RoutingDecision outputs directly to specialized worker agent nodes.
 """
-from typing import List, Union
-from ai.workflow.state import AgentState
+
+from typing import List
+
 from ai.schemas import IntentType
+from ai.workflow.state import AgentState
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -20,12 +22,19 @@ def route_after_guardrail(state: AgentState) -> List[str]:
     """
     # 0. Cache hit check -> direct to END (sub-1ms)
     from langgraph.graph import END
+
     if state.get("is_cache_hit"):
         logger.info("[EDGE: ROUTE] Fast-path Tier 0 cache hit routed directly to END")
         return [END]
 
     # 1. Safety check
-    if not state.get("is_safe", True) or state.get("adversarial_prob", 0.0) >= 0.80:
+    blocked = IntentType.ADVERSARIAL_BLOCKED.value
+    if (
+        not state.get("is_safe", True)
+        or state.get("adversarial_prob", 0.0) >= 0.80
+        or state.get("intent") == blocked
+        or blocked in (state.get("target_intents") or [])
+    ):
         logger.warning("[EDGE: ROUTE] Routing to refusal_node")
         return ["refusal_node"]
 
@@ -38,7 +47,7 @@ def route_after_guardrail(state: AgentState) -> List[str]:
 
     # 3. Intent-Specific Multi-Specialist Routing
     target_intents = state.get("target_intents") or ([intent] if intent else [])
-    
+
     node_map = {
         IntentType.PRODUCT_SEARCH.value: "search_agent_node",
         IntentType.DEALS_PROMOTIONS.value: "search_agent_node",

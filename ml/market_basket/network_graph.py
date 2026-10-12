@@ -1,6 +1,8 @@
+from typing import Any, Dict, List, Optional, Tuple
+
 import networkx as nx
 import pandas as pd
-from typing import Dict, Any, List, Tuple, Optional
+
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -36,7 +38,7 @@ class ProductNetworkGraph:
         rules_df: Optional[pd.DataFrame],
         item2vec_model: Any,
         order_counts: Optional[Dict[str, int]] = None,
-        top_k: int = 5
+        top_k: int = 5,
     ) -> pd.DataFrame:
         """Constructs unified product metrics table with PageRank, Apriori bundles, and Item2Vec embeddings."""
         logger.info("Building unified product network metrics (Apriori + Item2Vec)...")
@@ -62,9 +64,7 @@ class ProductNetworkGraph:
         logger.info(f"Unified product metrics table built successfully ({len(metrics_df):,} products).")
         return metrics_df
 
-    def build_graph_from_rules(
-        self, rules_df: pd.DataFrame, order_counts: Optional[Dict[str, int]] = None
-    ) -> pd.DataFrame:
+    def build_graph_from_rules(self, rules_df: pd.DataFrame, order_counts: Optional[Dict[str, int]] = None) -> pd.DataFrame:
         """Constructs graph with products as nodes and rule confidence/lift as edge weights.
         Strictly uses 1-to-1 pairwise rules to prevent edge overwriting from multi-item antecedents.
         """
@@ -72,10 +72,7 @@ class ProductNetworkGraph:
         self.graph.clear()
 
         # Filter strictly for pairwise rules
-        pairwise_rules = rules_df[
-            (rules_df["antecedents"].apply(len) == 1) & 
-            (rules_df["consequents"].apply(len) == 1)
-        ]
+        pairwise_rules = rules_df[(rules_df["antecedents"].apply(len) == 1) & (rules_df["consequents"].apply(len) == 1)]
         logger.info(f"Filtered to {len(pairwise_rules):,} strictly pairwise rules for the graph.")
 
         for _, row in pairwise_rules.iterrows():
@@ -92,7 +89,7 @@ class ProductNetworkGraph:
         self,
         similarity_map: Dict[str, List[Tuple[str, float]]],
         order_counts: Optional[Dict[str, int]] = None,
-        min_similarity: float = 0.30
+        min_similarity: float = 0.30,
     ) -> pd.DataFrame:
         """Constructs a k-NN directed similarity graph from a precomputed embedding similarity map."""
         self.graph.clear()
@@ -106,19 +103,13 @@ class ProductNetworkGraph:
         return self._compute_metrics(order_counts=order_counts, score_attr="lift")
 
     def build_graph_from_item2vec(
-        self,
-        item2vec_model: Any,
-        order_counts: Optional[Dict[str, int]] = None,
-        top_k: int = 5,
-        min_similarity: float = 0.30
+        self, item2vec_model: Any, order_counts: Optional[Dict[str, int]] = None, top_k: int = 5, min_similarity: float = 0.30
     ) -> pd.DataFrame:
         """Convenience method to construct k-NN similarity graph from an Item2Vec model."""
         sim_map = self._extract_similarity_map(item2vec_model, top_k=top_k)
         return self.build_graph_from_similarity_map(sim_map, order_counts=order_counts, min_similarity=min_similarity)
 
-    def _compute_metrics(
-        self, order_counts: Optional[Dict[str, int]] = None, score_attr: str = "lift"
-    ) -> pd.DataFrame:
+    def _compute_metrics(self, order_counts: Optional[Dict[str, int]] = None, score_attr: str = "lift") -> pd.DataFrame:
         """Calculates PageRank, HITS Hubs, Authorities and formats pure metrics table."""
         if self.graph.number_of_nodes() == 0:
             logger.warning("Network graph is empty. Returning empty metrics DataFrame.")
@@ -131,11 +122,12 @@ class ProductNetworkGraph:
         logger.info("Computing PageRank scores...")
         pagerank_dict = nx.pagerank(self.graph, weight="weight")
 
-        # Compute HITS (Hubs and Authorities)
+        # Compute HITS (Hubs and Authorities). networkx HITS is unweighted: only the link structure counts, not
+        # the confidence/lift edge weights (PageRank above is the weighted score).
         logger.info("Computing HITS Hubs and Authority scores...")
         try:
             hubs_dict, authorities_dict = nx.hits(self.graph, max_iter=200, normalized=True)
-        except Exception as e:
+        except nx.PowerIterationFailedConvergence as e:
             logger.warning(f"HITS algorithm convergence fallback: {e}")
             hubs_dict = {node: 1.0 / len(self.graph) for node in self.graph.nodes()}
             authorities_dict = {node: 1.0 / len(self.graph) for node in self.graph.nodes()}
@@ -144,8 +136,9 @@ class ProductNetworkGraph:
         records = []
         for node in self.graph.nodes():
             out_edges = list(self.graph.out_edges(node, data=True))
-            top_assoc = max(out_edges, key=lambda e: e[2].get(score_attr, 0))[1] if out_edges else None
-            max_score = max(out_edges, key=lambda e: e[2].get(score_attr, 0))[2].get(score_attr, 1.0) if out_edges else 1.0
+            best_edge = max(out_edges, key=lambda e: e[2].get(score_attr, 0)) if out_edges else None
+            top_assoc = best_edge[1] if best_edge else None
+            max_score = best_edge[2].get(score_attr, 1.0) if best_edge else 1.0
 
             # Store rich dicts so the API can serve real confidence/lift per recommendation
             bundle_recommendations = sorted(
@@ -158,19 +151,21 @@ class ProductNetworkGraph:
                     for e in out_edges
                 ],
                 key=lambda x: x["confidence"],
-                reverse=True
+                reverse=True,
             )[:5]
 
-            records.append({
-                "product_id": node,
-                "order_count": int(counts.get(node, 0)),
-                "pagerank_score": round(float(pagerank_dict.get(node, 0.0)), 5),
-                "hub_score": round(float(hubs_dict.get(node, 0.0)), 5),
-                "authority_score": round(float(authorities_dict.get(node, 0.0)), 5),
-                "top_associated_product": top_assoc,
-                "highest_lift_rule": round(float(max_score), 4),
-                "top_bundle_recommendations": bundle_recommendations,
-            })
+            records.append(
+                {
+                    "product_id": node,
+                    "order_count": int(counts.get(node, 0)),
+                    "pagerank_score": round(float(pagerank_dict.get(node, 0.0)), 5),
+                    "hub_score": round(float(hubs_dict.get(node, 0.0)), 5),
+                    "authority_score": round(float(authorities_dict.get(node, 0.0)), 5),
+                    "top_associated_product": top_assoc,
+                    "highest_lift_rule": round(float(max_score), 4),
+                    "top_bundle_recommendations": bundle_recommendations,
+                }
+            )
 
         metrics_df = pd.DataFrame(records).sort_values(by="pagerank_score", ascending=False)
         logger.info("Product network centrality computations completed.")

@@ -1,13 +1,18 @@
 """
 FastAPI authentication dependency and security exports.
 """
-from typing import Dict, Any, Optional
-from fastapi import Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-from core.exceptions import UnauthorizedError
-from core.security import hash_password, verify_password, create_access_token, decode_access_token
+from typing import Any, Dict, Optional
+
+from fastapi import Depends
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
 from apps.api.services.auth_service import auth_service
+from core.exceptions import UnauthorizedError
+from core.logging import get_logger
+from core.security import create_access_token, decode_access_token, hash_password, verify_password
+
+logger = get_logger(__name__)
 
 _bearer_scheme = HTTPBearer(auto_error=True)
 _optional_bearer_scheme = HTTPBearer(auto_error=False)
@@ -40,8 +45,9 @@ def get_current_user(
         payload = decode_access_token(credentials.credentials)
         return _build_user_dict(payload)
     except Exception as e:
+        logger.debug(f"Token validation failed: {e}")
         raise UnauthorizedError(
-            message=f"Invalid or expired token: {e}",
+            message="Invalid or expired token.",
             code="INVALID_TOKEN",
         )
 

@@ -5,14 +5,16 @@ Provides stateful shopping cart operations adhering to SOLID principles:
   - Cache Service: Uses RedisCacheManager (cache_manager) for Redis session caching.
   - Operations: Add items, remove items, mutate sizes, update quantities, calculate subtotals/discounts.
 """
-from typing import Optional, Dict, Any, List
-import json
 
-from ai.schemas import CartState, CartItem
+import json
+from typing import Any, Dict, List, Optional
+
 from ai.extractor.catalog_index import CatalogIndex
-from core.db.repository import BlackFridayRepository
-from core.cache.redis_client import cache_manager, RedisCacheManager
+from ai.schemas import CartItem, CartState
+from core.cache.redis_client import RedisCacheManager, cache_manager
 from core.config import settings
+from core.db.repository import BlackFridayRepository
+from core.exceptions import DomainError
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -85,62 +87,63 @@ class CartManagementTool:
 
         return CartState(user_id=user_id, session_id=session_id)
 
+    @staticmethod
+    def _product_info(product_id: str, prod: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Cart view of a catalog row, or None when it has no usable sale price (a price is never invented)."""
+        try:
+            price = float(prod.get("discounted_price"))
+        except (TypeError, ValueError):
+            return None
+        if price <= 0:
+            return None
+        return {
+            "product_id": product_id,
+            "name": prod.get("name", f"Product {product_id}"),
+            "discounted_price": price,
+            "original_price": prod.get("original_price"),
+            "sizes": prod.get("sizes", ["S", "M", "L", "XL"]),
+            "image_url": prod.get("image_url", f"/products/{product_id}.jpg"),
+            "category_name": prod.get("category_name", "Apparel"),
+        }
+
     def _lookup_product_info(self, product_id: Optional[str], query_hint: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """
-        Resolves product specifications from BlackFridayRepository,
-        falling back to CatalogIndex.
+        Resolves product specifications from BlackFridayRepository, falling back to CatalogIndex.
+        Returns None for an unknown product; raises DomainError for a known product without a price.
         """
         clean_id = (product_id or "").strip().upper()
         if clean_id and not clean_id.startswith("P"):
             clean_id = f"P{clean_id.zfill(8)}"
+        known_without_price = False
 
         # 1. Query repository layer (WarehouseRepository)
         if self.repo and clean_id:
             try:
                 prod = self.repo.get_curated_product_by_id(clean_id)
                 if prod:
-                    return {
-                        "product_id": prod["product_id"],
-                        "name": prod["name"],
-                        "discounted_price": float(prod.get("discounted_price", 49.99)),
-                        "original_price": float(prod.get("original_price", 99.99)),
-                        "sizes": prod.get("sizes", ["S", "M", "L", "XL"]),
-                        "image_url": prod.get("image_url", f"/products/{clean_id}.jpg"),
-                        "category_name": prod.get("category_name", "Apparel"),
-                    }
+                    info = self._product_info(prod["product_id"], prod)
+                    if info:
+                        return info
+                    known_without_price = True
             except Exception as e:
                 logger.debug(f"[TOOL: CART] Repository product lookup failed: {e}")
 
         # 2. Try CatalogIndex exact match
         if clean_id and clean_id in CatalogIndex._ID_TO_PRODUCT:
-            prod = CatalogIndex._ID_TO_PRODUCT[clean_id]
-            return {
-                "product_id": clean_id,
-                "name": prod.get("name", f"Product {clean_id}"),
-                "discounted_price": float(prod.get("discounted_price", 49.99)),
-                "original_price": float(prod.get("original_price", 99.99)),
-                "sizes": prod.get("sizes", ["S", "M", "L", "XL"]),
-                "image_url": prod.get("image_url", f"/products/{clean_id}.jpg"),
-                "category_name": prod.get("category_name", "Apparel"),
-            }
+            info = self._product_info(clean_id, CatalogIndex._ID_TO_PRODUCT[clean_id])
+            if info:
+                return info
+            known_without_price = True
+
+        if known_without_price:
+            logger.warning(f"[TOOL: CART] {clean_id} has no usable price; not adding it to a cart")
+            raise DomainError(f"Product {clean_id} has no price available right now.", code="PRICE_UNAVAILABLE")
 
         # 3. Fuzzy search in CatalogIndex if product_id was not explicitly given
         if query_hint:
             matched_id = CatalogIndex.find_best_product_id(query_hint)
             if matched_id:
                 return self._lookup_product_info(matched_id)
-
-        # Default fallback
-        if clean_id:
-            return {
-                "product_id": clean_id,
-                "name": f"Product {clean_id}",
-                "discounted_price": 49.99,
-                "original_price": 79.99,
-                "sizes": ["S", "M", "L", "XL"],
-                "image_url": f"/products/{clean_id}.jpg",
-                "category_name": "Apparel",
-            }
 
         return None
 
@@ -171,23 +174,25 @@ class CartManagementTool:
             clean_id = f"P{clean_id.zfill(8)}"
 
         if act == "add":
+            if not clean_id:
+                raise DomainError("No product was specified to add to the cart.", code="PRODUCT_REQUIRED")
             prod_info = self._lookup_product_info(clean_id)
             if not prod_info:
-                clean_id = clean_id or "P00025442"
-                prod_info = self._lookup_product_info(clean_id)
+                raise DomainError(f"Product {clean_id} is not in our catalog.", code="UNKNOWN_PRODUCT")
 
-            target_pid = prod_info["product_id"] if prod_info else (clean_id or "P00025442")
-            name = prod_info["name"] if prod_info else f"Product {target_pid}"
-            unit_price = prod_info["discounted_price"] if prod_info else 49.99
-            img_url = prod_info["image_url"] if prod_info else f"/products/{target_pid}.jpg"
-            available_sizes = prod_info["sizes"] if prod_info else ["M"]
+            target_pid = prod_info["product_id"]
+            name = prod_info["name"]
+            unit_price = prod_info["discounted_price"]
+            img_url = prod_info["image_url"]
+            available_sizes = prod_info["sizes"]
             chosen_size = (size or available_sizes[0]).upper()
 
-            # Stock availability validation (Phase 4 - Task P4-06)
+            # Catalog size validation (Phase 4 - Task P4-06); there is no inventory, only listed sizes
             if self.repo:
-                has_stock = self.repo.check_product_stock(product_id=target_pid, size=chosen_size, quantity=quantity)
-                if not has_stock:
-                    logger.warning(f"[TOOL: CART] Size {chosen_size} out of stock for {target_pid}. Defaulting to in-stock size.")
+                if not self.repo.is_size_offered(product_id=target_pid, size=chosen_size):
+                    logger.warning(
+                        f"[TOOL: CART] Size {chosen_size} not offered for {target_pid}. Defaulting to first listed size."
+                    )
                     if available_sizes:
                         chosen_size = available_sizes[0].upper()
 
@@ -222,7 +227,7 @@ class CartManagementTool:
 
         elif act == "update_size":
             target_new_size = (new_size or size or "M").upper()
-            target_old_size = (size if new_size else None)
+            target_old_size = size if new_size else None
             for item in items:
                 if not clean_id or item.product_id == clean_id:
                     if not target_old_size or item.size == target_old_size.upper():
@@ -261,7 +266,6 @@ class CartManagementTool:
     def _save_cart(self, user_id: str, session_id: str, items: List[CartItem]) -> CartState:
         new_state = self._recalculate_cart(user_id, session_id, items)
         cart_dict = new_state.model_dump()
-        payload = json.dumps(cart_dict)
         key = self._get_cart_key(user_id, session_id)
 
         # 1. Hot-tier Redis 6-hour sliding session (refreshes TTL on mutation)

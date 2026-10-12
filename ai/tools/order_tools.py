@@ -4,9 +4,11 @@ Provides order fulfillment status, return window policies, shipping estimates,
 and price match guarantee information.
 Connected to PostgreSQL (user_purchases, curated_products) and PolicyKnowledgeBase.
 """
-from typing import Optional, Dict, Any, List
-from datetime import datetime, timedelta, timezone
+
 import re
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, Optional
+
 from sqlalchemy import text
 
 from ai.schemas import OrderStatus
@@ -33,119 +35,72 @@ class OrderSupportTool:
                 self._repo = None
         return self._repo
 
-    def track_order(self, order_id: str, user_id: Optional[str] = None) -> OrderStatus:
+    def track_order(self, order_id: Optional[str], user_id: Optional[str] = None) -> OrderStatus:
         """
-        Looks up delivery status for an order code.
-        Queries PostgreSQL user_purchases & curated_products, with deterministic fallback.
+        Looks up delivery status for one of the caller's own orders.
+        A missing order id means the caller's most recent order. An order that does not exist or belongs
+        to someone else is reported as "Not Found" (the same answer for both, so ids cannot be probed).
         """
         clean_id = (order_id or "").strip().upper()
-        logger.info(f"[TOOL: ORDER] Tracking order_id={clean_id} for user={user_id}")
+        logger.info(f"[TOOL: ORDER] Tracking order_id={clean_id or 'latest'} for user={user_id}")
 
-        # Attempt to query real order from PostgreSQL
         db_order = self._query_database_order(clean_id, user_id)
         if db_order:
             return db_order
 
-        # Fallback deterministic order generator (for mock IDs and offline tests)
-        status_map = {
-            "ORD-9842": "Delivered",
-            "ORD-1102": "Out for Delivery",
-            "ORD-5541": "Shipped",
-        }
-        status = status_map.get(clean_id, "In Transit")
-        carrier = "FedEx Priority"
-        tracking_num = f"FX{abs(hash(clean_id)) % 10000000000:010d}"
-        est_delivery = (datetime.now(timezone.utc) + timedelta(days=2)).strftime("%B %d, %Y")
-        return_cutoff = (datetime.now(timezone.utc) + timedelta(days=60)).strftime("%B %d, %Y")
-
-        return OrderStatus(
-            order_id=clean_id,
-            status=status,
-            carrier=carrier,
-            tracking_number=tracking_num,
-            estimated_delivery=est_delivery,
-            items=[{"product_id": "P00025442", "name": "Artisan Paisley Silk Kimono Shirt", "size": "L"}],
-            return_eligible_until=return_cutoff,
-        )
+        return OrderStatus(order_id=clean_id or "LATEST", status="Not Found", carrier="", items_count=0)
 
     def _query_database_order(self, order_id: str, user_id: Optional[str] = None) -> Optional[OrderStatus]:
-        """Queries PostgreSQL user_purchases and curated_products for order details."""
-        if not self.repo:
+        """Reads one purchase owned by `user_id` (by order number, else the latest). Guests own no orders."""
+        if not self.repo or not user_id or not str(user_id).isdigit():
             return None
 
-        num_match = re.search(r"\d+", order_id)
-        if not num_match:
-            return None
+        order_num = None
+        if order_id:
+            num_match = re.search(r"\d+", order_id)
+            if not num_match:
+                return None
+            order_num = int(num_match.group(0))
 
-        order_num = int(num_match.group(0))
-
+        query = text(
+            """
+            SELECT up.id, up.product_id, up.predicted_usd, up.purchased_at, cp.name, cp.sizes
+            FROM user_purchases up
+            LEFT JOIN curated_products cp ON up.product_id = cp.product_id
+            WHERE up.user_id = :uid AND (CAST(:oid AS INTEGER) IS NULL OR up.id = :oid)
+            ORDER BY up.purchased_at DESC
+            LIMIT 1;
+            """
+        )
         try:
             with self.repo.engine.connect() as conn:
-                # Query purchase and product details
-                query = text("""
-                    SELECT up.id, up.user_id, up.product_id, up.predicted_usd, up.purchased_at,
-                           cp.name, cp.sizes, cp.category_name
-                    FROM user_purchases up
-                    LEFT JOIN curated_products cp ON up.product_id = cp.product_id
-                    WHERE up.id = :order_id
-                    LIMIT 1;
-                """)
-                row = conn.execute(query, {"order_id": order_num}).fetchone()
-
-                # If not found by ID and user_id is provided, try recent purchase by user
-                if not row and user_id and user_id.isdigit():
-                    user_query = text("""
-                        SELECT up.id, up.user_id, up.product_id, up.predicted_usd, up.purchased_at,
-                               cp.name, cp.sizes, cp.category_name
-                        FROM user_purchases up
-                        LEFT JOIN curated_products cp ON up.product_id = cp.product_id
-                        WHERE up.user_id = :uid
-                        ORDER BY up.purchased_at DESC
-                        LIMIT 1;
-                    """)
-                    row = conn.execute(user_query, {"uid": int(user_id)}).fetchone()
-
-                if row:
-                    p_id, p_uid, p_pid, p_usd, p_date, p_name, p_sizes, p_cat = row
-
-                    now = datetime.now(timezone.utc)
-                    p_dt = p_date if p_date.tzinfo else p_date.replace(tzinfo=timezone.utc)
-                    age_days = (now - p_dt).days
-
-                    if order_id == "ORD-9842":
-                        status = "Delivered"
-                    elif age_days >= 3:
-                        status = "Delivered"
-                    elif age_days >= 1:
-                        status = "In Transit"
-                    else:
-                        status = "Processing"
-
-                    product_name = p_name or f"Catalog Item {p_pid}"
-                    item_size = p_sizes[0] if (p_sizes and isinstance(p_sizes, list)) else "M"
-                    carrier = "FedEx Priority"
-                    tracking_num = f"FX{order_num:010d}"
-                    est_delivery = (p_dt + timedelta(days=3)).strftime("%B %d, %Y")
-                    return_cutoff = (p_dt + timedelta(days=60)).strftime("%B %d, %Y")
-
-                    return OrderStatus(
-                        order_id=order_id,
-                        status=status,
-                        carrier=carrier,
-                        tracking_number=tracking_num,
-                        estimated_delivery=est_delivery,
-                        items=[{
-                            "product_id": p_pid,
-                            "name": product_name,
-                            "size": item_size,
-                            "price": float(p_usd) if p_usd else 0.0,
-                        }],
-                        return_eligible_until=return_cutoff,
-                    )
+                row = conn.execute(query, {"uid": int(user_id), "oid": order_num}).fetchone()
         except Exception as e:
-            logger.debug(f"[TOOL: ORDER] DB order query bypassed: {e}")
+            logger.warning(f"[TOOL: ORDER] DB order query failed: {e}")
+            return None
+        if not row:
+            return None
 
-        return None
+        p_id, p_pid, p_usd, p_date, p_name, p_sizes = row
+        p_dt = p_date if p_date.tzinfo else p_date.replace(tzinfo=timezone.utc)
+        age_days = (datetime.now(timezone.utc) - p_dt).days
+        status = "Delivered" if age_days >= 3 else "In Transit" if age_days >= 1 else "Processing"
+        return OrderStatus(
+            order_id=f"ORD-{p_id}",
+            status=status,
+            carrier="FedEx Priority",
+            tracking_number=f"FX{p_id:010d}",
+            estimated_delivery=(p_dt + timedelta(days=3)).strftime("%B %d, %Y"),
+            items=[
+                {
+                    "product_id": p_pid,
+                    "name": p_name or f"Catalog Item {p_pid}",
+                    "size": p_sizes[0] if (p_sizes and isinstance(p_sizes, list)) else "M",
+                    "price": float(p_usd) if p_usd else 0.0,
+                }
+            ],
+            return_eligible_until=(p_dt + timedelta(days=60)).strftime("%B %d, %Y"),
+        )
 
     def get_policy(self, topic: str) -> Dict[str, Any]:
         """Fetches policy details from the Policy Knowledge Base."""

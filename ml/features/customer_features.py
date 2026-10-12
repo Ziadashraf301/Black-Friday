@@ -1,21 +1,28 @@
 import pandas as pd
-from typing import Dict, Any
+
 from core.logging import get_logger
 
 logger = get_logger(__name__)
+
 
 class CustomerFeatureExtractor:
     """Extracts customer-level behavioral and demographic metrics for clustering."""
 
     def extract_features(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Aggregates transactional purchase history into 1 row per unique User_ID."""
+        """Aggregates transactional purchase history into 1 row per unique User_ID.
+
+        Note: ``frequency`` is the number of DISTINCT products a customer bought, not the number of purchase rows,
+        so repeat purchases of one product count once. Switching to a purchase count would change the clusters and
+        personas, so that decision is deferred to round 2 (PIPE-13).
+        """
         logger.info(f"Extracting customer features from {len(df):,} transactions...")
+        logger.info("Customer 'frequency' = number of distinct products bought (not purchase rows).")
 
         # 1. Behavioral KPIs per customer
         agg_funcs = {
             "purchase": ["sum", "mean", lambda x: x.max() - x.min()],
             "product_id": "nunique",
-            "product_category_1": lambda x: x.mode()[0] if not x.mode().empty else x.iloc[0]
+            "product_category_1": lambda x: x.mode()[0] if not x.mode().empty else x.iloc[0],
         }
 
         user_behavior = df.groupby("user_id").agg(agg_funcs)
@@ -24,14 +31,12 @@ class CustomerFeatureExtractor:
             "average_order_value",
             "purchase_amount_variability",
             "frequency",
-            "popular_category"
+            "popular_category",
         ]
         user_behavior = user_behavior.reset_index()
 
         # 2. Customer Demographics (take first matching row since demographics are invariant per user)
-        demographics = df.drop_duplicates(subset=["user_id"])[[
-            "user_id", "gender", "marital_status", "age"
-        ]].copy()
+        demographics = df.drop_duplicates(subset=["user_id"])[["user_id", "gender", "marital_status", "age"]].copy()
 
         # Marital status text normalization
         demographics["marital_status"] = demographics["marital_status"].apply(
@@ -39,9 +44,7 @@ class CustomerFeatureExtractor:
         )
 
         # Age binned into <=50 vs >51 matching R analysis findings
-        demographics["age_binned"] = demographics["age"].apply(
-            lambda x: ">51" if x in ["51-55", "55+"] else "<=50"
-        )
+        demographics["age_binned"] = demographics["age"].apply(lambda x: ">51" if x in ["51-55", "55+"] else "<=50")
         demographics["age_group"] = demographics["age"]
         demographics.drop(columns=["age"], inplace=True)
 

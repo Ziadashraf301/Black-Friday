@@ -1,12 +1,19 @@
 """
 User repository for shopper authentication, profiles, and order history.
 """
-from typing import Dict, Any, List, Optional
+
+from typing import Any, Dict, List, Optional
+
 from sqlalchemy import text
+
 from core.db.repositories.base import BaseRepository
 from core.logging import get_logger
 
 logger = get_logger(__name__)
+
+# The model was trained on "0", "1", "2", "3", "4+" with no missing category; an unseen string such as "None" is
+# ordinal-encoded to -1. "1" is the most common training value (35% of rows) and the batch pricing fallback.
+DEFAULT_STAY_IN_CITY_YEARS = "1"
 
 
 class UserRepository(BaseRepository):
@@ -34,7 +41,7 @@ class UserRepository(BaseRepository):
 
             CREATE TABLE IF NOT EXISTS user_purchases (
                 id                   SERIAL PRIMARY KEY,
-                user_id              INTEGER REFERENCES app_users(user_id) ON DELETE CASCADE,
+                user_id              INTEGER NOT NULL REFERENCES app_users(user_id) ON DELETE CASCADE,
                 product_id           TEXT NOT NULL,
                 product_category_1   INTEGER,
                 product_category_2   INTEGER,
@@ -46,7 +53,16 @@ class UserRepository(BaseRepository):
         """
         with self.engine.begin() as conn:
             conn.execute(text(ddl))
+        self._require_purchase_user_id()
         logger.info("App tables (app_users, user_purchases) ensured.")
+
+    def _require_purchase_user_id(self):
+        """Brings a table created by an older DDL (nullable user_id) in line with the ORM model and init_schema.sql."""
+        try:
+            with self.engine.begin() as conn:
+                conn.execute(text("ALTER TABLE user_purchases ALTER COLUMN user_id SET NOT NULL"))
+        except Exception as err:
+            logger.warning(f"Could not make user_purchases.user_id NOT NULL (existing rows without a user?): {err}")
 
     def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
         query = text("SELECT * FROM app_users WHERE email = :email")
@@ -60,44 +76,43 @@ class UserRepository(BaseRepository):
             result = conn.execute(query, {"user_id": user_id}).mappings().first()
             return dict(result) if result else None
 
+    @staticmethod
+    def _demographics_from_row(row: Dict[str, Any]) -> Dict[str, Any]:
+        """Normalises a user / transaction row into the demographic vector used for pricing."""
+        stay = row["stay_in_current_city_years"]
+        return {
+            "gender": row["gender"],
+            "age": row["age"],
+            "city_category": row["city_category"],
+            "stay_in_current_city_years": str(stay) if stay not in (None, "") else DEFAULT_STAY_IN_CITY_YEARS,
+            "marital_status": int(row["marital_status"]) if row["marital_status"] is not None else 0,
+            "occupation": int(row["occupation"]) if row["occupation"] is not None else 0,
+        }
+
     def get_user_demographics(self, user_id: int) -> Optional[Dict[str, Any]]:
         """Retrieves exact demographic vector for user_id from app_users or black_friday_cleaned table."""
         # 1. Check app_users table
         user = self.get_user_by_id(user_id)
         if user and user.get("gender") and user.get("age"):
-            return {
-                "gender": user["gender"],
-                "age": user["age"],
-                "city_category": user["city_category"],
-                "stay_in_current_city_years": str(user["stay_in_current_city_years"]),
-                "marital_status": int(user["marital_status"]) if user["marital_status"] is not None else 0,
-                "occupation": int(user["occupation"]) if user["occupation"] is not None else 0,
-            }
+            return self._demographics_from_row(user)
 
         # 2. Check black_friday_cleaned table
-        query = text("""
+        query = text(
+            """
             SELECT gender, age, occupation, city_category, stay_in_current_city_years, marital_status
             FROM black_friday_cleaned
             WHERE user_id = :user_id
             LIMIT 1
-        """)
+        """
+        )
         with self.engine.connect() as conn:
             res = conn.execute(query, {"user_id": user_id}).mappings().first()
-            if res:
-                d = dict(res)
-                return {
-                    "gender": d["gender"],
-                    "age": d["age"],
-                    "city_category": d["city_category"],
-                    "stay_in_current_city_years": str(d["stay_in_current_city_years"]),
-                    "marital_status": int(d["marital_status"]) if d["marital_status"] is not None else 0,
-                    "occupation": int(d["occupation"]) if d["occupation"] is not None else 0,
-                }
-        return None
+            return self._demographics_from_row(dict(res)) if res else None
 
     def create_user(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Insert a new user and return the created record."""
-        query = text("""
+        query = text(
+            """
             INSERT INTO app_users
                 (name, email, password_hash, gender, age, city_category,
                  marital_status, occupation, stay_in_current_city_years,
@@ -107,77 +122,65 @@ class UserRepository(BaseRepository):
                  :marital_status, :occupation, :stay_in_current_city_years,
                  :cluster_id, :cluster_persona, :recommended_action)
             RETURNING *
-        """)
+        """
+        )
         with self.engine.begin() as conn:
             result = conn.execute(query, data).mappings().first()
             return dict(result)
+
+    _INSERT_PURCHASE = text(
+        """
+        INSERT INTO user_purchases
+            (user_id, product_id, product_category_1, product_category_2,
+             product_category_3, predicted_usd, model_used)
+        VALUES
+            (:user_id, :product_id, :product_category_1, :product_category_2,
+             :product_category_3, :predicted_usd, :model_used)
+        RETURNING *
+    """
+    )
 
     def record_purchase(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Save a shopper's product prediction/purchase event."""
-        query = text("""
-            INSERT INTO user_purchases
-                (user_id, product_id, product_category_1, product_category_2,
-                 product_category_3, predicted_usd, model_used)
-            VALUES
-                (:user_id, :product_id, :product_category_1, :product_category_2,
-                 :product_category_3, :predicted_usd, :model_used)
-            RETURNING *
-        """)
         with self.engine.begin() as conn:
-            result = conn.execute(query, data).mappings().first()
+            result = conn.execute(self._INSERT_PURCHASE, data).mappings().first()
             return dict(result)
 
-    def record_purchases_batch(
-        self, records: List[Dict[str, Any]], connection: Optional[Any] = None
-    ) -> List[Dict[str, Any]]:
+    def record_purchases_batch(self, records: List[Dict[str, Any]], connection: Optional[Any] = None) -> List[Dict[str, Any]]:
         """Save multiple purchases in ONE atomic transaction with rollback on failure."""
         if not records:
             return []
 
-        query = text("""
-            INSERT INTO user_purchases
-                (user_id, product_id, product_category_1, product_category_2,
-                 product_category_3, predicted_usd, model_used)
-            VALUES
-                (:user_id, :product_id, :product_category_1, :product_category_2,
-                 :product_category_3, :predicted_usd, :model_used)
-            RETURNING *
-        """)
+        def insert_all(conn) -> List[Dict[str, Any]]:
+            return [dict(conn.execute(self._INSERT_PURCHASE, rec).mappings().first()) for rec in records]
 
         if connection is not None:
-            results = []
-            for rec in records:
-                row = connection.execute(query, rec).mappings().first()
-                results.append(dict(row))
-            return results
-
+            return insert_all(connection)
         with self.engine.begin() as conn:
-            results = []
-            for rec in records:
-                row = conn.execute(query, rec).mappings().first()
-                results.append(dict(row))
-            return results
-
+            return insert_all(conn)
 
     def get_user_purchase_history(self, user_id: int) -> List[Dict[str, Any]]:
-        query = text("""
+        query = text(
+            """
             SELECT id, product_id, product_category_1, product_category_2,
                    product_category_3, predicted_usd, model_used, purchased_at
             FROM user_purchases
             WHERE user_id = :user_id
             ORDER BY purchased_at DESC
             LIMIT 50
-        """)
+        """
+        )
         with self.engine.connect() as conn:
             return [dict(r) for r in conn.execute(query, {"user_id": user_id}).mappings().all()]
 
     def update_user_password(self, user_id: int, new_password_hash: str) -> None:
         """Update a user's password hash in app_users."""
-        query = text("""
+        query = text(
+            """
             UPDATE app_users
             SET password_hash = :password_hash
             WHERE user_id = :user_id
-        """)
+        """
+        )
         with self.engine.begin() as conn:
             conn.execute(query, {"user_id": user_id, "password_hash": new_password_hash})
-

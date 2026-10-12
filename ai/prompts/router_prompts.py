@@ -1,6 +1,8 @@
+# flake8: noqa: E501 (long prompt/regex literals)
 """
 System-1 Guardrail & Intent Classification Prompt Specifications.
 """
+
 from ai.schemas import PromptVersion, QuestionSpec
 
 # Baseline System-1 8-Intent E-Commerce Classifier & Adversarial Guardrail

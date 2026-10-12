@@ -1,9 +1,11 @@
-import os
 import json
+import os
+from typing import Any, Dict, List
+
 import numpy as np
-import pandas as pd
 import onnxruntime as ort
-from typing import Dict, Any, List
+import pandas as pd
+
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -30,9 +32,7 @@ class ONNXMissForestImputer:
             session_opts = ort.SessionOptions()
             session_opts.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_BASIC
             sess = ort.InferenceSession(
-                os.path.join(model_dir, step["onnx_file"]),
-                sess_options=session_opts,
-                providers=["CPUExecutionProvider"]
+                os.path.join(model_dir, step["onnx_file"]), sess_options=session_opts, providers=["CPUExecutionProvider"]
             )
             self.sessions[step["target_col"]] = (step, sess)
 
@@ -79,7 +79,7 @@ class ONNXMissForestImputer:
 
             arr[col_missing, feat_idx] = preds
 
-        # 3. Post-process integer categories (Fix 3.6: keep imputed columns when absent from input, clip [1, 20], cannot fail on NaN)
+        # 3. Post-process integer categories (keep imputed columns absent from input, clip to [1, 20], NaN-safe)
         for j, c in enumerate(self.cols):
             if c in ["product_category_2", "product_category_3"]:
                 col_vals = np.clip(np.round(arr[:, j]), 1, 20)

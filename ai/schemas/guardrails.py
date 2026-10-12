@@ -2,13 +2,17 @@
 Guardrail & Safety Domain Schemas.
 Centralized definitions for safety filtering and guardrail service evaluations.
 """
-from typing import Optional, List, Dict, Any
+
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, Field
+
 from ai.schemas.router import ExtractedEntities
 
 
 class SafetyEvaluationResult(BaseModel):
     """Pydantic model representing the safety verdict of a user query."""
+
     is_safe: bool = Field(..., description="True if query is safe to process, False if blocked.")
     adversarial_probability: float = Field(..., ge=0.0, le=1.0, description="Calibrated probability of attack.")
     flagged_rules: List[str] = Field(default_factory=list, description="List of triggered rules or detectors.")
@@ -20,6 +24,7 @@ class SafetyEvaluationResult(BaseModel):
 
 class GuardrailResponse(BaseModel):
     """Unified service response contract for AI guardrail & router evaluation."""
+
     query: str
     intent: str
     target_intents: List[str] = Field(default_factory=list, description="All detected intents for multi-intent handling")

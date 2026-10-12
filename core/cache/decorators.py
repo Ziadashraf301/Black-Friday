@@ -2,9 +2,11 @@
 Caching decorators for application services.
 Provides non-blocking, fault-tolerant Redis JSON caching with transparent fallback to execution.
 """
+
 import functools
 import inspect
-from typing import Callable, Any, Optional, Union
+from typing import Any, Callable, Optional, Union
+
 from core.cache.redis_client import cache_manager
 from core.logging import get_logger
 
@@ -16,21 +18,44 @@ def _resolve_cache_key(
     fn: Callable[..., Any],
     args: tuple,
     kwargs: dict,
-) -> str:
-    """Resolves dynamic cache key from static string, format pattern, or callable."""
-    if callable(key_spec):
-        return key_spec(*args, **kwargs)
+) -> Optional[str]:
+    """Resolves dynamic cache key from static string, format pattern, or callable.
 
-    if isinstance(key_spec, str) and "{" in key_spec and "}" in key_spec:
-        try:
-            sig = inspect.signature(fn)
-            bound = sig.bind_partial(*args, **kwargs)
+    Returns None when a dynamic key cannot be built, so the caller bypasses the cache instead of
+    letting every call share one unformatted key.
+    """
+    try:
+        if callable(key_spec):
+            return key_spec(*args, **kwargs)
+
+        if "{" in key_spec and "}" in key_spec:
+            bound = inspect.signature(fn).bind_partial(*args, **kwargs)
             bound.apply_defaults()
             return key_spec.format(**bound.arguments)
-        except Exception:
-            return key_spec
+    except Exception as exc:
+        logger.warning(f"Cache key resolution failed for '{getattr(fn, '__name__', fn)}': {exc}. Bypassing cache.")
+        return None
 
     return str(key_spec)
+
+
+def _read_cache(cache_key: str) -> Optional[Any]:
+    """Returns the cached value, or None on a miss or any cache failure."""
+    try:
+        if cache_manager.is_available:
+            return cache_manager.get_json(cache_key)
+    except Exception as exc:
+        logger.warning(f"Cache get failed for '{cache_key}': {exc}")
+    return None
+
+
+def _write_cache(cache_key: str, result: Any, ttl: int) -> None:
+    """Stores a non-None result; cache failures are logged, never raised."""
+    try:
+        if result is not None and cache_manager.is_available:
+            cache_manager.set_json(cache_key, result, ttl=ttl)
+    except Exception as exc:
+        logger.warning(f"Cache set failed for '{cache_key}': {exc}")
 
 
 def cached_json(key: Union[str, Callable[..., str]], ttl: int = 3600):
@@ -43,58 +68,36 @@ def cached_json(key: Union[str, Callable[..., str]], ttl: int = 3600):
     - Zero exceptions bubbled up from cache failures.
     - Zero delay / hangs when Redis is disconnected.
     """
+
     def decorator(fn: Callable[..., Any]) -> Callable[..., Any]:
         if inspect.iscoroutinefunction(fn):
+
             @functools.wraps(fn)
             async def async_wrapper(*args, **kwargs):
                 cache_key = _resolve_cache_key(key, fn, args, kwargs)
-                # 1. Try cache read
-                try:
-                    if cache_manager.is_available:
-                        cached = cache_manager.get_json(cache_key)
-                        if cached is not None:
-                            return cached
-                except Exception as exc:
-                    logger.warning(f"Cache get failed for '{cache_key}': {exc}")
-
-                # 2. Execute underlying function
+                if cache_key is None:
+                    return await fn(*args, **kwargs)
+                cached = _read_cache(cache_key)
+                if cached is not None:
+                    return cached
                 result = await fn(*args, **kwargs)
-
-                # 3. Try cache write
-                try:
-                    if result is not None and cache_manager.is_available:
-                        cache_manager.set_json(cache_key, result, ttl=ttl)
-                except Exception as exc:
-                    logger.warning(f"Cache set failed for '{cache_key}': {exc}")
-
+                _write_cache(cache_key, result, ttl)
                 return result
 
             return async_wrapper
-        else:
-            @functools.wraps(fn)
-            def sync_wrapper(*args, **kwargs):
-                cache_key = _resolve_cache_key(key, fn, args, kwargs)
-                # 1. Try cache read
-                try:
-                    if cache_manager.is_available:
-                        cached = cache_manager.get_json(cache_key)
-                        if cached is not None:
-                            return cached
-                except Exception as exc:
-                    logger.warning(f"Cache get failed for '{cache_key}': {exc}")
 
-                # 2. Execute underlying function
-                result = fn(*args, **kwargs)
+        @functools.wraps(fn)
+        def sync_wrapper(*args, **kwargs):
+            cache_key = _resolve_cache_key(key, fn, args, kwargs)
+            if cache_key is None:
+                return fn(*args, **kwargs)
+            cached = _read_cache(cache_key)
+            if cached is not None:
+                return cached
+            result = fn(*args, **kwargs)
+            _write_cache(cache_key, result, ttl)
+            return result
 
-                # 3. Try cache write
-                try:
-                    if result is not None and cache_manager.is_available:
-                        cache_manager.set_json(cache_key, result, ttl=ttl)
-                except Exception as exc:
-                    logger.warning(f"Cache set failed for '{cache_key}': {exc}")
-
-                return result
-
-            return sync_wrapper
+        return sync_wrapper
 
     return decorator
