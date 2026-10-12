@@ -8,11 +8,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=ghcr.io/astral-sh/uv:0.5.11 /uv /uvx /bin/
 
-COPY requirements-ui.txt ./
+# Exact, hashed versions (make lock regenerates them from requirements-ui.txt)
+COPY requirements-ui.lock ./
 
 ENV PYTHONPATH="/app"
 
-RUN uv pip install --system --no-cache -r requirements-ui.txt
+RUN uv pip install --system --no-cache --require-hashes -r requirements-ui.lock
 
 COPY core/ /app/core/
 COPY apps/ /app/apps/

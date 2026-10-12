@@ -28,15 +28,12 @@ jobs:
         with:
           python-version: "3.11"
           cache: "pip"
-          cache-dependency-path: |
-            requirements.txt
-            requirements-ml.txt
-            requirements-dev.txt
+          cache-dependency-path: requirements-dev.lock
 
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
+          pip install --require-hashes -r requirements-dev.lock
 
       - name: Lint (flake8, black, isort on clean paths)
         run: make lint-ci

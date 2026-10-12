@@ -82,6 +82,7 @@ Black Friday/
 ├── pyproject.toml     # black / isort / pytest config (markers, 60s timeout)
 ├── .flake8            # flake8 config (line length 127)
 ├── requirements.txt   # API runtime only (Docker image); requirements-ml.txt adds pipelines, requirements-ui.txt is the UI image, requirements-dev.txt adds tests/lint
+├── requirements*.lock # Hashed exact versions (Linux, Python 3.11) used by the Dockerfiles and CI; `make lock` regenerates them after editing a requirements*.txt
 └── .env               # Environment variables (gitignored)
 ```
 

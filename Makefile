@@ -1,4 +1,4 @@
-.PHONY: help up down restart ps logs migrate ingest preprocess segmentation basket catalog train monitor retrain cron eval eval-ml eval-ai test test-unit test-slow test-integration test-e2e lint lint-ci clean
+.PHONY: lock help up down restart ps logs migrate ingest preprocess segmentation basket catalog train monitor retrain cron eval eval-ml eval-ai test test-unit test-slow test-integration test-e2e lint lint-ci clean
 
 # Default target: display help
 help:
@@ -14,6 +14,7 @@ help:
 	@echo "  make ingest       - Ingest raw train.csv into PostgreSQL warehouse"
 	@echo "  make preprocess   - Run missForest imputation and outlier tagging"
 	@echo "  make segmentation - Run Gower clustering and 10 persona profiling"
+	@echo "  make lock         - Regenerate the hashed requirements*.lock files after editing requirements*.txt"
 	@echo "  make basket       - Mine Apriori rules and compute PageRank/HITS"
 	@echo "  make catalog      - Rebuild curated catalogue bundles/similars/order counts (after basket)"
 	@echo "  make train        - Train regression benchmark models & export ONNX"
@@ -56,6 +57,15 @@ logs:
 
 # Database schema (Alembic, core/db/migrations). New change: edit core/db/models, then
 # alembic revision --autogenerate -m "..." and review the generated file before committing it.
+# Exact, hashed dependency locks for Linux / Python 3.11 (the images and CI). Edit requirements*.txt, then run this.
+# The dev lock is compiled first and constrains the API and ML locks, so tests run on the versions the API ships.
+LOCK_FLAGS = --python-version 3.11 --python-platform x86_64-manylinux_2_28 --generate-hashes --no-header --quiet
+lock:
+	uv pip compile requirements-dev.txt $(LOCK_FLAGS) -o requirements-dev.lock
+	uv pip compile requirements.txt -c requirements-dev.lock $(LOCK_FLAGS) -o requirements.lock
+	uv pip compile requirements-ml.txt -c requirements-dev.lock $(LOCK_FLAGS) -o requirements-ml.lock
+	uv pip compile requirements-ui.txt $(LOCK_FLAGS) -o requirements-ui.lock
+
 migrate:
 	alembic upgrade head
 
