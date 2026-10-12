@@ -9,6 +9,7 @@ from typing import List, Optional
 
 from ai.extractor.catalog_index import CatalogIndex
 from ai.schemas import BundleItem
+from ai.tools.product_ids import normalize_product_id
 from core.cache.redis_client import RedisCacheManager
 from core.cache.redis_client import cache_manager as default_cache_manager
 from core.db.repository import BlackFridayRepository
@@ -41,9 +42,7 @@ class BundleRecommendationsTool:
         Retrieves bundled accessories and complementary outfits for a product.
         bundle_type: 'apriori', 'item2vec', or 'all'
         """
-        clean_id = product_id.strip().upper()
-        if not clean_id.startswith("P"):
-            clean_id = f"P{clean_id.zfill(8)}"
+        clean_id = normalize_product_id(product_id)
 
         logger.info(f"[TOOL: BUNDLE] Fetching bundles for product_id={clean_id} (type={bundle_type})")
 

@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional
 
 from ai.extractor.catalog_index import CatalogIndex
 from ai.schemas import CartItem, CartState
+from ai.tools.product_ids import normalize_product_id
 from core.cache.redis_client import RedisCacheManager, cache_manager
 from core.config import settings
 from core.db.repository import BlackFridayRepository
@@ -111,9 +112,7 @@ class CartManagementTool:
         Resolves product specifications from BlackFridayRepository, falling back to CatalogIndex.
         Returns None for an unknown product; raises DomainError for a known product without a price.
         """
-        clean_id = (product_id or "").strip().upper()
-        if clean_id and not clean_id.startswith("P"):
-            clean_id = f"P{clean_id.zfill(8)}"
+        clean_id = normalize_product_id(product_id)
         known_without_price = False
 
         # 1. Query repository layer (WarehouseRepository)
@@ -169,9 +168,7 @@ class CartManagementTool:
         items: List[CartItem] = list(current_cart.items)
         act = action.lower().strip()
 
-        clean_id = (product_id or "").strip().upper()
-        if clean_id and not clean_id.startswith("P"):
-            clean_id = f"P{clean_id.zfill(8)}"
+        clean_id = normalize_product_id(product_id)
 
         if act == "add":
             if not clean_id:

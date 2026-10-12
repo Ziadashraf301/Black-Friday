@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional
 
 from ai.extractor.catalog_index import CatalogIndex
 from ai.schemas import ProductDetails
+from ai.tools.product_ids import normalize_product_id
 from core.db.repository import BlackFridayRepository
 from core.logging import get_logger
 
@@ -23,9 +24,7 @@ class ProductDetailsTool:
 
     def get_details(self, product_id: str) -> Optional[ProductDetails]:
         """Fetches product details by canonical product ID (e.g. P00025442)."""
-        clean_id = product_id.strip().upper()
-        if not clean_id.startswith("P"):
-            clean_id = f"P{clean_id.zfill(8)}"
+        clean_id = normalize_product_id(product_id)
 
         logger.info(f"[TOOL: DETAILS] Fetching specs for product_id={clean_id}")
 
