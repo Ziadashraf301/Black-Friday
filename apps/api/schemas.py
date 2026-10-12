@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field
 
 MAX_BATCH_ITEMS = 100
 MAX_ITEM_QUANTITY = 50
@@ -199,7 +199,8 @@ class CuratedBundleItem(BaseModel):
     price: float
     lift: Optional[float] = None
     confidence: Optional[float] = None
-    cosine_similarity: Optional[float] = None
+    # The catalogue file stores the Item2Vec score as "similarity"; the API keeps its "cosine_similarity" name
+    cosine_similarity: Optional[float] = Field(None, validation_alias=AliasChoices("cosine_similarity", "similarity"))
 
 
 class CuratedProductItem(BaseModel):
