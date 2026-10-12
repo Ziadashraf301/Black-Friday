@@ -39,11 +39,19 @@ class Item2VecRecommender:
             logger.warning("Gensim is unavailable. Skipping Item2Vec fitting.")
             return self
 
-        logger.info(f"Training Item2Vec model on {len(baskets):,} customer baskets (vector_size={self.vector_size})...")
+        # A basket has no order, so by default (window=0) every item is context for every other item in its basket,
+        # as in the Item2Vec paper: the window spans the longest basket and is never randomly shrunk.
+        whole_basket = self.window == 0
+        window = max((len(b) for b in baskets), default=1) if whole_basket else self.window
+        logger.info(
+            f"Training Item2Vec model on {len(baskets):,} customer baskets "
+            f"(vector_size={self.vector_size}, window={'whole basket' if whole_basket else window})..."
+        )
         self.model = Word2Vec(
             sentences=baskets,
             vector_size=self.vector_size,
-            window=self.window,
+            window=window,
+            shrink_windows=not whole_basket,
             min_count=self.min_count,
             sg=1,  # Skip-gram
             # One worker plus a fixed seed makes training reproducible; several workers reorder updates between runs

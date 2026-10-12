@@ -118,7 +118,8 @@ class Settings(BaseSettings):
     APRIORI_MIN_SUPPORT: float = Field(default=0.05)
     APRIORI_MIN_CONFIDENCE: float = Field(default=0.40)
     ITEM2VEC_VECTOR_SIZE: int = Field(default=32)
-    ITEM2VEC_WINDOW: int = Field(default=5)
+    # 0 = the whole basket is the context window (baskets are unordered sets); > 0 = a fixed skip-gram window
+    ITEM2VEC_WINDOW: int = Field(default=0, ge=0)
     ITEM2VEC_MIN_COUNT: int = Field(default=2)
     ITEM2VEC_EPOCHS: int = Field(default=10)
 

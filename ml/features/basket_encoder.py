@@ -15,9 +15,12 @@ class TransactionBasketEncoder:
         self.encoder = TransactionEncoder()
 
     def build_baskets(self, df: pd.DataFrame) -> List[List[str]]:
-        """Groups products into a list of unique baskets keyed by user_id."""
+        """Groups products into a list of unique baskets keyed by user_id.
+
+        Each basket is sorted so the result does not depend on the row order of ``df``.
+        """
         logger.info(f"Grouping transactions from {len(df):,} rows into user baskets...")
-        baskets = df.groupby("user_id")["product_id"].unique().apply(list).tolist()
+        baskets = df.groupby("user_id")["product_id"].unique().apply(sorted).tolist()
         logger.info(f"Built {len(baskets):,} unique customer baskets.")
         return baskets
 

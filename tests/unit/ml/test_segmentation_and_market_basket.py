@@ -119,9 +119,32 @@ def test_anl7_item2vec_training_is_reproducible():
 def test_anl8_item2vec_defaults_follow_settings(monkeypatch):
     monkeypatch.setattr(settings, "ITEM2VEC_MIN_COUNT", 3)
     monkeypatch.setattr(settings, "ITEM2VEC_EPOCHS", 4)
+    monkeypatch.setattr(settings, "ITEM2VEC_WINDOW", 7)
     model = Item2VecRecommender()
-    assert (model.min_count, model.epochs, model.vector_size, model.window) == (3, 4, 32, 5)
+    assert (model.min_count, model.epochs, model.vector_size, model.window) == (3, 4, 32, 7)
     assert Item2VecRecommender(min_count=1).min_count == 1
+
+
+def test_anl9_window_zero_uses_the_whole_basket_without_shrinking():
+    baskets = _baskets() + [[f"P{i}" for i in range(20)]]
+    model = Item2VecRecommender(window=0, min_count=1, epochs=1).fit(baskets)
+    assert model.model.window == 20
+    assert model.model.shrink_windows is False
+
+
+def test_anl9_fixed_window_is_still_supported():
+    model = Item2VecRecommender(window=3, min_count=1, epochs=1).fit(_baskets())
+    assert model.model.window == 3
+    assert model.model.shrink_windows is True
+
+
+def test_anl9_baskets_do_not_depend_on_row_order():
+    from ml.features.basket_encoder import TransactionBasketEncoder
+
+    df = pd.DataFrame({"user_id": [1, 1, 1, 2, 2], "product_id": ["P3", "P1", "P2", "P2", "P1"]})
+    shuffled = df.iloc[::-1]
+    encoder = TransactionBasketEncoder()
+    assert encoder.build_baskets(df) == encoder.build_baskets(shuffled) == [["P1", "P2", "P3"], ["P1", "P2"]]
 
 
 def test_anl8_similarity_pass_covers_every_product():
