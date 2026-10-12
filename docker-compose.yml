@@ -125,6 +125,9 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.api
+      args:
+        APP_UID: ${APP_UID:-1000}
+        APP_GID: ${APP_GID:-1000}
     container_name: blackfriday_api
     restart: unless-stopped
     depends_on:
@@ -173,6 +176,9 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.ui
+      args:
+        APP_UID: ${APP_UID:-1000}
+        APP_GID: ${APP_GID:-1000}
     container_name: blackfriday_ui
     restart: unless-stopped
     depends_on:

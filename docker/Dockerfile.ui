@@ -19,6 +19,14 @@ COPY core/ /app/core/
 COPY apps/ /app/apps/
 COPY data/ /app/data/
 
+# Run as a non-root user (INF-12). The bind-mounted code, models/ and data/ only need to be readable by it; on a
+# Linux host build with APP_UID/APP_GID = your own id (`id -u` / `id -g`) if those files are not world-readable.
+ARG APP_UID=1000
+ARG APP_GID=1000
+RUN groupadd --gid ${APP_GID} app && useradd --uid ${APP_UID} --gid ${APP_GID} --create-home --shell /usr/sbin/nologin app
+RUN chown -R app:app /app/apps/reflex_app
+USER app
+
 WORKDIR /app/apps/reflex_app
 
 # Install bun and the frontend npm packages and build the production frontend now, at image build time, so a container

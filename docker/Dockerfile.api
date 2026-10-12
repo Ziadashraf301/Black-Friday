@@ -30,6 +30,16 @@ COPY evaluation/ /app/evaluation/
 
 # models/ and data/ are bind-mounted by docker-compose (models/ is gitignored, so it is not in a clean checkout).
 
+# Run as a non-root user (INF-12). The bind-mounted code, models/ and data/ only need to be readable by it; on a
+# Linux host build with APP_UID/APP_GID = your own id (`id -u` / `id -g`) if those files are not world-readable.
+ARG APP_UID=1000
+ARG APP_GID=1000
+RUN groupadd --gid ${APP_GID} app && useradd --uid ${APP_UID} --gid ${APP_GID} --create-home --shell /usr/sbin/nologin app
+# Logs are written inside the container; bytecode is not written into the bind mounts
+ENV PYTHONDONTWRITEBYTECODE=1
+RUN mkdir -p /app/logs && chown -R app:app /app/logs
+USER app
+
 EXPOSE 8000
 
 HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=3 \
