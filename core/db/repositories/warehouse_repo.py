@@ -119,8 +119,6 @@ class WarehouseRepository(BaseRepository):
             "badge": p.get("badge"),
             "is_hero": bool(p.get("is_hero", False)),
             "sizes": p.get("sizes") or [],
-            "rating": float(p.get("rating", 4.5)),
-            "review_count": int(p.get("review_count", 100)),
             # Prices are hand-maintained USD values in the catalogue file; a product without them is an error
             "original_price": float(p["original_price"]),
             "discounted_price": float(p["discounted_price"]),
@@ -174,8 +172,6 @@ class WarehouseRepository(BaseRepository):
                     "badge": r.badge,
                     "is_hero": r.is_hero,
                     "sizes": r.sizes or [],
-                    "rating": float(r.rating) if r.rating is not None else 4.5,
-                    "review_count": int(r.review_count) if r.review_count is not None else 100,
                     "original_price": float(r.original_price) if r.original_price is not None else 99.9,
                     "discounted_price": float(r.discounted_price) if r.discounted_price is not None else 49.9,
                     "image_url": r.image_url,

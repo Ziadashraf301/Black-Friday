@@ -215,3 +215,29 @@ def test_0003_refuses_purchases_of_unknown_products(scratch_url):
     _run_sql(scratch_url, PRE_0003 + "INSERT INTO user_purchases (user_id, product_id) VALUES (1, 'P_GONE');")
     with pytest.raises(RuntimeError, match="1 rows whose product_id is not in curated_products"):
         _upgrade(scratch_url)
+
+
+def test_0004_drops_invented_ratings_and_keeps_prices(scratch_url):
+    _run_sql(scratch_url, SCHEMA_SQL.read_text(encoding="utf-8"))
+    _run_sql(
+        scratch_url,
+        """
+        ALTER TABLE curated_products ADD COLUMN rating FLOAT NOT NULL DEFAULT 4.5,
+            ADD COLUMN review_count INTEGER NOT NULL DEFAULT 100;
+        INSERT INTO curated_products (product_id, original_price, discounted_price, rating, review_count)
+            VALUES ('P00025442', 99.90, 49.90, 4.8, 128);
+        """,
+    )
+    _upgrade(scratch_url)
+
+    engine = create_engine(scratch_url)
+    try:
+        columns = {c["name"] for c in inspect(engine).get_columns("curated_products")}
+        with engine.connect() as conn:
+            prices = conn.execute(text("SELECT original_price, discounted_price FROM curated_products")).one()
+    finally:
+        engine.dispose()
+
+    assert not {"rating", "review_count"} & columns
+    assert tuple(str(p) for p in prices) == ("99.90", "49.90")
+    assert _schema_diff(scratch_url) == []

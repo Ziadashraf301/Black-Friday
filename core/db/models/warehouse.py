@@ -11,7 +11,6 @@ from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
-    Float,
     Index,
     Integer,
     Numeric,
@@ -157,8 +156,6 @@ class CuratedProduct(Base):
     badge = Column(String(50), nullable=True)
     is_hero = Column(Boolean, nullable=False, default=False, server_default=text("false"))
     sizes = Column(JSONB, nullable=True)
-    rating = Column(Float, nullable=False, default=4.5, server_default=text("4.5"))
-    review_count = Column(Integer, nullable=False, default=100, server_default=text("100"))
     original_price = Column(Numeric(10, 2), nullable=False)
     discounted_price = Column(Numeric(10, 2), nullable=False)
     image_url = Column(Text, nullable=True)

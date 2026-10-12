@@ -1,6 +1,6 @@
 # Database ERD: Black Friday Platform
 
-The PostgreSQL 16 database `fridayblack` (with pgvector), as read from the live database after Alembic migration `0003`.
+The PostgreSQL 16 database `fridayblack` (with pgvector), as read from the live database after Alembic migration `0004`.
 
 ---
 
@@ -252,7 +252,6 @@ The 50 products shown in the store, enriched with names, images, prices and reco
 | `is_hero` | boolean | The featured product on the right of the page |
 | `original_price`, `discounted_price` | numeric(10,2) | Prices shown in the UI, in USD (hand-maintained in `data/curated_products.json`) |
 | `order_count` | int | Purchase rows in the warehouse (rebuilt by `make catalog`) |
-| `rating`, `review_count` | double / int | No real source in the dataset; not shown in the UI or the API |
 | `sizes`, `apriori_bundles`, `item2vec_similars` | jsonb | Sizes and "bought together" / "similar" lists (bundles and similars rebuilt by `make catalog` from the Apriori rules and the Item2Vec model) |
 | `embedding` | vector | **pgvector** embedding for semantic search (**HNSW index**) |
 | `search_vector` | tsvector | Full-text search (GIN index) |
@@ -310,7 +309,7 @@ Caches the assistant's answers by meaning, so similar questions reuse an answer.
 
 ### 4.10 alembic_version (system)
 
-One row with the current migration version (`0003`). Managed by Alembic only; never edit it by hand.
+One row with the current migration version (`0004`). Managed by Alembic only; never edit it by hand.
 
 ---
 
@@ -329,7 +328,7 @@ One row with the current migration version (`0003`). Managed by Alembic only; ne
 
 ## 6. Observations
 
-These were noticed while drawing this ERD. Round 2 (step 6.5) handled each one:
+These were noticed while drawing this ERD. Round 2 (step 6.5) handled each one. Migration `0004` also dropped `curated_products.rating` / `review_count`: the dataset has no ratings, the values were invented, and nothing showed them.
 
 1. **Money as `double precision`** in `curated_products` and `user_purchases.predicted_usd`. Fixed: `numeric(10,2)` (migration `0003`; every stored value already had at most 2 decimals). The invented `99.9` / `49.9` column defaults are gone, so a product without a price is an error instead of a made-up price.
 2. **`user_carts.updated_at` was a `varchar`.** Fixed: `timestamptz` with default `now()`. Old ISO-8601 text converts; anything unreadable becomes NULL (never guessed). The repository now writes `now()`.

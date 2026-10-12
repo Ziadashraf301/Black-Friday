@@ -25,7 +25,7 @@ def _product(pid, price, **extra):
     }
 
 
-PRODUCTS = [_product("P001", 10.0, rating=4.8), _product("P002", 20.0), _product("P003", 30.0)]
+PRODUCTS = [_product("P001", 10.0, brand="Heritage Guild"), _product("P002", 20.0), _product("P003", 30.0)]
 
 RULES = pd.DataFrame(
     {
@@ -114,7 +114,8 @@ def test_run_end_to_end_with_a_saved_model(tmp_path):
     written = json.loads(out.read_text(encoding="utf-8"))
     assert [p["order_count"] for p in written] == [5, 6, 7]
     assert all(len(p["item2vec_similars"]) == 2 for p in written)
-    assert written[0]["rating"] == 4.8  # untouched field
+    assert written[0]["brand"] == "Heritage Guild"  # untouched field
+    assert [p["discounted_price"] for p in written] == [10.0, 20.0, 30.0]  # prices never change
     assert json.loads(catalog.read_text(encoding="utf-8")) == PRODUCTS  # input file untouched when --output is used
 
 

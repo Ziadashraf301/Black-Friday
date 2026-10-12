@@ -109,8 +109,6 @@ CREATE TABLE IF NOT EXISTS curated_products (
     badge VARCHAR(50),
     is_hero BOOLEAN NOT NULL DEFAULT FALSE,
     sizes JSONB,
-    rating FLOAT NOT NULL DEFAULT 4.5,
-    review_count INTEGER NOT NULL DEFAULT 100,
     original_price NUMERIC(10, 2) NOT NULL,
     discounted_price NUMERIC(10, 2) NOT NULL,
     image_url TEXT,
