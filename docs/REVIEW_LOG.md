@@ -146,6 +146,20 @@ Round-1 step 7 ideas not done (won't fix): a shared `is_cacheable` (one cache wr
 - Not done: `docs/DATABASE_ERD.pdf` is stale (no Mermaid renderer available here; the PDF build is not recorded).
 - Each commit was tested on its own staged state (unstaged work stashed): every listed test file passed. Lint on touched files clean with black 25.12 (the pin).
 
+### Steps 2, 5 and 6.6: prepared, not built (2026-10-12)
+
+Code and config are committed; nothing was built or pulled. The steps stay unchecked until the images are rebuilt and tested (planned 2026-10-13).
+
+| ID | Area | Finding | File | Severity | Status | Commit |
+|---|---|---|---|---|---|---|
+| INF-21 | Infra | Traces from the API container lose their span data ("An error occurred while attempting to fetch the trace data"): the API image uses `mlflow-skinny` without `boto3` since INF-17, so `traces.json` is never uploaded to `s3://mlflow-artifacts`. Recommended and done: `boto3` in `requirements.txt` (not proxied artifacts: each existing experiment keeps its `s3://` artifact location, so clients would still write to S3 directly). `setup_tracking_environment` warns when boto3 is missing. Traces already missing their data cannot be recovered. To verify after the rebuild: one bot query, its trace has `traces.json` and opens in the UI. | `requirements.txt`, `core/tracking/client.py` | medium | fixed (not built) | ffc746f |
+| INF-10, INF-17 | Infra | Hashed locks `requirements{,-ml,-ui,-dev}.lock` (uv, Linux / Python 3.11, `--generate-hashes`); the dev lock constrains the API and ML locks (Reflex caps redis below 8, so the locks first disagreed on redis 7.4.1 vs 8.1.0). Dockerfiles and CI install with `--require-hashes`; `make lock` regenerates them and reproduces the committed files byte for byte. MLflow stays 2.22.5 (`<3`). | `requirements*.lock`, `docker/`, CI, `Makefile` | medium | fixed (not built) | 4e8506d |
+| INF-19 | Infra / UI | `handle_bot_trigger_click` returned a bool (Reflex `TypeError`): handlers now return nothing, the logic is in `_open_bot_if_authenticated`. The UI image installs bun/npm packages and builds the frontend at build time (`reflex export --frontend-only --no-zip`). | `apps/reflex_app/reflex_app/state.py`, `docker/Dockerfile.ui` | medium | fixed (Dockerfile not built) | 028a71f, 1c2063b |
+| UI-7 | Frontend | (leftovers) Catalog prices are validated once in `_set_catalog` (`_validated_catalog`: top-level and nested bundle/similar prices become a positive float or None); the 18 inline `$x.2f` formats use one `_usd` helper. | `apps/reflex_app/reflex_app/state.py` | low | fixed | 9e22847 |
+| INF-12 | Infra | API and UI containers run as user `app`, UID/GID from build args `APP_UID`/`APP_GID` (default 1000, set in compose from `.env`). The API only reads its bind mounts; its logs stay inside the container and `PYTHONDONTWRITEBYTECODE=1`. Not testable here: bind-mount permissions on a Linux host. | `docker/Dockerfile.*`, `docker-compose.yml` | low | fixed (not built) | 1ab0e6d |
+
+- `mlflow` database collation: recorded 2.41 (created under a newer glibc), the image provides 2.36. Ran `REINDEX DATABASE mlflow` (indexes built under 2.41 may sort differently), then `ALTER DATABASE mlflow REFRESH COLLATION VERSION`; the warning is gone. No commit (database operation only).
+
 ## Baseline (step 0)
 
 Recorded 2026-10-11 on `review/round-1` (no fixes applied). Local Postgres, Redis and MLflow are reachable, and the Docker API container is running.
