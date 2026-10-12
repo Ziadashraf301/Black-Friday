@@ -1,7 +1,7 @@
 """
 SQLAlchemy ORM model for application users.
 """
-from sqlalchemy import Column, DateTime, Integer, String, Text, func
+from sqlalchemy import Column, DateTime, Index, Integer, String, Text, func
 
 from core.db.models.base import Base
 
@@ -9,6 +9,7 @@ from core.db.models.base import Base
 class AppUser(Base):
     """Registered application user and shopper demographic profile."""
     __tablename__ = "app_users"
+    __table_args__ = (Index("idx_users_email", "email"),)
 
     user_id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(Text, nullable=False)

@@ -42,6 +42,7 @@ def test_base_repository_create_app_tables_on_scratch_db():
             "app_users",
             "user_purchases",
             "user_carts",
+            "semantic_query_cache",
         }
         orm_tables = set(Base.metadata.tables.keys())
 

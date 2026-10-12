@@ -10,6 +10,7 @@ from core.db.models.warehouse import (
     CustomerSegment,
     ProductNetworkMetric,
     RawBlackFriday,
+    SemanticQueryCache,
     UserCart,
 )
 
@@ -23,4 +24,5 @@ __all__ = [
     "ProductNetworkMetric",
     "CuratedProduct",
     "UserCart",
+    "SemanticQueryCache",
 ]

@@ -1,4 +1,4 @@
-.PHONY: help up down restart ps logs ingest preprocess segmentation basket train monitor retrain cron eval eval-ml eval-ai test test-unit test-slow test-integration test-e2e lint lint-ci clean
+.PHONY: help up down restart ps logs migrate ingest preprocess segmentation basket train monitor retrain cron eval eval-ml eval-ai test test-unit test-slow test-integration test-e2e lint lint-ci clean
 
 # Default target: display help
 help:
@@ -10,6 +10,7 @@ help:
 	@echo "  make restart      - Restart all services"
 	@echo "  make ps           - View running container status"
 	@echo "  make logs         - Stream container logs"
+	@echo "  make migrate      - Apply the Alembic schema migrations (alembic upgrade head)"
 	@echo "  make ingest       - Ingest raw train.csv into PostgreSQL warehouse"
 	@echo "  make preprocess   - Run missForest imputation and outlier tagging"
 	@echo "  make segmentation - Run Gower clustering and 10 persona profiling"
@@ -51,6 +52,11 @@ ps:
 
 logs:
 	docker compose logs -f
+
+# Database schema (Alembic, core/db/migrations). New change: edit core/db/models, then
+# alembic revision --autogenerate -m "..." and review the generated file before committing it.
+migrate:
+	alembic upgrade head
 
 # Data & ML Pipelines (Local or Container Execution)
 ingest:

@@ -1,7 +1,7 @@
 """
 SQLAlchemy ORM model for user purchase history.
 """
-from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, Text, func
+from sqlalchemy import Column, DateTime, Float, ForeignKey, Index, Integer, Text, func
 
 from core.db.models.base import Base
 
@@ -9,6 +9,7 @@ from core.db.models.base import Base
 class UserPurchase(Base):
     """Historical purchase and model prediction log for a shopper."""
     __tablename__ = "user_purchases"
+    __table_args__ = (Index("idx_purchases_user_id", "user_id"),)
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("app_users.user_id", ondelete="CASCADE"), nullable=False)

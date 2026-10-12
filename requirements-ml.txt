@@ -2,6 +2,9 @@
 # Adds to the API runtime; not installed in the model-api image.
 -r requirements.txt
 
+# Schema migrations (make migrate)
+alembic>=1.13,<2
+
 # Core data science & math
 python-dateutil>=2.8.2
 scipy>=1.12.0
