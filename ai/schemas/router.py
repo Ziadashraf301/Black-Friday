@@ -5,7 +5,7 @@ System-1 Router & Entity Extraction Domain Schemas.
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class IntentType(str, Enum):
@@ -62,6 +62,16 @@ class RoutingDecision(BaseModel):
     prompt_version: str = "v1.0.0"
     latency_ms: float = 0.0
     metadata: Dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _adversarial_is_never_safe(self) -> "RoutingDecision":
+        """Any adversarial label makes the whole decision unsafe and blocked, whichever router produced it (AI-3)."""
+        blocked = IntentType.ADVERSARIAL_BLOCKED
+        if self.intent == blocked or blocked in self.target_intents:
+            self.is_safe = False
+            self.intent = blocked
+            self.target_intents = [blocked]
+        return self
 
 
 class QuestionSpec(BaseModel):

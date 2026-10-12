@@ -65,3 +65,17 @@ def test_router_unit_run_correctness():
     assert decision.intent == IntentType.PRODUCT_SEARCH
     assert decision.is_safe is True
     assert decision.entities.max_price == 100.0
+
+
+def test_routing_decision_adversarial_label_is_always_unsafe():
+    from ai.schemas.router import IntentType, RoutingDecision
+
+    blocked = IntentType.ADVERSARIAL_BLOCKED
+    by_intent = RoutingDecision(query="q", intent=blocked, is_safe=True)
+    by_target = RoutingDecision(
+        query="q", intent=IntentType.PRODUCT_SEARCH, target_intents=[IntentType.PRODUCT_SEARCH, blocked], is_safe=True
+    )
+    for decision in (by_intent, by_target):
+        assert decision.is_safe is False
+        assert decision.intent == blocked and decision.target_intents == [blocked]
+    assert RoutingDecision(query="q", intent=IntentType.PRODUCT_SEARCH).is_safe is True
