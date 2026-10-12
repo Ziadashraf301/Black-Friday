@@ -87,6 +87,18 @@ Item 6 above. No new findings (planned change, not a review).
 - Tests: 530 collected (same as round 1). Unit + architecture + load 376 passed (including all slow tests); every touched integration file passed against the live stack; e2e collected only (real LLM calls).
 - Note: `-m "not slow"` drops whole slow files at collection time (the conftest hook), so they are not counted as deselected. Count with `--collect-only` without `-m` when comparing totals.
 
+### Step 3: Alembic migrations (2026-10-12)
+
+| ID | Area | Finding | File | Severity | Status | Commit |
+|---|---|---|---|---|---|---|
+| CORE-16 | Core | (round-1 deferred) ORM was not the real schema. Models now match `init_schema.sql` (CustomerSegment columns, `SemanticQueryCache`, JSONB, NUMERIC, VARCHAR(8)/(4), named indexes). Alembic in `core/db/migrations`: idempotent frozen baseline `0001`, `make migrate`; `init_semantic_cache.py` removed. | `core/db/models/`, `core/db/migrations/` | low | fixed | bfc614f |
+| CORE-17 | Core | Live schema had drifted: `product_network_metrics` created by pandas (TEXT/BIGINT/DOUBLE, no primary key, JSON stored as CSV-quoted text), `curated_products` JSON not JSONB, nullable `black_friday_cleaned.is_outlier/normalized_purchase/split` and `user_purchases.user_id`, missing `idx_cleaned_split`. Migration `0002` repairs each after checking the current shape. | `core/db/migrations/versions/0002_align_live_schema.py` | medium | fixed | 6cc66f1 |
+| CORE-18 | Core | Cause of CORE-17: pipelines already replace by TRUNCATE + COPY (no `to_sql(if_exists="replace")` anywhere), but when the table was missing the `to_sql` fallback in `insert_dataframe` created it with pandas types. It now raises and asks for `make migrate`. | `core/db/repositories/base.py` | medium | fixed | afbb470 |
+
+- Tests: `tests/integration/test_migrations.py` (5: empty DB, after `init_schema.sql`, `init_schema.sql` alone, live drift repaired, NULL purchase owners refused) and `test_pipeline_writes_keep_schema.py` (2) on scratch databases. Note: in `bfc614f` alone, `test_migrations.py` has two imports only used from `6cc66f1` (flake8 F401 at that commit only).
+- Live warehouse migrated on 2026-10-12 after a full backup (`backups/fridayblack_pre_core17_20261012.dump`, pg_dump custom format, gitignored). `alembic current` = `0002 (head)`; autogenerate finds no diff between the live DB and the ORM; row counts unchanged; `/health`, `/shopper/catalog`, `/shopper/curated-catalog` and `/shopper/browse/{id}` (bundles + similar items from JSONB) work; UI on :3000 answers 200. 21 integration files for the touched tables pass.
+- Left as before: the API still runs `create_all` at startup (right shape on an empty DB); the duplicate `_ensure_semantic_cache_schema` goes in step 6.5.
+
 ## Baseline (step 0)
 
 Recorded 2026-10-11 on `review/round-1` (no fixes applied). Local Postgres, Redis and MLflow are reachable, and the Docker API container is running.

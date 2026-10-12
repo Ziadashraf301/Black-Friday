@@ -37,3 +37,6 @@ Phase2_Implementation_Plan.xlsx
 docs/archive/
 # Python bytecode
 *.py[cod]
+
+# Database backups (pg_dump)
+backups/
