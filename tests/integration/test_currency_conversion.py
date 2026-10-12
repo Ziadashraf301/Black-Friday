@@ -11,7 +11,8 @@ import pytest
 from apps.api.services.model_service import model_service
 from core.config import settings
 
-pytestmark = pytest.mark.slow
+# Needs the trained champion ONNX in models/onnx (gitignored), so it runs locally, not in CI.
+pytestmark = pytest.mark.integration
 
 
 @pytest.fixture(autouse=True)
