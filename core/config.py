@@ -177,6 +177,8 @@ class Settings(BaseSettings):
     API_BASE_URL: str = Field(default="http://localhost:8000")
     REFLEX_PORT: int = 3000
     CORS_ORIGINS: Optional[str] = Field(default=None)
+    # Comma-separated reverse-proxy IPs/CIDRs whose X-Forwarded-For is honoured; empty = use the socket peer only
+    TRUSTED_PROXIES: Optional[str] = Field(default=None)
 
     # Rate Limiting
     RATE_LIMIT_MINUTE: int = Field(default=60)

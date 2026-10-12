@@ -286,7 +286,7 @@ apps/        apps/api (FastAPI), apps/reflex_app (Reflex UI)
 #### Terminal 1: Start FastAPI Backend Server
 
 ```powershell
-python -m uvicorn apps.api.main:app --host 127.0.0.1 --port 8000 --reload
+python -m uvicorn apps.api.main:app --host 127.0.0.1 --port 8000 --reload --no-proxy-headers
 ```
 
 #### Terminal 2: Start Reflex Interactive Frontend

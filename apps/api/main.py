@@ -99,4 +99,4 @@ def health_check():
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("apps.api.main:app", host=settings.API_HOST, port=settings.API_PORT, reload=True)
+    uvicorn.run("apps.api.main:app", host=settings.API_HOST, port=settings.API_PORT, reload=True, proxy_headers=False)

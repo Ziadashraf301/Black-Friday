@@ -130,7 +130,7 @@ These rules are **enforced by AST analysis** in `tests/architecture/test_archite
 
 ```bash
 # Start FastAPI backend server
-python -m uvicorn apps.api.main:app --host 127.0.0.1 --port 8000 --reload
+python -m uvicorn apps.api.main:app --host 127.0.0.1 --port 8000 --reload --no-proxy-headers
 
 # Start Reflex frontend (from project root)
 cd apps/reflex_app && reflex run
@@ -196,6 +196,7 @@ All configuration is managed through **Pydantic Settings** in `core/config.py`, 
 - **Drift Thresholds:** `DRIFT_DATASET_THRESHOLD` (0.30), `DRIFT_TARGET_PSI_THRESHOLD` (0.20)
 - **LLM:** `GEMINI_API_KEY`, `LLM_MODEL` (default `gemini-3-flash-preview`)
 - **Rate limits:** `RATE_LIMIT_MINUTE` (60), `RATE_LIMIT_DAY` (1000), `AUTH_RATE_LIMIT_MINUTE` (10), `AUTH_RATE_LIMIT_DAY` (200)
+- **Trusted proxies:** `TRUSTED_PROXIES` (comma-separated IPs/CIDRs, empty by default) is the only control for `X-Forwarded-For` (rightmost untrusted hop, in `apps/api/client_identity.client_ip`); uvicorn always runs with `--no-proxy-headers`
 - **Safety:** when `ENVIRONMENT` is not a dev environment, startup fails if `SECRET_KEY`, `POSTGRES_PASSWORD` or `MINIO_ROOT_PASSWORD` still has its default
 
 ---
