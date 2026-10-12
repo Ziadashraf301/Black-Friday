@@ -251,7 +251,7 @@ All share the same SQLAlchemy engine via dependency injection.
 | MLflow | `blackfriday_mlflow` | 5000 | Custom Dockerfile |
 | Redis 7 | `blackfriday_redis` | 6379 | `redis:7-alpine` |
 | FastAPI | `blackfriday_api` | 8000 | `docker/Dockerfile.api` |
-| Reflex UI | `blackfriday_ui` | 3000, 8001 | `docker/Dockerfile.ui` |
+| Reflex UI | `blackfriday_ui` | 3000 (-> container 8001), 8001 | `docker/Dockerfile.ui` |
 
 ---
 

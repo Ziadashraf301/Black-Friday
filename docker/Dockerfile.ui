@@ -20,8 +20,9 @@ COPY data/ /app/data/
 
 WORKDIR /app/apps/reflex_app
 
-EXPOSE 3000 8001
+# Reflex 0.10 in prod mode serves the frontend and the backend on one port (8001); the first start compiles the app
+EXPOSE 8001
 
-HEALTHCHECK CMD curl --fail http://localhost:3000 || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=180s --retries=3 CMD curl --fail http://localhost:8001/ping || exit 1
 
 ENTRYPOINT ["reflex", "run", "--env", "prod"]
