@@ -95,6 +95,8 @@ An enterprise-grade, end-to-end Data Engineering, Data Science, and Machine Lear
    - **Catalog Coverage**: **96.01%** of products embedded (`3,487` unique product vectors).
    - **Cosine Similarity Compactness**: Average top-5 nearest neighbor similarity = **0.797**.
    - **Apriori Rule Alignment Score**: **0.806** (average cosine similarity for item pairs in mined Apriori rules; was 0.672 with a 5-item window).
+   - `make basket` saves the model to `models/item2vec/item2vec.model` (`ITEM2VEC_MODEL_PATH`).
+3. **Curated catalogue (`ml/pipelines/build_curated_catalog.py`)**: `make catalog` rebuilds the data-derived fields of `data/curated_products.json` (bundles from the Apriori rules, similars from the Item2Vec model, `order_count` from the warehouse) and leaves the hand-written display fields and USD prices unchanged. Then `python -m ml.pipelines.seed_curated` loads it into PostgreSQL.
 
 ---
 

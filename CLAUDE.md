@@ -34,7 +34,7 @@ Black Friday/
 │   ├── tracking/      # MLflowTracker, drift monitor, SHAP explainability, model cards (go through core.tracking)
 │   ├── market_basket/ # Apriori association mining, Item2Vec embeddings, product network centrality
 │   ├── segmentation/  # Gower dissimilarity clustering, 10 customer personas
-│   ├── pipelines/     # Pipeline entrypoints: ingest, preprocess, train, monitor, retrain, segmentation, market_basket, seed_curated, cron_scheduler
+│   ├── pipelines/     # Pipeline entrypoints: ingest, preprocess, train, monitor, retrain, segmentation, market_basket, build_curated_catalog, seed_curated, cron_scheduler
 │   └── serving/       # ONNX runtime inference engines
 │
 ├── ai/                # AI / LLM domain (shopping assistant)
@@ -148,7 +148,8 @@ make logs                 # stream logs
 make ingest               # Ingest raw train.csv → PostgreSQL (COPY streaming, ~7s for 550k rows)
 make preprocess           # MissForest imputation + train/test split (zero-leakage)
 make segmentation         # Gower clustering → 10 customer personas
-make basket               # Apriori rules + Item2Vec embeddings + PageRank/HITS
+make basket               # Apriori rules + Item2Vec embeddings + PageRank/HITS (saves models/item2vec/item2vec.model)
+make catalog              # Rebuild bundles/similars/order_count in data/curated_products.json (prices and display text kept)
 make train                # Train regression benchmark + ONNX export
 make train MODEL=lgbm     # Train specific model
 make monitor DEMO=1       # Evidently AI drift monitoring
