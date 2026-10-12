@@ -21,7 +21,14 @@ COPY data/ /app/data/
 
 WORKDIR /app/apps/reflex_app
 
-# Reflex 0.10 in prod mode serves the frontend and the backend on one port (8001); the first start compiles the app
+# Install bun and the frontend npm packages and build the production frontend now, at image build time, so a container
+# start needs no network and does not download them again (INF-19). REFLEX_API_URL is baked into the frontend bundle.
+ARG REFLEX_API_URL=http://localhost:8001
+ENV REFLEX_API_URL=${REFLEX_API_URL}
+RUN reflex export --frontend-only --no-zip --env prod
+
+# Reflex 0.10 in prod mode serves the frontend and the backend on one port (8001); a start only recompiles the app, the
+# packages installed above are reused
 EXPOSE 8001
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=180s --retries=3 CMD curl --fail http://localhost:8001/ping || exit 1
