@@ -285,4 +285,4 @@ GitHub Actions workflow (`.github/workflows/ci-cd.yml`):
 ## Code Review Status
 
 - Round 1 review is complete (merged from `review/round-1`). Summary, before/after metrics and round-2 items are in `docs/REVIEW_LOG.md`; the runbook is `docs/REVIEW_PLAN.md`.
-- For round 2, reuse the same runbook loop: one area per session, one commit per finding, log every finding.
+- Round 2 runbook: `docs/REVIEW_PLAN_ROUND2.md` (branch `review/round-2`, not created yet; the first session creates it). Same loop: one area per session, one commit per finding, log every finding. Ask before replacing any model or personas (step 6).
