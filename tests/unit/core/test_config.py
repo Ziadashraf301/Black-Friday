@@ -109,3 +109,9 @@ def test_core12_default_service_password_rejected_in_production(field):
 def test_core12_default_service_passwords_allowed_in_development():
     s = _make(ENVIRONMENT="development", SECRET_KEY="x" * 40)
     assert s.POSTGRES_PASSWORD and s.MINIO_ROOT_PASSWORD
+
+
+def test_anl11_segmentation_metric_only_accepts_gower():
+    assert Settings(_env_file=None).SEGMENTATION_METRIC == "gower"
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, SEGMENTATION_METRIC="euclidean")

@@ -1,6 +1,6 @@
 import urllib.parse
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -108,7 +108,8 @@ class Settings(BaseSettings):
 
     # Customer Segmentation Hyperparameters
     K_CLUSTERS: int = Field(default=10)
-    SEGMENTATION_METRIC: str = Field(default="gower")
+    # Gower is the only dissimilarity implemented (mixed numeric/categorical features); other values are rejected
+    SEGMENTATION_METRIC: Literal["gower"] = Field(default="gower")
     SEGMENTATION_LINKAGE: str = Field(default="complete")
     # A cluster is a VIP persona (9/10) when its mean lifetime value or mean distinct-product count exceeds these
     SEGMENT_VIP_MIN_LTV: float = Field(default=2_500_000.0)
