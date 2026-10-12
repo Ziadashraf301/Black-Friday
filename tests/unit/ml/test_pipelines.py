@@ -329,7 +329,7 @@ def test_train_promotes_only_a_model_that_beats_the_champion_on_the_same_split()
     assert should_promote(0.40, {"r2": 0.72}) is False
 
 
-def test_customer_frequency_counts_distinct_products_not_purchase_rows():
+def test_pipe13_customer_frequency_counts_purchase_rows_not_distinct_products():
     import pandas as pd
 
     from ml.features.customer_features import CustomerFeatureExtractor
@@ -348,7 +348,7 @@ def test_customer_frequency_counts_distinct_products_not_purchase_rows():
 
     features = CustomerFeatureExtractor().extract_features(df)
 
-    assert features["frequency"].iloc[0] == 2
+    assert features["frequency"].iloc[0] == 3
 
 
 def test_reports_dir_is_anchored_at_base_dir_not_the_working_directory(tmp_path, monkeypatch):
