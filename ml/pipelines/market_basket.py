@@ -52,6 +52,8 @@ def run_market_basket_pipeline():
     epochs = settings.ITEM2VEC_EPOCHS
     item2vec = Item2VecRecommender(vector_size=vector_size, window=window, min_count=min_count, epochs=epochs)
     item2vec.fit(baskets)
+    if item2vec.model is not None:
+        item2vec.save(settings.resolved_item2vec_model_path)
 
     # Evaluate Item2Vec embedding quality and alignment with Apriori rules
     item2vec_metrics = item2vec.evaluate_embeddings(baskets=baskets, rules_df=rules_df)

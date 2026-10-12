@@ -123,6 +123,13 @@ class Settings(BaseSettings):
     ITEM2VEC_WINDOW: int = Field(default=0, ge=0)
     ITEM2VEC_MIN_COUNT: int = Field(default=2)
     ITEM2VEC_EPOCHS: int = Field(default=10)
+    # `make basket` saves the trained model here; `make catalog` reads it to rebuild the curated similars
+    ITEM2VEC_MODEL_PATH: str = Field(default="models/item2vec/item2vec.model")
+
+    @property
+    def resolved_item2vec_model_path(self) -> Path:
+        p = Path(self.ITEM2VEC_MODEL_PATH)
+        return p if p.is_absolute() else self.BASE_DIR / p
 
     # Imputation Configuration (Optional / Overridable via .env)
     IMPUTER_N_ESTIMATORS: int = Field(default=30)

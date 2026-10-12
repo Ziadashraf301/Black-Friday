@@ -1,4 +1,4 @@
-.PHONY: help up down restart ps logs migrate ingest preprocess segmentation basket train monitor retrain cron eval eval-ml eval-ai test test-unit test-slow test-integration test-e2e lint lint-ci clean
+.PHONY: help up down restart ps logs migrate ingest preprocess segmentation basket catalog train monitor retrain cron eval eval-ml eval-ai test test-unit test-slow test-integration test-e2e lint lint-ci clean
 
 # Default target: display help
 help:
@@ -15,6 +15,7 @@ help:
 	@echo "  make preprocess   - Run missForest imputation and outlier tagging"
 	@echo "  make segmentation - Run Gower clustering and 10 persona profiling"
 	@echo "  make basket       - Mine Apriori rules and compute PageRank/HITS"
+	@echo "  make catalog      - Rebuild curated catalogue bundles/similars/order counts (after basket)"
 	@echo "  make train        - Train regression benchmark models & export ONNX"
 	@echo "                      Example: make train [MODEL=lgbm]"
 	@echo "  make monitor      - Run Evidently AI drift monitor on incoming batch"
@@ -70,6 +71,9 @@ segmentation:
 
 basket:
 	python -m ml.pipelines.market_basket
+
+catalog:
+	python -m ml.pipelines.build_curated_catalog $(ARGS)
 
 train:
 	python -m ml.pipelines.train $(if $(MODEL),--model $(MODEL),) $(ARGS)

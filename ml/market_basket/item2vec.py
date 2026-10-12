@@ -1,4 +1,5 @@
-from typing import Any, Dict, List, Optional, Tuple
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -61,6 +62,26 @@ class Item2VecRecommender:
         )
         logger.info(f"Item2Vec training complete. Vocabulary size: {len(self.model.wv):,} products.")
         return self
+
+    def save(self, path: Union[str, Path]) -> Path:
+        """Saves the trained gensim model (with its vectors) so later jobs, e.g. the catalog build, can reuse it."""
+        if not HAS_GENSIM or not self.model:
+            raise ValueError("Item2Vec model is not trained; nothing to save.")
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        self.model.save(str(path))
+        logger.info(f"Item2Vec model saved to {path}")
+        return path
+
+    @classmethod
+    def load(cls, path: Union[str, Path]) -> "Item2VecRecommender":
+        """Loads a model written by `save`; hyperparameters are read back from it."""
+        if not HAS_GENSIM:
+            raise ImportError("gensim is required to load an Item2Vec model.")
+        model = Word2Vec.load(str(path))
+        recommender = cls(vector_size=model.vector_size, window=model.window, min_count=model.min_count, epochs=model.epochs)
+        recommender.model = model
+        return recommender
 
     def get_similar_products(self, product_id: str, top_n: int = 5) -> List[Tuple[str, float]]:
         """Finds most similar products in dense embedding space via Cosine Similarity."""
