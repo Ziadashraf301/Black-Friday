@@ -1,4 +1,6 @@
-"""UI-4: the cart tool never adds a product at a made-up price."""
+"""UI-4: the cart tool never adds a product at a made-up price.
+
+AI-4: cart intent words are matched as whole words, not substrings ("to" inside "total", "from" inside a sentence)."""
 
 import uuid
 from unittest.mock import MagicMock, patch
@@ -6,6 +8,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from ai.extractor.catalog_index import CatalogIndex
+from ai.nodes.cart_node import detect_cart_action
 from ai.tools.cart_tools import CartManagementTool
 from core.exceptions import DomainError
 
@@ -58,3 +61,22 @@ def test_priced_repo_product_is_added_at_its_price(user):
 def test_unknown_product_is_still_just_unknown(user):
     tool = _tool(None)
     assert tool._lookup_product_info("P99999999") is None
+
+
+@pytest.mark.parametrize(
+    "query, sizes, expected",
+    [
+        ("change my jacket from size l to xl", [], ("update_size", "L", "XL")),
+        ("switch the size please", ["M", "L"], ("update_size", "M", "L")),
+        ("add the jacket from the sale page to my cart", [], ("add", None, None)),
+        ("add this to my cart in size m", ["M"], ("add", None, None)),
+        ("remove the boots from my cart", [], ("remove", None, None)),
+        ("take out the scarf", [], ("remove", None, None)),
+        ("clear my cart", [], ("clear", None, None)),
+        ("what is my cart total", [], ("get", None, None)),
+        ("show my address book subtotal", [], ("get", None, None)),
+        ("do you have a droplet print", [], ("get", None, None)),
+    ],
+)
+def test_detect_cart_action(query, sizes, expected):
+    assert detect_cart_action(query, sizes) == expected

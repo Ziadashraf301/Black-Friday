@@ -5,7 +5,7 @@ from pathlib import Path
 from ai.schemas import CartState
 from ai.schemas.identity import GUEST_USER_ID
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[3]
 
 
 def test_constant_value_is_unchanged():
