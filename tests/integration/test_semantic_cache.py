@@ -133,6 +133,33 @@ def test_saving_purges_expired_rows_and_replaces_same_query(repo):
     assert rows == [(fresh, "v2")]
 
 
+def test_my_entry_is_found_when_many_closer_rows_belong_to_others(repo):
+    """CORE-15: an HNSW scan returns only ef_search candidates before the user filter, losing my entry."""
+    repo, keys = repo
+    me, others = _key(keys), _key(keys)
+    vec_str = "[" + ",".join(str(x) for x in VEC) + "]"
+    with repo.engine.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO semantic_query_cache (query_text, embedding, response_text, ui_payload, intent, user_key) "
+                "SELECT 'q' || g, CAST(:v AS vector), 'theirs', '{}'::jsonb, 'PRODUCT_SEARCH', :k "
+                "FROM generate_series(1, 2000) g"
+            ),
+            {"v": vec_str, "k": others},
+        )
+        conn.execute(text("ANALYZE semantic_query_cache"))
+    near = list(VEC)
+    near[0] += 0.02  # still within max_distance, but farther than every other row
+    _save(repo, me, response="mine")
+    with repo.engine.connect() as conn:
+        assert conn.execute(
+            text("SELECT (embedding <=> CAST(:v AS vector)) <= 0.08 FROM semantic_query_cache WHERE user_key = :k"),
+            {"v": "[" + ",".join(str(x) for x in near) + "]", "k": me},
+        ).scalar()
+    hit = repo.find_semantic_cached_response(near, me)
+    assert hit is not None and hit["response_message"] == "mine"
+
+
 def test_legacy_rows_without_a_user_never_match(repo):
     repo, keys = repo
     key = _key(keys)

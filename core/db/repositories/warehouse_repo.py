@@ -587,21 +587,29 @@ class WarehouseRepository(BaseRepository):
         (default settings.SEMANTIC_CACHE_TTL_SECONDS) can match, so one shopper's personalised
         answer is never served to another and prices do not go stale.
         Returns the closest entry with cosine distance <= max_distance (similarity >= 0.92).
+
+        The user's live rows are selected first (btree on user_key, created_at) and ranked exactly.
+        Ordering the whole table by distance would let the planner use the HNSW index, which returns
+        only ef_search candidates before the user filter runs, so a user's entry could be missed once
+        other users' rows are closer (CORE-15).
         """
-        self._ensure_semantic_cache_schema()
         vec_str = "[" + ",".join(str(x) for x in query_vec) + "]"
         query = text(
             """
+            WITH mine AS MATERIALIZED (
+                SELECT query_text, response_text, ui_payload, intent, embedding
+                FROM semantic_query_cache
+                WHERE user_key = :user_key
+                  AND created_at > now() - make_interval(secs => :ttl)
+            )
             SELECT
                 query_text,
                 response_text,
                 ui_payload,
                 intent,
                 (embedding <=> CAST(:qvec AS vector)) AS distance
-            FROM semantic_query_cache
-            WHERE user_key = :user_key
-              AND created_at > now() - make_interval(secs => :ttl)
-              AND (embedding <=> CAST(:qvec AS vector)) <= :max_dist
+            FROM mine
+            WHERE (embedding <=> CAST(:qvec AS vector)) <= :max_dist
             ORDER BY distance ASC
             LIMIT 1;
         """
